@@ -1,0 +1,170 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from datetime import datetime
+from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.user import User, PerfilUsuario
+from app.models.crm import Lead, InteracaoLead, StatusFunil
+from app.schemas.crm import (
+    LeadCreate, LeadUpdate, LeadResponse,
+    InteracaoCreate, InteracaoResponse, LeadPerderRequest,
+)
+
+router = APIRouter(prefix="/leads", tags=["CRM — Leads"])
+
+
+@router.get("/", response_model=List[LeadResponse])
+def listar_leads(
+    status_funil: Optional[StatusFunil] = None,
+    vendedor_id: Optional[int] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lista leads — vendedor vê apenas os seus; gestor vê todos."""
+    query = db.query(Lead).filter(Lead.convertido_em_cliente == False)
+
+    # Vendedor só vê sua carteira (SRS Seção 2)
+    if current_user.perfil == PerfilUsuario.VENDEDOR:
+        query = query.filter(Lead.vendedor_id == current_user.id)
+    elif vendedor_id:
+        query = query.filter(Lead.vendedor_id == vendedor_id)
+
+    if status_funil:
+        query = query.filter(Lead.status_funil == status_funil)
+
+    return query.order_by(Lead.criado_em.desc()).offset(skip).limit(limit).all()
+
+
+@router.post("/", response_model=LeadResponse, status_code=201)
+def criar_lead(
+    payload: LeadCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cadastra novo lead — RF001."""
+    lead = Lead(**payload.model_dump())
+    if not lead.vendedor_id:
+        # Auto-atribuir ao vendedor logado
+        if current_user.perfil == PerfilUsuario.VENDEDOR:
+            lead.vendedor_id = current_user.id
+
+    db.add(lead)
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+
+@router.get("/{lead_id}", response_model=LeadResponse)
+def obter_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+    return lead
+
+
+@router.patch("/{lead_id}", response_model=LeadResponse)
+def atualizar_lead(
+    lead_id: int,
+    payload: LeadUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(lead, field, value)
+
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+
+@router.post("/{lead_id}/perder", response_model=LeadResponse)
+def marcar_perdido(
+    lead_id: int,
+    payload: LeadPerderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """RF004 — Exige motivo ao marcar lead como Perdido (RN001)."""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+
+    lead.status_funil = StatusFunil.PERDIDO
+    lead.motivo_perda = payload.motivo_perda
+    lead.concorrente_perdido = payload.concorrente
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+
+@router.post("/{lead_id}/qualificar", response_model=LeadResponse)
+def qualificar_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """RN001 — Registra qualificação antes de avançar para briefing."""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+
+    lead.qualificado = True
+    lead.status_funil = StatusFunil.EM_VISITA
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+
+# === INTERAÇÕES ===
+
+@router.get("/{lead_id}/interacoes", response_model=List[InteracaoResponse])
+def listar_interacoes(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """RF003 — Histórico completo de interações."""
+    return (
+        db.query(InteracaoLead)
+        .filter(InteracaoLead.lead_id == lead_id)
+        .order_by(InteracaoLead.data.desc())
+        .all()
+    )
+
+
+@router.post("/{lead_id}/interacoes", response_model=InteracaoResponse, status_code=201)
+def registrar_interacao(
+    lead_id: int,
+    payload: InteracaoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """RF003 — Registra interação e atualiza última_interacao_em."""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+
+    interacao = InteracaoLead(
+        lead_id=lead_id,
+        responsavel_id=current_user.id,
+        tipo=payload.tipo,
+        resumo=payload.resumo,
+    )
+    db.add(interacao)
+
+    # Atualiza timestamp de última interação (RF005 — alerta 3 dias sem interação)
+    lead.ultima_interacao_em = datetime.utcnow()
+    db.commit()
+    db.refresh(interacao)
+    return interacao

@@ -1,0 +1,41 @@
+# === Python / Backend ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.env
+*.db
+*.sqlite
+
+# Alembic
+alembic/versions/*.pyc
+
+# === Node / Frontend ===
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+*.log
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Build artifacts ===
+*.pyc
+*.pycache
+.cache/
+coverage/
+.nyc_output/
