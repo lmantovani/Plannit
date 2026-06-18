@@ -59,6 +59,14 @@ export const dashboardApi = {
   projetosAtivos: () => api.get('/dashboard/projetos-ativos'),
 }
 
+export const projetosApi = {
+  list: (params) => api.get('/projetos/', { params }),
+  get: (id) => api.get(`/projetos/${id}`),
+  create: (data) => api.post('/projetos/', data),
+  mudarStatus: (id, data) => api.post(`/projetos/${id}/status`, data),
+  historico: (id) => api.get(`/projetos/${id}/historico`),
+}
+
 export const usersApi = {
   list: () => api.get('/users/'),
   create: (data) => api.post('/users/', data),

@@ -6,9 +6,10 @@ import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import CRMPage from './pages/crm/CRMPage'
 import {
-  ProjetosPage, BriefingPage, ConferenciaPage, LogisticaPage,
+  ProjetosPage, ConferenciaPage, LogisticaPage,
   MontagemPage, FinanceiroPage, PosVendaPage, RelatoriosPage, ConfiguracoesPage,
 } from './pages/PlaceholderPages'
+import BriefingPage from './pages/briefing/BriefingPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
