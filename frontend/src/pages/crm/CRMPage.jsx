@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Phone, Mail, Building2, Clock, User, Search, Filter, ChevronDown } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Phone, Mail, Building2, Clock, User, Search, Filter } from 'lucide-react'
 import { leadsApi } from '../../lib/api'
 import { Modal, EmptyState, LoadingPage, StatusBadge } from '../../components/ui'
 import { FUNIL_ETAPAS, ORIGEM_LABELS, timeAgo } from '../../lib/constants'
@@ -10,10 +10,12 @@ const COLUNAS_MVP = ['novo_lead', 'qualificando', 'em_visita', 'em_briefing', 'e
 export default function CRMPage() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('kanban') // kanban | lista
+  const [view, setView] = useState('kanban')
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
+  const draggedId = useRef(null)
+  const [dragOverCol, setDragOverCol] = useState(null)
 
   const fetchLeads = async () => {
     try {
@@ -34,6 +36,19 @@ export default function CRMPage() {
     acc[s] = filtered.filter(l => l.status_funil === s)
     return acc
   }, {})
+
+  const moveLead = async (leadId, novoStatus) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead || lead.status_funil === novoStatus) return
+    // Atualiza otimisticamente
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status_funil: novoStatus } : l))
+    try {
+      await leadsApi.update(leadId, { status_funil: novoStatus })
+    } catch (e) {
+      console.error(e)
+      fetchLeads() // reverte em caso de erro
+    }
+  }
 
   if (loading) return <LoadingPage />
 
@@ -91,6 +106,15 @@ export default function CRMPage() {
                 status={status}
                 leads={byStatus[status] || []}
                 onCardClick={setSelectedLead}
+                dragOverCol={dragOverCol}
+                onDragStart={(id) => { draggedId.current = id }}
+                onDragEnter={() => setDragOverCol(status)}
+                onDragLeave={() => setDragOverCol(null)}
+                onDrop={() => {
+                  if (draggedId.current) moveLead(draggedId.current, status)
+                  draggedId.current = null
+                  setDragOverCol(null)
+                }}
               />
             ))}
           </div>
@@ -121,13 +145,20 @@ export default function CRMPage() {
 }
 
 // === Coluna Kanban ===
-function KanbanColumn({ status, leads, onCardClick }) {
+function KanbanColumn({ status, leads, onCardClick, dragOverCol, onDragStart, onDragEnter, onDragLeave, onDrop }) {
   const etapa = FUNIL_ETAPAS.find(e => e.key === status)
   const label = etapa?.label || status
   const cor = etapa?.cor || '#888'
+  const isOver = dragOverCol === status
 
   return (
-    <div className="kanban-col">
+    <div
+      className={clsx('kanban-col transition-colors', isOver && 'bg-primary-50 ring-2 ring-primary-200 ring-inset')}
+      onDragOver={e => e.preventDefault()}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {/* Cabeçalho da coluna */}
       <div className="flex items-center justify-between px-2 py-1.5 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -140,10 +171,12 @@ function KanbanColumn({ status, leads, onCardClick }) {
       {/* Cards */}
       <div className="flex-1 overflow-y-auto space-y-2 pb-2 pr-1">
         {leads.length === 0 ? (
-          <div className="text-center py-6 text-stone-300 text-xs">Vazio</div>
+          <div className={clsx('text-center py-6 text-xs', isOver ? 'text-primary-400' : 'text-stone-300')}>
+            {isOver ? 'Soltar aqui' : 'Vazio'}
+          </div>
         ) : (
           leads.map(lead => (
-            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} />
+            <LeadCard key={lead.id} lead={lead} onClick={() => onCardClick(lead)} onDragStart={onDragStart} />
           ))
         )}
       </div>
@@ -152,13 +185,18 @@ function KanbanColumn({ status, leads, onCardClick }) {
 }
 
 // === Card do Lead ===
-function LeadCard({ lead, onClick }) {
+function LeadCard({ lead, onClick, onDragStart }) {
   const semInteracao = lead.ultima_interacao_em
     ? (Date.now() - new Date(lead.ultima_interacao_em).getTime()) > (3 * 24 * 60 * 60 * 1000)
     : true
 
   return (
-    <div onClick={onClick} className={clsx('kanban-card group', semInteracao && 'border-l-2 border-l-amber-400')}>
+    <div
+      draggable
+      onDragStart={e => { e.stopPropagation(); onDragStart(lead.id) }}
+      onClick={onClick}
+      className={clsx('kanban-card group cursor-grab active:cursor-grabbing active:opacity-60', semInteracao && 'border-l-2 border-l-amber-400')}
+    >
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-sm font-medium text-stone-800 leading-tight">{lead.nome}</p>
         {semInteracao && (
