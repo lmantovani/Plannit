@@ -37,12 +37,13 @@ export const STATUS_CONFIG = {
 }
 
 export const STATUS_COLOR_CLASSES = {
-  blue:   'bg-blue-50 text-blue-700 border-blue-200',
-  purple: 'bg-purple-50 text-purple-700 border-purple-200',
-  green:  'bg-green-50 text-green-700 border-green-200',
-  amber:  'bg-amber-50 text-amber-700 border-amber-200',
-  red:    'bg-red-50 text-red-700 border-red-200',
-  stone:  'bg-stone-100 text-stone-600 border-stone-200',
+  blue:    'bg-blue-50 text-blue-700 border-blue-200',
+  purple:  'bg-purple-50 text-purple-700 border-purple-200',
+  green:   'bg-green-50 text-green-700 border-green-200',
+  amber:   'bg-amber-50 text-amber-700 border-amber-200',
+  red:     'bg-red-50 text-red-700 border-red-200',
+  stone:   'bg-stone-100 text-stone-600 border-stone-200',
+  primary: 'bg-primary-50 text-primary-700 border-primary-200',
 }
 
 export const getStatusBadge = (status) => {
@@ -91,4 +92,22 @@ export const timeAgo = (date) => {
   if (hrs < 24) return `${hrs}h atrás`
   const days = Math.floor(hrs / 24)
   return `${days}d atrás`
+}
+
+// Score de Arquitetos (Módulo Arquitetos)
+export const SEGMENTO_CONFIG = {
+  campeao:        { label: 'Campeão',        color: 'primary' },
+  parceiro_fiel:  { label: 'Parceiro Fiel',  color: 'green' },
+  em_ascensao:    { label: 'Em Ascensão',    color: 'blue' },
+  novo_promissor: { label: 'Novo Promissor', color: 'purple' },
+  ocasional:      { label: 'Ocasional',      color: 'stone' },
+  em_risco:       { label: 'Em Risco',       color: 'red' },
+  inativo:        { label: 'Inativo',        color: 'stone' },
+}
+
+export const FLAG_CONFIG = {
+  top_indicador:        { label: 'Top Indicador',           color: 'primary' },
+  em_risco_de_perda:    { label: 'Em Risco de Perda',       color: 'red' },
+  alto_potencial:       { label: 'Alto Potencial',          color: 'blue' },
+  indicacao_alto_valor: { label: 'Indicação de Alto Valor', color: 'green' },
 }
