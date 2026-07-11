@@ -167,7 +167,7 @@ export function Tabs({ tabs, active, onChange }) {
 }
 
 // === Score Bar ===
-export function ScoreBar({ score, min = 70, label }) {
+export function ScoreBar({ score, min = 70, label, showMinimo = true }) {
   const pct = Math.min(100, Math.max(0, score))
   const ok = score >= min
   return (
@@ -184,7 +184,7 @@ export function ScoreBar({ score, min = 70, label }) {
           {score.toFixed(0)}/100
         </span>
       </div>
-      {score < min && (
+      {showMinimo && score < min && (
         <p className="text-xs text-amber-600 mt-0.5">Mínimo: {min} pontos</p>
       )}
     </div>
