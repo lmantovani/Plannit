@@ -180,7 +180,7 @@ function ArquitetoForm({ initial, onSubmit, onCancel, submitLabel }) {
         </div>
         <div className="col-span-2">
           <label className="label">Nível de parceria</label>
-          <input className="input" value={form.nivel_parceria} onChange={e => set('nivel_parceria', e.target.value)} placeholder="parceiro" />
+          <input className="input" required value={form.nivel_parceria} onChange={e => set('nivel_parceria', e.target.value)} placeholder="parceiro" />
         </div>
       </div>
 
@@ -275,7 +275,11 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
       contatosFetchStarted.current = true
       fetchContatos()
     }
-  }, [tab, fetchContatos])
+    // fetchContatos é recriada a cada render; deps de propósito restritas a
+    // [tab, atual.id] (mesmo padrão do efeito de score, acima) — incluir a
+    // função aqui reintroduziria o loop de retry que o ref existe pra evitar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, atual.id])
 
   const handleEditSubmit = async (form) => {
     const { data } = await arquitetosApi.update(atual.id, form)
@@ -494,6 +498,7 @@ function ContatosTabContent({ arquitetoId, contatos, loading, error, onRefetch }
 
         {editingDecisor !== undefined && (
           <DecisorForm
+            key={editingDecisor?.id ?? 'novo'}
             initial={editingDecisor ? {
               nome: editingDecisor.nome,
               cargo: editingDecisor.cargo || '',
@@ -548,6 +553,7 @@ function ContatosTabContent({ arquitetoId, contatos, loading, error, onRefetch }
 
         {editingConcorrente !== undefined && (
           <ConcorrenteForm
+            key={editingConcorrente?.id ?? 'novo'}
             initial={editingConcorrente ? {
               nome_concorrente: editingConcorrente.nome_concorrente,
               percentual_fechamento_estimado: editingConcorrente.percentual_fechamento_estimado,
