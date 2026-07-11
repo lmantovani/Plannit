@@ -5,7 +5,7 @@ não percentil relativo entre arquitetos. Limiares numéricos ficam como constan
 nomeadas abaixo, ajustáveis sem reescrever a lógica.
 """
 from datetime import datetime
-from typing import Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 
 def pontuar_recencia(dias_desde_ultimo_projeto: Optional[int]) -> int:
@@ -106,3 +106,58 @@ def meses_entre(inicio: Optional[datetime], fim: datetime) -> int:
 def contar_meses_distintos(datas: Iterable[Optional[datetime]]) -> int:
     chaves = {(d.year, d.month) for d in datas if d is not None}
     return len(chaves)
+
+
+def determinar_segmento(
+    *,
+    tem_historico: bool,
+    dias_desde_cadastro: int,
+    em_risco: bool,
+    score_geral: float,
+    rfv: float,
+    potencial: float,
+    lealdade: float,
+) -> str:
+    if not tem_historico:
+        return "inativo"
+    if dias_desde_cadastro < 90:
+        return "novo_promissor"
+    if em_risco:
+        return "em_risco"
+    if score_geral >= 85:
+        return "campeao"
+    if lealdade >= 75 and rfv >= 50:
+        return "parceiro_fiel"
+    if potencial >= 70:
+        return "em_ascensao"
+    return "ocasional"
+
+
+def determinar_flags(
+    *,
+    score_geral: float,
+    potencial: float,
+    valor_pontos: float,
+    em_risco: bool,
+) -> list[str]:
+    flags = []
+    if score_geral >= 85:
+        flags.append("top_indicador")
+    if em_risco:
+        flags.append("em_risco_de_perda")
+    if potencial >= 70:
+        flags.append("alto_potencial")
+    if valor_pontos >= 90:
+        flags.append("indicacao_alto_valor")
+    return flags
+
+
+def calcular_risco_concorrencia(percentuais: list[float]) -> dict:
+    maior = max(percentuais) if percentuais else 0.0
+    if maior < 30:
+        nivel = "baixo"
+    elif maior <= 60:
+        nivel = "medio"
+    else:
+        nivel = "alto"
+    return {"risco": round(maior, 1), "nivel": nivel}
