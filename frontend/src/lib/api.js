@@ -73,3 +73,20 @@ export const usersApi = {
   update: (id, data) => api.patch(`/users/${id}`, data),
   disponibilidadeProjetistas: () => api.get('/users/projetistas/disponibilidade'),
 }
+
+export const arquitetosApi = {
+  list: (params) => api.get('/arquitetos/', { params }),
+  get: (id) => api.get(`/arquitetos/${id}`),
+  create: (data) => api.post('/arquitetos/', data),
+  update: (id, data) => api.patch(`/arquitetos/${id}`, data),
+  desativar: (id) => api.delete(`/arquitetos/${id}`),
+  score: (id) => api.get(`/arquitetos/${id}/score`),
+  listarDecisores: (id) => api.get(`/arquitetos/${id}/decisores`),
+  criarDecisor: (id, data) => api.post(`/arquitetos/${id}/decisores`, data),
+  atualizarDecisor: (id, decisorId, data) => api.patch(`/arquitetos/${id}/decisores/${decisorId}`, data),
+  removerDecisor: (id, decisorId) => api.delete(`/arquitetos/${id}/decisores/${decisorId}`),
+  listarConcorrentes: (id) => api.get(`/arquitetos/${id}/concorrentes`),
+  criarConcorrente: (id, data) => api.post(`/arquitetos/${id}/concorrentes`, data),
+  atualizarConcorrente: (id, concId, data) => api.patch(`/arquitetos/${id}/concorrentes/${concId}`, data),
+  removerConcorrente: (id, concId) => api.delete(`/arquitetos/${id}/concorrentes/${concId}`),
+}

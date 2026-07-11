@@ -10,6 +10,7 @@ import {
   MontagemPage, FinanceiroPage, PosVendaPage, RelatoriosPage, ConfiguracoesPage,
 } from './pages/PlaceholderPages'
 import BriefingPage from './pages/briefing/BriefingPage'
+import ArquitetosPage from './pages/arquitetos/ArquitetosPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
@@ -20,6 +21,7 @@ const ROUTE_TITLES = {
   '/crm':           { title: 'CRM & Leads',         subtitle: 'Pipeline comercial' },
   '/projetos':      { title: 'Projetos',            subtitle: 'Fila e desenvolvimento' },
   '/briefing':      { title: 'Briefings',           subtitle: 'Formulários e score' },
+  '/arquitetos':    { title: 'Arquitetos',          subtitle: 'Parceiros e indicações' },
   '/conferencia':   { title: 'Conferência',         subtitle: 'Medições e adequações' },
   '/logistica':     { title: 'Logística',           subtitle: 'Pedidos e entregas' },
   '/montagem':      { title: 'Montagem',            subtitle: 'Agendamento e checklist' },
@@ -51,6 +53,7 @@ export default function App() {
             <Route path="/crm"           element={<CRMPage />} />
             <Route path="/projetos"      element={<ProjetosPage />} />
             <Route path="/briefing"      element={<BriefingPage />} />
+            <Route path="/arquitetos"    element={<ArquitetosPage />} />
             <Route path="/conferencia"   element={<ConferenciaPage />} />
             <Route path="/logistica"     element={<LogisticaPage />} />
             <Route path="/montagem"      element={<MontagemPage />} />
