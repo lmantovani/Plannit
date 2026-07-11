@@ -1,9 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Plus, Search, Phone, Mail, Building2 } from 'lucide-react'
 import { arquitetosApi } from '../../lib/api'
-import { Modal, ConfirmDialog, EmptyState, LoadingPage, Spinner, Tabs, ScoreBar } from '../../components/ui'
+import { Modal, ConfirmDialog, EmptyState, LoadingPage, Spinner, Tabs, ScoreBar, AlertBanner } from '../../components/ui'
 import { STATUS_COLOR_CLASSES, SEGMENTO_CONFIG, FLAG_CONFIG } from '../../lib/constants'
 import clsx from 'clsx'
+
+// Extrai uma mensagem exibível de um erro de API. `detail` do FastAPI pode ser
+// uma string (erro de negócio) ou um array de {loc,msg,type} (erro de validação
+// Pydantic, ex: e-mail vazio) — renderizar o array direto quebraria o React.
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg || String(d)).join('; ')
+  return fallback
+}
+
+// Campos opcionais em branco viram undefined (omitidos do JSON) em vez de ''
+// — evita 422 do backend em campos como email: Optional[EmailStr].
+function sanitizeForm(form) {
+  return Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v === '' ? undefined : v]))
+}
 
 export default function ArquitetosPage() {
   const [arquitetos, setArquitetos] = useState([])
@@ -11,20 +27,24 @@ export default function ArquitetosPage() {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selected, setSelected] = useState(null)
+  const [listError, setListError] = useState('')
 
   const fetchArquitetos = async () => {
     try {
       const { data } = await arquitetosApi.list()
       setArquitetos(data)
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
+      setListError('')
+    } catch (e) {
+      console.error(e)
+      setListError('Não foi possível carregar a lista de arquitetos.')
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { fetchArquitetos() }, [])
 
   const filtered = arquitetos.filter(a =>
     !search ||
-    a.nome.toLowerCase().includes(search.toLowerCase()) ||
+    (a.nome || '').toLowerCase().includes(search.toLowerCase()) ||
     a.escritorio?.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -32,6 +52,12 @@ export default function ArquitetosPage() {
 
   return (
     <div className="p-6">
+      {listError && (
+        <div className="mb-4">
+          <AlertBanner type="error" message={listError} onDismiss={() => setListError('')} />
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-3 py-1.5 flex-1 max-w-xs">
@@ -69,6 +95,7 @@ export default function ArquitetosPage() {
       {/* Drawer */}
       {selected && (
         <ArquitetoDrawer
+          key={selected.id}
           arquiteto={selected}
           onClose={() => setSelected(null)}
           onUpdated={fetchArquitetos}
@@ -121,9 +148,9 @@ function ArquitetoForm({ initial, onSubmit, onCancel, submitLabel }) {
     setLoading(true)
     setError('')
     try {
-      await onSubmit(form)
+      await onSubmit(sanitizeForm(form))
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar arquiteto')
+      setError(extractErrorMessage(err, 'Erro ao salvar arquiteto'))
       setLoading(false)
     }
   }
@@ -194,13 +221,16 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
   const [atual, setAtual] = useState(arquiteto)
   const [editing, setEditing] = useState(false)
   const [confirmDesativar, setConfirmDesativar] = useState(false)
+  const [desativarError, setDesativarError] = useState('')
 
   const [score, setScore] = useState(null)
   const [scoreLoading, setScoreLoading] = useState(false)
   const [scoreError, setScoreError] = useState('')
+  const scoreFetchStarted = useRef(false)
 
   useEffect(() => {
-    if (tab === 'score' && !score && !scoreLoading) {
+    if (tab === 'score' && !scoreFetchStarted.current) {
+      scoreFetchStarted.current = true
       setScoreLoading(true)
       setScoreError('')
       arquitetosApi.score(atual.id)
@@ -208,7 +238,36 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
         .catch(() => setScoreError('Não foi possível calcular o score deste arquiteto'))
         .finally(() => setScoreLoading(false))
     }
-  }, [tab, atual.id, score, scoreLoading])
+  }, [tab, atual.id])
+
+  const [contatos, setContatos] = useState(null)
+  const [contatosLoading, setContatosLoading] = useState(false)
+  const [contatosError, setContatosError] = useState('')
+  const contatosFetchStarted = useRef(false)
+
+  const fetchContatos = async () => {
+    setContatosLoading(true)
+    setContatosError('')
+    try {
+      const [d, c] = await Promise.all([
+        arquitetosApi.listarDecisores(atual.id),
+        arquitetosApi.listarConcorrentes(atual.id),
+      ])
+      setContatos({ decisores: d.data, concorrentes: c.data })
+    } catch (e) {
+      console.error(e)
+      setContatosError('Não foi possível carregar decisores e concorrentes.')
+    } finally {
+      setContatosLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'contatos' && !contatosFetchStarted.current) {
+      contatosFetchStarted.current = true
+      fetchContatos()
+    }
+  }, [tab, fetchContatos])
 
   const handleEditSubmit = async (form) => {
     const { data } = await arquitetosApi.update(atual.id, form)
@@ -218,83 +277,100 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
   }
 
   const handleDesativar = async () => {
-    await arquitetosApi.desativar(atual.id)
-    setConfirmDesativar(false)
-    onUpdated()
-    onClose()
+    try {
+      await arquitetosApi.desativar(atual.id)
+      setConfirmDesativar(false)
+      onUpdated()
+      onClose()
+    } catch (err) {
+      setConfirmDesativar(false)
+      setDesativarError(extractErrorMessage(err, 'Erro ao desativar arquiteto'))
+    }
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-elevated border-l border-stone-200 z-50 flex flex-col animate-slide-in-right">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-        <div>
-          <h3 className="font-semibold text-stone-800">{atual.nome}</h3>
-          <p className="text-xs text-stone-400">{atual.escritorio || 'Sem escritório'}</p>
+    <>
+      <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-elevated border-l border-stone-200 z-50 flex flex-col animate-slide-in-right">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+          <div>
+            <h3 className="font-semibold text-stone-800">{atual.nome}</h3>
+            <p className="text-xs text-stone-400">{atual.escritorio || 'Sem escritório'}</p>
+          </div>
+          <button onClick={onClose} className="btn-icon">✕</button>
         </div>
-        <button onClick={onClose} className="btn-icon">✕</button>
-      </div>
 
-      {/* Tabs */}
-      <div className="px-5 pt-4">
-        <Tabs tabs={DRAWER_TABS} active={tab} onChange={setTab} />
-      </div>
+        {/* Tabs */}
+        <div className="px-5 pt-4">
+          <Tabs tabs={DRAWER_TABS} active={tab} onChange={setTab} />
+        </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {tab === 'perfil' && (
-          editing ? (
-            <ArquitetoForm
-              initial={{
-                nome: atual.nome,
-                escritorio: atual.escritorio || '',
-                telefone: atual.telefone || '',
-                email: atual.email || '',
-                nivel_parceria: atual.nivel_parceria,
-              }}
-              submitLabel="Salvar alterações"
-              onCancel={() => setEditing(false)}
-              onSubmit={handleEditSubmit}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {tab === 'perfil' && (
+            editing ? (
+              <ArquitetoForm
+                initial={{
+                  nome: atual.nome,
+                  escritorio: atual.escritorio || '',
+                  telefone: atual.telefone || '',
+                  email: atual.email || '',
+                  nivel_parceria: atual.nivel_parceria,
+                }}
+                submitLabel="Salvar alterações"
+                onCancel={() => setEditing(false)}
+                onSubmit={handleEditSubmit}
+              />
+            ) : (
+              <div className="space-y-4">
+                <span className="badge badge-neutro">{atual.nivel_parceria}</span>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-stone-400">Telefone</p>
+                    <p className="font-medium text-stone-700">{atual.telefone || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-stone-400">E-mail</p>
+                    <p className="font-medium text-stone-700">{atual.email || '—'}</p>
+                  </div>
+                </div>
+                {desativarError && (
+                  <AlertBanner type="error" message={desativarError} onDismiss={() => setDesativarError('')} />
+                )}
+                <div className="flex gap-2 pt-2">
+                  <button className="btn-secondary btn-sm" onClick={() => setEditing(true)}>Editar</button>
+                  <button className="btn-danger btn-sm" onClick={() => setConfirmDesativar(true)}>Desativar</button>
+                </div>
+              </div>
+            )
+          )}
+
+          {tab === 'score' && (
+            <ScoreTabContent score={score} loading={scoreLoading} error={scoreError} />
+          )}
+
+          {tab === 'contatos' && (
+            <ContatosTabContent
+              arquitetoId={atual.id}
+              contatos={contatos}
+              loading={contatosLoading}
+              error={contatosError}
+              onRefetch={fetchContatos}
             />
-          ) : (
-            <div className="space-y-4">
-              <span className="badge badge-neutro">{atual.nivel_parceria}</span>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-stone-400">Telefone</p>
-                  <p className="font-medium text-stone-700">{atual.telefone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-stone-400">E-mail</p>
-                  <p className="font-medium text-stone-700">{atual.email || '—'}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button className="btn-secondary btn-sm" onClick={() => setEditing(true)}>Editar</button>
-                <button className="btn-danger btn-sm" onClick={() => setConfirmDesativar(true)}>Desativar</button>
-              </div>
-            </div>
-          )
-        )}
+          )}
+        </div>
 
-        {tab === 'score' && (
-          <ScoreTabContent score={score} loading={scoreLoading} error={scoreError} />
-        )}
-
-        {tab === 'contatos' && (
-          <ContatosTabContent arquitetoId={atual.id} />
-        )}
+        <ConfirmDialog
+          open={confirmDesativar}
+          onClose={() => setConfirmDesativar(false)}
+          onConfirm={handleDesativar}
+          title="Desativar arquiteto"
+          message={`Tem certeza que deseja desativar ${atual.nome}? Ele deixará de aparecer na listagem.`}
+          confirmLabel="Desativar"
+          danger
+        />
       </div>
-
-      <ConfirmDialog
-        open={confirmDesativar}
-        onClose={() => setConfirmDesativar(false)}
-        onConfirm={handleDesativar}
-        title="Desativar arquiteto"
-        message={`Tem certeza que deseja desativar ${atual.nome}? Ele deixará de aparecer na listagem.`}
-        confirmLabel="Desativar"
-        danger
-      />
-    </div>
+    </>
   )
 }
 
@@ -377,34 +453,29 @@ function ScoreTabContent({ score, loading, error }) {
 }
 
 // === Conteúdo da aba Decisores & Concorrentes ===
-function ContatosTabContent({ arquitetoId }) {
-  const [decisores, setDecisores] = useState([])
-  const [concorrentes, setConcorrentes] = useState([])
-  const [loading, setLoading] = useState(true)
+// Dados vêm do drawer pai (ArquitetoDrawer), que busca uma única vez por
+// abertura de drawer e mantém em cache entre trocas de aba — mesmo padrão do
+// score, para não refazer a requisição toda vez que o usuário volta à aba.
+function ContatosTabContent({ arquitetoId, contatos, loading, error, onRefetch }) {
   const [editingDecisor, setEditingDecisor] = useState(undefined)
   const [editingConcorrente, setEditingConcorrente] = useState(undefined)
   const [removerDecisor, setRemoverDecisor] = useState(null)
   const [removerConcorrente, setRemoverConcorrente] = useState(null)
-
-  const fetchAll = async () => {
-    setLoading(true)
-    try {
-      const [d, c] = await Promise.all([
-        arquitetosApi.listarDecisores(arquitetoId),
-        arquitetosApi.listarConcorrentes(arquitetoId),
-      ])
-      setDecisores(d.data)
-      setConcorrentes(c.data)
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { fetchAll() }, [arquitetoId])
+  const [removeError, setRemoveError] = useState('')
 
   if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
+  if (error) return <p className="text-sm text-red-600">{error}</p>
+  if (!contatos) return null
+
+  const decisores = contatos.decisores
+  const concorrentes = contatos.concorrentes
 
   return (
     <div className="space-y-6">
+      {removeError && (
+        <AlertBanner type="error" message={removeError} onDismiss={() => setRemoveError('')} />
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Decisores</p>
@@ -418,13 +489,14 @@ function ContatosTabContent({ arquitetoId }) {
             initial={editingDecisor || { nome: '', cargo: '', telefone: '', email: '', observacoes: '', is_principal: false }}
             onCancel={() => setEditingDecisor(undefined)}
             onSubmit={async (form) => {
+              const payload = sanitizeForm(form)
               if (editingDecisor?.id) {
-                await arquitetosApi.atualizarDecisor(arquitetoId, editingDecisor.id, form)
+                await arquitetosApi.atualizarDecisor(arquitetoId, editingDecisor.id, payload)
               } else {
-                await arquitetosApi.criarDecisor(arquitetoId, form)
+                await arquitetosApi.criarDecisor(arquitetoId, payload)
               }
               setEditingDecisor(undefined)
-              fetchAll()
+              onRefetch()
             }}
           />
         )}
@@ -464,14 +536,14 @@ function ContatosTabContent({ arquitetoId }) {
             initial={editingConcorrente || { nome_concorrente: '', percentual_fechamento_estimado: 0, observacoes: '' }}
             onCancel={() => setEditingConcorrente(undefined)}
             onSubmit={async (form) => {
-              const payload = { ...form, percentual_fechamento_estimado: Number(form.percentual_fechamento_estimado) }
+              const payload = sanitizeForm({ ...form, percentual_fechamento_estimado: Number(form.percentual_fechamento_estimado) })
               if (editingConcorrente?.id) {
                 await arquitetosApi.atualizarConcorrente(arquitetoId, editingConcorrente.id, payload)
               } else {
                 await arquitetosApi.criarConcorrente(arquitetoId, payload)
               }
               setEditingConcorrente(undefined)
-              fetchAll()
+              onRefetch()
             }}
           />
         )}
@@ -500,9 +572,14 @@ function ContatosTabContent({ arquitetoId }) {
         open={!!removerDecisor}
         onClose={() => setRemoverDecisor(null)}
         onConfirm={async () => {
-          await arquitetosApi.removerDecisor(arquitetoId, removerDecisor.id)
-          setRemoverDecisor(null)
-          fetchAll()
+          try {
+            await arquitetosApi.removerDecisor(arquitetoId, removerDecisor.id)
+            setRemoverDecisor(null)
+            onRefetch()
+          } catch (err) {
+            setRemoverDecisor(null)
+            setRemoveError(extractErrorMessage(err, 'Erro ao remover decisor'))
+          }
         }}
         title="Remover decisor"
         message={`Remover ${removerDecisor?.nome} da lista de decisores?`}
@@ -514,9 +591,14 @@ function ContatosTabContent({ arquitetoId }) {
         open={!!removerConcorrente}
         onClose={() => setRemoverConcorrente(null)}
         onConfirm={async () => {
-          await arquitetosApi.removerConcorrente(arquitetoId, removerConcorrente.id)
-          setRemoverConcorrente(null)
-          fetchAll()
+          try {
+            await arquitetosApi.removerConcorrente(arquitetoId, removerConcorrente.id)
+            setRemoverConcorrente(null)
+            onRefetch()
+          } catch (err) {
+            setRemoverConcorrente(null)
+            setRemoveError(extractErrorMessage(err, 'Erro ao remover concorrente'))
+          }
         }}
         title="Remover concorrente"
         message={`Remover ${removerConcorrente?.nome_concorrente} da lista de concorrentes?`}
@@ -540,7 +622,7 @@ function DecisorForm({ initial, onSubmit, onCancel }) {
     try {
       await onSubmit(form)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar decisor')
+      setError(extractErrorMessage(err, 'Erro ao salvar decisor'))
       setLoading(false)
     }
   }
@@ -580,7 +662,7 @@ function ConcorrenteForm({ initial, onSubmit, onCancel }) {
     try {
       await onSubmit(form)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar concorrente')
+      setError(extractErrorMessage(err, 'Erro ao salvar concorrente'))
       setLoading(false)
     }
   }

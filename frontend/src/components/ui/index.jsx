@@ -170,17 +170,22 @@ export function Tabs({ tabs, active, onChange }) {
 export function ScoreBar({ score, min = 70, label, showMinimo = true }) {
   const pct = Math.min(100, Math.max(0, score))
   const ok = score >= min
+  // Sem showMinimo, não há um "mínimo" real para este score (ex: sub-scores de
+  // Arquitetos) — usar verde/âmbar de aprovação/reprovação seria enganoso, então
+  // a barra usa uma cor neutra em vez da semântica de passa/não passa.
+  const barColor = !showMinimo ? 'bg-primary-500' : (ok ? 'bg-green-500' : 'bg-amber-500')
+  const textColor = !showMinimo ? 'text-primary-600' : (ok ? 'text-green-600' : 'text-amber-600')
   return (
     <div>
       {label && <p className="text-xs text-stone-500 mb-1">{label}</p>}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-2 bg-stone-100 rounded-full overflow-hidden">
           <div
-            className={clsx('h-full rounded-full transition-all duration-500', ok ? 'bg-green-500' : 'bg-amber-500')}
+            className={clsx('h-full rounded-full transition-all duration-500', barColor)}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className={clsx('text-xs font-semibold min-w-[2.5rem] text-right', ok ? 'text-green-600' : 'text-amber-600')}>
+        <span className={clsx('text-xs font-semibold min-w-[2.5rem] text-right', textColor)}>
           {score.toFixed(0)}/100
         </span>
       </div>
