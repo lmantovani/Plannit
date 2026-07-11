@@ -4,10 +4,11 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto
 from app.schemas.crm import (
     ArquitetoCreate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
+    ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
 )
 
 router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
@@ -193,4 +194,88 @@ def remover_decisor(
     if not decisor:
         raise HTTPException(404, "Decisor não encontrado")
     db.delete(decisor)
+    db.commit()
+
+
+# === CONCORRENTES ===
+
+@router.get("/{arquiteto_id}/concorrentes", response_model=List[ConcorrenteArquitetoResponse])
+def listar_concorrentes(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(ConcorrenteArquiteto)
+        .filter(ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(ConcorrenteArquiteto.percentual_fechamento_estimado.desc())
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/concorrentes", response_model=ConcorrenteArquitetoResponse, status_code=201)
+def criar_concorrente(
+    arquiteto_id: int,
+    payload: ConcorrenteArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    concorrente = ConcorrenteArquiteto(
+        arquiteto_id=arquiteto_id,
+        registrado_por_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(concorrente)
+    db.commit()
+    db.refresh(concorrente)
+    return concorrente
+
+
+@router.patch("/{arquiteto_id}/concorrentes/{concorrente_id}", response_model=ConcorrenteArquitetoResponse)
+def atualizar_concorrente(
+    arquiteto_id: int,
+    concorrente_id: int,
+    payload: ConcorrenteArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    concorrente = (
+        db.query(ConcorrenteArquiteto)
+        .filter(ConcorrenteArquiteto.id == concorrente_id, ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
+        .first()
+    )
+    if not concorrente:
+        raise HTTPException(404, "Concorrente não encontrado")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(concorrente, field, value)
+
+    db.commit()
+    db.refresh(concorrente)
+    return concorrente
+
+
+@router.delete("/{arquiteto_id}/concorrentes/{concorrente_id}", status_code=204)
+def remover_concorrente(
+    arquiteto_id: int,
+    concorrente_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    concorrente = (
+        db.query(ConcorrenteArquiteto)
+        .filter(ConcorrenteArquiteto.id == concorrente_id, ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
+        .first()
+    )
+    if not concorrente:
+        raise HTTPException(404, "Concorrente não encontrado")
+    db.delete(concorrente)
     db.commit()

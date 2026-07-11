@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 from app.models.crm import OrigemLead, StatusFunil, TipoCliente
@@ -143,6 +143,27 @@ class DecisorArquitetoResponse(BaseModel):
     email: Optional[str]
     observacoes: Optional[str]
     is_principal: bool
+    criado_em: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# === CONCORRENTE ARQUITETO ===
+
+class ConcorrenteArquitetoCreate(BaseModel):
+    nome_concorrente: str
+    percentual_fechamento_estimado: float = Field(..., ge=0, le=100)
+    observacoes: Optional[str] = None
+
+
+class ConcorrenteArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    nome_concorrente: str
+    percentual_fechamento_estimado: float
+    observacoes: Optional[str]
+    registrado_por_id: Optional[int]
     criado_em: datetime
 
     class Config:

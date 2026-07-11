@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SAEnum, Text, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SAEnum, Text, ForeignKey, Date, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -155,3 +155,26 @@ class DecisorArquiteto(Base):
 
     def __repr__(self):
         return f"<DecisorArquiteto {self.nome} [arquiteto={self.arquiteto_id}]>"
+
+
+class ConcorrenteArquiteto(Base):
+    """Percepção manual de onde o arquiteto costuma fechar com a concorrência.
+    Dado subjetivo — nunca entra no cálculo automático de score."""
+    __tablename__ = "concorrentes_arquitetos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
+
+    nome_concorrente = Column(String(200), nullable=False)
+    percentual_fechamento_estimado = Column(Float, nullable=False)  # 0-100
+    observacoes = Column(Text, nullable=True)
+    registrado_por_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+    atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
+
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
+    registrado_por = relationship("User", foreign_keys=[registrado_por_id])
+
+    def __repr__(self):
+        return f"<ConcorrenteArquiteto {self.nome_concorrente} [arquiteto={self.arquiteto_id}]>"
