@@ -185,6 +185,7 @@ function NovoArquitetoModal({ open, onClose, onSaved }) {
 const DRAWER_TABS = [
   { key: 'perfil', label: 'Perfil' },
   { key: 'score', label: 'Score' },
+  { key: 'contatos', label: 'Decisores & Concorrentes' },
 ]
 
 // === Drawer ===
@@ -278,6 +279,10 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
         {tab === 'score' && (
           <ScoreTabContent score={score} loading={scoreLoading} error={scoreError} />
         )}
+
+        {tab === 'contatos' && (
+          <ContatosTabContent arquitetoId={atual.id} />
+        )}
       </div>
 
       <ConfirmDialog
@@ -368,5 +373,233 @@ function ScoreTabContent({ score, loading, error }) {
         )}
       </div>
     </div>
+  )
+}
+
+// === Conteúdo da aba Decisores & Concorrentes ===
+function ContatosTabContent({ arquitetoId }) {
+  const [decisores, setDecisores] = useState([])
+  const [concorrentes, setConcorrentes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editingDecisor, setEditingDecisor] = useState(undefined)
+  const [editingConcorrente, setEditingConcorrente] = useState(undefined)
+  const [removerDecisor, setRemoverDecisor] = useState(null)
+  const [removerConcorrente, setRemoverConcorrente] = useState(null)
+
+  const fetchAll = async () => {
+    setLoading(true)
+    try {
+      const [d, c] = await Promise.all([
+        arquitetosApi.listarDecisores(arquitetoId),
+        arquitetosApi.listarConcorrentes(arquitetoId),
+      ])
+      setDecisores(d.data)
+      setConcorrentes(c.data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchAll() }, [arquitetoId])
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Decisores</p>
+          {editingDecisor === undefined && (
+            <button className="btn-secondary btn-sm" onClick={() => setEditingDecisor(null)}>Adicionar</button>
+          )}
+        </div>
+
+        {editingDecisor !== undefined && (
+          <DecisorForm
+            initial={editingDecisor || { nome: '', cargo: '', telefone: '', email: '', observacoes: '', is_principal: false }}
+            onCancel={() => setEditingDecisor(undefined)}
+            onSubmit={async (form) => {
+              if (editingDecisor?.id) {
+                await arquitetosApi.atualizarDecisor(arquitetoId, editingDecisor.id, form)
+              } else {
+                await arquitetosApi.criarDecisor(arquitetoId, form)
+              }
+              setEditingDecisor(undefined)
+              fetchAll()
+            }}
+          />
+        )}
+
+        {decisores.length === 0 ? (
+          <p className="text-sm text-stone-300">Nenhum decisor cadastrado</p>
+        ) : (
+          <ul className="space-y-2">
+            {decisores.map(d => (
+              <li key={d.id} className="flex items-start justify-between gap-2 text-sm border-b border-stone-50 pb-2">
+                <div>
+                  <p className="font-medium text-stone-700">
+                    {d.nome} {d.is_principal && <span className="badge badge-ativo ml-1">Principal</span>}
+                  </p>
+                  <p className="text-xs text-stone-400">{d.cargo || '—'} · {d.telefone || d.email || 'sem contato'}</p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button className="text-xs text-stone-500 hover:text-stone-800" onClick={() => setEditingDecisor(d)}>Editar</button>
+                  <button className="text-xs text-red-500 hover:text-red-700" onClick={() => setRemoverDecisor(d)}>Remover</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Concorrentes</p>
+          {editingConcorrente === undefined && (
+            <button className="btn-secondary btn-sm" onClick={() => setEditingConcorrente(null)}>Adicionar</button>
+          )}
+        </div>
+
+        {editingConcorrente !== undefined && (
+          <ConcorrenteForm
+            initial={editingConcorrente || { nome_concorrente: '', percentual_fechamento_estimado: 0, observacoes: '' }}
+            onCancel={() => setEditingConcorrente(undefined)}
+            onSubmit={async (form) => {
+              const payload = { ...form, percentual_fechamento_estimado: Number(form.percentual_fechamento_estimado) }
+              if (editingConcorrente?.id) {
+                await arquitetosApi.atualizarConcorrente(arquitetoId, editingConcorrente.id, payload)
+              } else {
+                await arquitetosApi.criarConcorrente(arquitetoId, payload)
+              }
+              setEditingConcorrente(undefined)
+              fetchAll()
+            }}
+          />
+        )}
+
+        {concorrentes.length === 0 ? (
+          <p className="text-sm text-stone-300">Nenhum concorrente cadastrado</p>
+        ) : (
+          <ul className="space-y-2">
+            {concorrentes.map(c => (
+              <li key={c.id} className="flex items-start justify-between gap-2 text-sm border-b border-stone-50 pb-2">
+                <div>
+                  <p className="font-medium text-stone-700">{c.nome_concorrente}</p>
+                  <p className="text-xs text-stone-400">{c.percentual_fechamento_estimado.toFixed(0)}% de fechamento estimado</p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button className="text-xs text-stone-500 hover:text-stone-800" onClick={() => setEditingConcorrente(c)}>Editar</button>
+                  <button className="text-xs text-red-500 hover:text-red-700" onClick={() => setRemoverConcorrente(c)}>Remover</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={!!removerDecisor}
+        onClose={() => setRemoverDecisor(null)}
+        onConfirm={async () => {
+          await arquitetosApi.removerDecisor(arquitetoId, removerDecisor.id)
+          setRemoverDecisor(null)
+          fetchAll()
+        }}
+        title="Remover decisor"
+        message={`Remover ${removerDecisor?.nome} da lista de decisores?`}
+        confirmLabel="Remover"
+        danger
+      />
+
+      <ConfirmDialog
+        open={!!removerConcorrente}
+        onClose={() => setRemoverConcorrente(null)}
+        onConfirm={async () => {
+          await arquitetosApi.removerConcorrente(arquitetoId, removerConcorrente.id)
+          setRemoverConcorrente(null)
+          fetchAll()
+        }}
+        title="Remover concorrente"
+        message={`Remover ${removerConcorrente?.nome_concorrente} da lista de concorrentes?`}
+        confirmLabel="Remover"
+        danger
+      />
+    </div>
+  )
+}
+
+function DecisorForm({ initial, onSubmit, onCancel }) {
+  const [form, setForm] = useState(initial)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao salvar decisor')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 mb-3 p-3 bg-stone-50 rounded-lg">
+      <input className="input" required value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Nome *" />
+      <div className="grid grid-cols-2 gap-2">
+        <input className="input" value={form.cargo} onChange={e => set('cargo', e.target.value)} placeholder="Cargo" />
+        <input className="input" value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="Telefone" />
+      </div>
+      <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="E-mail" />
+      <textarea className="input resize-none h-16" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Observações" />
+      <label className="flex items-center gap-2 text-sm text-stone-600">
+        <input type="checkbox" checked={form.is_principal} onChange={e => set('is_principal', e.target.checked)} />
+        Contato principal
+      </label>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button type="button" className="btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-primary btn-sm" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+      </div>
+    </form>
+  )
+}
+
+function ConcorrenteForm({ initial, onSubmit, onCancel }) {
+  const [form, setForm] = useState(initial)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao salvar concorrente')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 mb-3 p-3 bg-stone-50 rounded-lg">
+      <input className="input" required value={form.nome_concorrente} onChange={e => set('nome_concorrente', e.target.value)} placeholder="Nome do concorrente *" />
+      <input
+        className="input" type="number" min="0" max="100" required
+        value={form.percentual_fechamento_estimado}
+        onChange={e => set('percentual_fechamento_estimado', e.target.value)}
+        placeholder="% estimado de fechamento"
+      />
+      <textarea className="input resize-none h-16" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Observações" />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button type="button" className="btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-primary btn-sm" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+      </div>
+    </form>
   )
 }
