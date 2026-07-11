@@ -4,8 +4,11 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto
-from app.schemas.crm import ArquitetoCreate, ArquitetoResponse
+from app.models.crm import Arquiteto, DecisorArquiteto
+from app.schemas.crm import (
+    ArquitetoCreate, ArquitetoResponse,
+    DecisorArquitetoCreate, DecisorArquitetoResponse,
+)
 
 router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 
@@ -90,4 +93,104 @@ def desativar_arquiteto(
         raise HTTPException(404, "Arquiteto não encontrado")
 
     arquiteto.is_active = False
+    db.commit()
+
+
+def _get_arquiteto_ou_404(arquiteto_id: int, db: Session) -> Arquiteto:
+    arquiteto = db.query(Arquiteto).filter(Arquiteto.id == arquiteto_id).first()
+    if not arquiteto:
+        raise HTTPException(404, "Arquiteto não encontrado")
+    return arquiteto
+
+
+# === DECISORES ===
+
+@router.get("/{arquiteto_id}/decisores", response_model=List[DecisorArquitetoResponse])
+def listar_decisores(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(DecisorArquiteto)
+        .filter(DecisorArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(DecisorArquiteto.is_principal.desc(), DecisorArquiteto.nome)
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/decisores", response_model=DecisorArquitetoResponse, status_code=201)
+def criar_decisor(
+    arquiteto_id: int,
+    payload: DecisorArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+
+    if payload.is_principal:
+        db.query(DecisorArquiteto).filter(
+            DecisorArquiteto.arquiteto_id == arquiteto_id
+        ).update({"is_principal": False})
+
+    decisor = DecisorArquiteto(arquiteto_id=arquiteto_id, **payload.model_dump())
+    db.add(decisor)
+    db.commit()
+    db.refresh(decisor)
+    return decisor
+
+
+@router.patch("/{arquiteto_id}/decisores/{decisor_id}", response_model=DecisorArquitetoResponse)
+def atualizar_decisor(
+    arquiteto_id: int,
+    decisor_id: int,
+    payload: DecisorArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    decisor = (
+        db.query(DecisorArquiteto)
+        .filter(DecisorArquiteto.id == decisor_id, DecisorArquiteto.arquiteto_id == arquiteto_id)
+        .first()
+    )
+    if not decisor:
+        raise HTTPException(404, "Decisor não encontrado")
+
+    dados = payload.model_dump(exclude_unset=True)
+    if dados.get("is_principal"):
+        db.query(DecisorArquiteto).filter(
+            DecisorArquiteto.arquiteto_id == arquiteto_id,
+            DecisorArquiteto.id != decisor_id,
+        ).update({"is_principal": False})
+
+    for field, value in dados.items():
+        setattr(decisor, field, value)
+
+    db.commit()
+    db.refresh(decisor)
+    return decisor
+
+
+@router.delete("/{arquiteto_id}/decisores/{decisor_id}", status_code=204)
+def remover_decisor(
+    arquiteto_id: int,
+    decisor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
+    )),
+):
+    decisor = (
+        db.query(DecisorArquiteto)
+        .filter(DecisorArquiteto.id == decisor_id, DecisorArquiteto.arquiteto_id == arquiteto_id)
+        .first()
+    )
+    if not decisor:
+        raise HTTPException(404, "Decisor não encontrado")
+    db.delete(decisor)
     db.commit()

@@ -133,3 +133,25 @@ class Arquiteto(Base):
 
     def __repr__(self):
         return f"<Arquiteto {self.nome}>"
+
+
+class DecisorArquiteto(Base):
+    """Contato dentro de um escritório de arquitetura (RN — decisores multi-contato)."""
+    __tablename__ = "decisores_arquitetos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
+
+    nome = Column(String(200), nullable=False)
+    cargo = Column(String(100), nullable=True)
+    telefone = Column(String(20), nullable=True)
+    email = Column(String(200), nullable=True)
+    observacoes = Column(Text, nullable=True)
+    is_principal = Column(Boolean, default=False)
+
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
+
+    def __repr__(self):
+        return f"<DecisorArquiteto {self.nome} [arquiteto={self.arquiteto_id}]>"

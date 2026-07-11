@@ -121,3 +121,29 @@ class ArquitetoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# === DECISOR ARQUITETO ===
+
+class DecisorArquitetoCreate(BaseModel):
+    nome: str
+    cargo: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    observacoes: Optional[str] = None
+    is_principal: bool = False
+
+
+class DecisorArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    nome: str
+    cargo: Optional[str]
+    telefone: Optional[str]
+    email: Optional[str]
+    observacoes: Optional[str]
+    is_principal: bool
+    criado_em: datetime
+
+    class Config:
+        from_attributes = True
