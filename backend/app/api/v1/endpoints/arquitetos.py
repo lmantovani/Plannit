@@ -104,6 +104,17 @@ def _get_arquiteto_ou_404(arquiteto_id: int, db: Session) -> Arquiteto:
     return arquiteto
 
 
+def _get_concorrente_ou_404(arquiteto_id: int, concorrente_id: int, db: Session) -> ConcorrenteArquiteto:
+    concorrente = (
+        db.query(ConcorrenteArquiteto)
+        .filter(ConcorrenteArquiteto.id == concorrente_id, ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
+        .first()
+    )
+    if not concorrente:
+        raise HTTPException(404, "Concorrente não encontrado")
+    return concorrente
+
+
 # === DECISORES ===
 
 @router.get("/{arquiteto_id}/decisores", response_model=List[DecisorArquitetoResponse])
@@ -245,13 +256,7 @@ def atualizar_concorrente(
         PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
     )),
 ):
-    concorrente = (
-        db.query(ConcorrenteArquiteto)
-        .filter(ConcorrenteArquiteto.id == concorrente_id, ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
-        .first()
-    )
-    if not concorrente:
-        raise HTTPException(404, "Concorrente não encontrado")
+    concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(concorrente, field, value)
@@ -270,12 +275,6 @@ def remover_concorrente(
         PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
     )),
 ):
-    concorrente = (
-        db.query(ConcorrenteArquiteto)
-        .filter(ConcorrenteArquiteto.id == concorrente_id, ConcorrenteArquiteto.arquiteto_id == arquiteto_id)
-        .first()
-    )
-    if not concorrente:
-        raise HTTPException(404, "Concorrente não encontrado")
+    concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
     db.delete(concorrente)
     db.commit()
