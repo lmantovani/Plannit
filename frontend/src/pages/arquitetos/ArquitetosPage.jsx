@@ -15,10 +15,14 @@ function extractErrorMessage(err, fallback) {
   return fallback
 }
 
-// Campos opcionais em branco viram undefined (omitidos do JSON) em vez de ''
-// — evita 422 do backend em campos como email: Optional[EmailStr].
+// Campos opcionais em branco viram null (não undefined) antes de enviar.
+// null continua no JSON e o backend trata como "limpar o campo"
+// (Pydantic exclude_unset=True considera o campo como enviado); já undefined
+// seria omitido do corpo da requisição e o PATCH manteria o valor antigo.
+// Evita também o 422 de EmailStr em string vazia, já que None é aceito por
+// Optional[EmailStr].
 function sanitizeForm(form) {
-  return Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v === '' ? undefined : v]))
+  return Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v === '' ? null : v]))
 }
 
 export default function ArquitetosPage() {
@@ -235,7 +239,10 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
       setScoreError('')
       arquitetosApi.score(atual.id)
         .then(({ data }) => setScore(data))
-        .catch(() => setScoreError('Não foi possível calcular o score deste arquiteto'))
+        .catch(() => {
+          scoreFetchStarted.current = false // permite tentar de novo ao revisitar a aba
+          setScoreError('Não foi possível calcular o score deste arquiteto')
+        })
         .finally(() => setScoreLoading(false))
     }
   }, [tab, atual.id])
@@ -256,6 +263,7 @@ function ArquitetoDrawer({ arquiteto, onClose, onUpdated }) {
       setContatos({ decisores: d.data, concorrentes: c.data })
     } catch (e) {
       console.error(e)
+      contatosFetchStarted.current = false // permite tentar de novo ao revisitar a aba
       setContatosError('Não foi possível carregar decisores e concorrentes.')
     } finally {
       setContatosLoading(false)
@@ -486,7 +494,14 @@ function ContatosTabContent({ arquitetoId, contatos, loading, error, onRefetch }
 
         {editingDecisor !== undefined && (
           <DecisorForm
-            initial={editingDecisor || { nome: '', cargo: '', telefone: '', email: '', observacoes: '', is_principal: false }}
+            initial={editingDecisor ? {
+              nome: editingDecisor.nome,
+              cargo: editingDecisor.cargo || '',
+              telefone: editingDecisor.telefone || '',
+              email: editingDecisor.email || '',
+              observacoes: editingDecisor.observacoes || '',
+              is_principal: editingDecisor.is_principal,
+            } : { nome: '', cargo: '', telefone: '', email: '', observacoes: '', is_principal: false }}
             onCancel={() => setEditingDecisor(undefined)}
             onSubmit={async (form) => {
               const payload = sanitizeForm(form)
@@ -533,7 +548,11 @@ function ContatosTabContent({ arquitetoId, contatos, loading, error, onRefetch }
 
         {editingConcorrente !== undefined && (
           <ConcorrenteForm
-            initial={editingConcorrente || { nome_concorrente: '', percentual_fechamento_estimado: 0, observacoes: '' }}
+            initial={editingConcorrente ? {
+              nome_concorrente: editingConcorrente.nome_concorrente,
+              percentual_fechamento_estimado: editingConcorrente.percentual_fechamento_estimado,
+              observacoes: editingConcorrente.observacoes || '',
+            } : { nome_concorrente: '', percentual_fechamento_estimado: 0, observacoes: '' }}
             onCancel={() => setEditingConcorrente(undefined)}
             onSubmit={async (form) => {
               const payload = sanitizeForm({ ...form, percentual_fechamento_estimado: Number(form.percentual_fechamento_estimado) })
