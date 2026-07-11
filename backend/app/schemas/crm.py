@@ -168,3 +168,16 @@ class ConcorrenteArquitetoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# === SCORE DO ARQUITETO ===
+
+class ArquitetoScoreResponse(BaseModel):
+    rfv: float
+    potencial: float
+    lealdade: float
+    score_geral: float
+    segmento: str
+    flags: List[str]
+    detalhes: dict
+    concorrencia: dict

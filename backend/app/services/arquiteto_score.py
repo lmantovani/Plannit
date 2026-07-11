@@ -4,8 +4,13 @@ Critérios de pontuação são faixas fixas (mesmo padrão de app/services/brief
 não percentil relativo entre arquitetos. Limiares numéricos ficam como constantes
 nomeadas abaixo, ajustáveis sem reescrever a lógica.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Iterable, List, Optional
+
+from sqlalchemy.orm import Session
+
+from app.models.crm import Arquiteto, Lead, StatusFunil, ConcorrenteArquiteto
+from app.models.projeto import Projeto, StatusProjeto
 
 
 def pontuar_recencia(dias_desde_ultimo_projeto: Optional[int]) -> int:
@@ -161,3 +166,117 @@ def calcular_risco_concorrencia(percentuais: list[float]) -> dict:
     else:
         nivel = "alto"
     return {"risco": round(maior, 1), "nivel": nivel}
+
+
+LEADS_STATUS_TERMINAL = {StatusFunil.FECHADO, StatusFunil.PERDIDO, StatusFunil.DESQUALIFICADO}
+PROJETO_STATUS_ENCERRADO = {StatusProjeto.CONCLUIDO, StatusProjeto.CANCELADO}
+
+
+def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
+    agora = datetime.utcnow()
+    limite_12_meses = agora - timedelta(days=365)
+
+    projetos = (
+        db.query(Projeto)
+        .filter(Projeto.arquiteto_id == arquiteto.id, Projeto.arquivado == False)
+        .all()
+    )
+    leads = db.query(Lead).filter(Lead.arquiteto_id == arquiteto.id).all()
+    concorrentes = (
+        db.query(ConcorrenteArquiteto)
+        .filter(ConcorrenteArquiteto.arquiteto_id == arquiteto.id)
+        .all()
+    )
+
+    projetos_12m = [p for p in projetos if p.criado_em and p.criado_em >= limite_12_meses]
+
+    datas_projetos = [p.criado_em for p in projetos if p.criado_em]
+    ultimo_projeto_em = max(datas_projetos) if datas_projetos else None
+    dias_desde_ultimo_projeto = (agora - ultimo_projeto_em).days if ultimo_projeto_em else None
+
+    datas_leads = [l.criado_em for l in leads if l.criado_em]
+    ultimo_lead_em = max(datas_leads) if datas_leads else None
+    candidatos_atividade = [d for d in (ultimo_projeto_em, ultimo_lead_em) if d]
+    ultima_atividade_em = max(candidatos_atividade) if candidatos_atividade else None
+    dias_desde_ultima_atividade = (agora - ultima_atividade_em).days if ultima_atividade_em else None
+
+    recencia = pontuar_recencia(dias_desde_ultimo_projeto)
+    frequencia = pontuar_frequencia(len(projetos_12m))
+    soma_valor = sum(p.valor_contrato for p in projetos_12m if p.valor_contrato)
+    valor = pontuar_valor(soma_valor)
+    rfv = calcular_rfv(recencia, frequencia, valor)
+
+    leads_ativos = [l for l in leads if l.status_funil not in LEADS_STATUS_TERMINAL]
+    projetos_ativos = [p for p in projetos if p.status not in PROJETO_STATUS_ENCERRADO]
+    potencial = pontuar_potencial(len(leads_ativos) + len(projetos_ativos))
+
+    meses_desde_cadastro = meses_entre(arquiteto.criado_em, agora)
+    tempo_parceria = pontuar_tempo_parceria(meses_desde_cadastro)
+    meses_com_projeto = contar_meses_distintos(p.criado_em for p in projetos_12m)
+    consistencia = pontuar_consistencia(meses_com_projeto)
+    leads_fechados = sum(1 for l in leads if l.status_funil == StatusFunil.FECHADO)
+    leads_perdidos = sum(1 for l in leads if l.status_funil == StatusFunil.PERDIDO)
+    leads_desqualificados = sum(1 for l in leads if l.status_funil == StatusFunil.DESQUALIFICADO)
+    taxa_conversao = pontuar_taxa_conversao(leads_fechados, leads_perdidos, leads_desqualificados)
+    lealdade = calcular_lealdade(tempo_parceria, consistencia, taxa_conversao)
+
+    score_geral = calcular_score_geral(rfv, potencial, lealdade)
+
+    frequencia_all_time = len(projetos)
+    em_risco = frequencia_all_time > 0 and (
+        dias_desde_ultima_atividade is None or dias_desde_ultima_atividade > 180
+    )
+    tem_historico = bool(projetos) or bool(leads)
+    dias_desde_cadastro = (agora - arquiteto.criado_em).days if arquiteto.criado_em else 0
+
+    segmento = determinar_segmento(
+        tem_historico=tem_historico,
+        dias_desde_cadastro=dias_desde_cadastro,
+        em_risco=em_risco,
+        score_geral=score_geral,
+        rfv=rfv,
+        potencial=potencial,
+        lealdade=lealdade,
+    )
+    flags = determinar_flags(
+        score_geral=score_geral,
+        potencial=potencial,
+        valor_pontos=valor,
+        em_risco=em_risco,
+    )
+
+    concorrencia = calcular_risco_concorrencia(
+        [c.percentual_fechamento_estimado for c in concorrentes]
+    )
+    concorrencia["concorrentes"] = [
+        {
+            "id": c.id,
+            "nome_concorrente": c.nome_concorrente,
+            "percentual_fechamento_estimado": c.percentual_fechamento_estimado,
+        }
+        for c in concorrentes
+    ]
+
+    return {
+        "rfv": rfv,
+        "potencial": potencial,
+        "lealdade": lealdade,
+        "score_geral": score_geral,
+        "segmento": segmento,
+        "flags": flags,
+        "detalhes": {
+            "recencia": recencia,
+            "frequencia": frequencia,
+            "valor": valor,
+            "dias_desde_ultimo_projeto": dias_desde_ultimo_projeto,
+            "projetos_12_meses": len(projetos_12m),
+            "soma_valor_contratos_12_meses": soma_valor,
+            "leads_ativos": len(leads_ativos),
+            "projetos_ativos": len(projetos_ativos),
+            "tempo_parceria": tempo_parceria,
+            "consistencia": consistencia,
+            "taxa_conversao": taxa_conversao,
+            "meses_desde_cadastro": meses_desde_cadastro,
+        },
+        "concorrencia": concorrencia,
+    }

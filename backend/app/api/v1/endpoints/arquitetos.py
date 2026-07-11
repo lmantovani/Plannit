@@ -9,7 +9,9 @@ from app.schemas.crm import (
     ArquitetoCreate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
+    ArquitetoScoreResponse,
 )
+from app.services import arquiteto_score as score_service
 
 router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 
@@ -102,6 +104,16 @@ def _get_arquiteto_ou_404(arquiteto_id: int, db: Session) -> Arquiteto:
     if not arquiteto:
         raise HTTPException(404, "Arquiteto não encontrado")
     return arquiteto
+
+
+@router.get("/{arquiteto_id}/score", response_model=ArquitetoScoreResponse)
+def obter_score_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+    return score_service.calcular_score(db, arquiteto)
 
 
 def _get_concorrente_ou_404(arquiteto_id: int, concorrente_id: int, db: Session) -> ConcorrenteArquiteto:
