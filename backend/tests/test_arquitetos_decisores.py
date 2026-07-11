@@ -82,3 +82,19 @@ def test_remover_decisor(auth_client):
 
     listagem = auth_client.get(f"/api/v1/arquitetos/{arquiteto['id']}/decisores").json()
     assert listagem == []
+
+
+def test_criar_decisor_sem_permissao_403(auth_client, projetista_user, create_client_com_user):
+    # Criar arquiteto com usuário com permissão (DIRETORIA)
+    arquiteto = _criar_arquiteto(auth_client)
+
+    # Criar cliente com usuário sem permissão (PROJETISTA)
+    auth_client_sem_permissao = create_client_com_user(projetista_user)
+
+    # Tentar criar decisor com usuário sem permissão
+    resp = auth_client_sem_permissao.post(
+        f"/api/v1/arquitetos/{arquiteto['id']}/decisores",
+        json={"nome": "João Sócio", "cargo": "Sócio", "is_principal": True},
+    )
+
+    assert resp.status_code == 403

@@ -61,3 +61,35 @@ def auth_client(client, diretoria_user):
     fastapi_app.dependency_overrides[get_current_user] = _override_get_current_user
     yield client
     fastapi_app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
+def projetista_user(db_session):
+    user = User(
+        nome="Projetista Teste",
+        email="projetista.teste@plannit.com.br",
+        hashed_password=get_password_hash("Teste@123"),
+        perfil=PerfilUsuario.PROJETISTA,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture()
+def create_client_com_user(db_session):
+    """Factory fixture para criar clientes autenticados com usuários específicos."""
+    def _create_client(user):
+        def _override_get_db():
+            yield db_session
+
+        def _override_get_current_user():
+            return user
+
+        fastapi_app.dependency_overrides[get_db] = _override_get_db
+        fastapi_app.dependency_overrides[get_current_user] = _override_get_current_user
+        return TestClient(fastapi_app)
+
+    return _create_client
