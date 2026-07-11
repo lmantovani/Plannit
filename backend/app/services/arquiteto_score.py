@@ -4,7 +4,8 @@ Critérios de pontuação são faixas fixas (mesmo padrão de app/services/brief
 não percentil relativo entre arquitetos. Limiares numéricos ficam como constantes
 nomeadas abaixo, ajustáveis sem reescrever a lógica.
 """
-from typing import Optional
+from datetime import datetime
+from typing import Iterable, Optional
 
 
 def pontuar_recencia(dias_desde_ultimo_projeto: Optional[int]) -> int:
@@ -61,3 +62,47 @@ def pontuar_potencial(qtd_leads_e_projetos_ativos: int) -> int:
     if qtd_leads_e_projetos_ativos <= 6:
         return 85
     return 100
+
+
+def pontuar_tempo_parceria(meses_desde_cadastro: int) -> int:
+    if meses_desde_cadastro < 3:
+        return 20
+    if meses_desde_cadastro < 12:
+        return 50
+    if meses_desde_cadastro < 24:
+        return 75
+    return 100
+
+
+def pontuar_consistencia(meses_com_projeto_ultimos_12: int) -> float:
+    meses = max(0, min(12, meses_com_projeto_ultimos_12))
+    return round((meses / 12) * 100, 1)
+
+
+def pontuar_taxa_conversao(leads_fechados: int, leads_perdidos: int, leads_desqualificados: int) -> float:
+    total_terminal = leads_fechados + leads_perdidos + leads_desqualificados
+    if total_terminal == 0:
+        return 50.0
+    return round((leads_fechados / total_terminal) * 100, 1)
+
+
+def calcular_lealdade(tempo_parceria: float, consistencia: float, taxa_conversao: float) -> float:
+    return round((tempo_parceria + consistencia + taxa_conversao) / 3, 1)
+
+
+def calcular_score_geral(rfv: float, potencial: float, lealdade: float) -> float:
+    return round((rfv + potencial + lealdade) / 3, 1)
+
+
+def meses_entre(inicio: Optional[datetime], fim: datetime) -> int:
+    if inicio is None:
+        return 0
+    meses = (fim.year - inicio.year) * 12 + (fim.month - inicio.month)
+    if fim.day < inicio.day:
+        meses -= 1
+    return meses
+
+
+def contar_meses_distintos(datas: Iterable[Optional[datetime]]) -> int:
+    chaves = {(d.year, d.month) for d in datas if d is not None}
+    return len(chaves)
