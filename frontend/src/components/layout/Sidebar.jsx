@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, FileText, Layers, DollarSign,
   Truck, Hammer, HeadphonesIcon, BarChart2, Settings, LogOut,
-  ChevronLeft, Building2
+  ChevronLeft, Building2, Compass
 } from 'lucide-react'
 import { useAuthStore, useUIStore, PERFIL_LABELS } from '../../store'
 import clsx from 'clsx'
@@ -12,6 +12,7 @@ const NAV = [
   { path: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard, perfis: ['*'] },
   { section: 'Comercial' },
   { path: '/crm',        label: 'CRM / Leads',   icon: Users,           perfis: ['*'] },
+  { path: '/especificadores', label: 'Especificadores', icon: Compass,  perfis: ['diretoria','gerente_comercial','vendedor','recepcao'] },
   { path: '/briefing',   label: 'Briefings',     icon: FileText,        perfis: ['diretoria','gerente_comercial','vendedor','projetista'] },
   { path: '/projetos',   label: 'Projetos',      icon: Layers,          perfis: ['diretoria','gerente_comercial','projetista','vendedor'] },
   { section: 'Operacional' },

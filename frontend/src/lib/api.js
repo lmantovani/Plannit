@@ -73,3 +73,19 @@ export const usersApi = {
   update: (id, data) => api.patch(`/users/${id}`, data),
   disponibilidadeProjetistas: () => api.get('/users/projetistas/disponibilidade'),
 }
+
+export const arquitetosApi = {
+  list: (params) => api.get('/arquitetos/', { params }),
+  get: (id) => api.get(`/arquitetos/${id}`),
+  create: (data) => api.post('/arquitetos/', data),
+  update: (id, data) => api.patch(`/arquitetos/${id}`, data),
+  listarClientes: (id) => api.get(`/arquitetos/${id}/clientes`),
+  listarInteracoes: (id) => api.get(`/arquitetos/${id}/interacoes`),
+  registrarInteracao: (id, data) => api.post(`/arquitetos/${id}/interacoes`, data),
+  listarFuncionarios: (id) => api.get(`/arquitetos/${id}/funcionarios`),
+  criarFuncionario: (id, data) => api.post(`/arquitetos/${id}/funcionarios`, data),
+  atualizarFuncionario: (id, funcionarioId, data) =>
+    api.patch(`/arquitetos/${id}/funcionarios/${funcionarioId}`, data),
+  removerFuncionario: (id, funcionarioId) =>
+    api.delete(`/arquitetos/${id}/funcionarios/${funcionarioId}`),
+}
