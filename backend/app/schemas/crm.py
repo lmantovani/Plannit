@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.models.crm import OrigemLead, StatusFunil, TipoCliente
+from app.models.crm import OrigemLead, StatusFunil, TipoCliente, TipoArquiteto, TipoInteracaoArquiteto
 
 
 # === LEAD ===
@@ -83,6 +83,7 @@ class ClienteCreate(BaseModel):
     estado: Optional[str] = None
     endereco: Optional[str] = None
     tipo: TipoCliente = TipoCliente.PESSOA_FISICA
+    arquiteto_id: Optional[int] = None
 
 
 class ClienteResponse(BaseModel):
@@ -94,6 +95,7 @@ class ClienteResponse(BaseModel):
     cidade: Optional[str]
     tipo: TipoCliente
     cadastro_aprovado: bool
+    arquiteto_id: Optional[int]
     criado_em: datetime
 
     class Config:
@@ -104,20 +106,90 @@ class ClienteResponse(BaseModel):
 
 class ArquitetoCreate(BaseModel):
     nome: str
+    tipo: TipoArquiteto
     escritorio: Optional[str] = None
     telefone: Optional[str] = None
     email: Optional[EmailStr] = None
     nivel_parceria: str = "parceiro"
 
 
+class ArquitetoUpdate(BaseModel):
+    nome: Optional[str] = None
+    tipo: Optional[TipoArquiteto] = None
+    escritorio: Optional[str] = None
+    endereco_escritorio: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    nivel_parceria: Optional[str] = None
+    vendedor_id: Optional[int] = None
+
+
 class ArquitetoResponse(BaseModel):
     id: int
     nome: str
+    tipo: Optional[TipoArquiteto]
     escritorio: Optional[str]
+    endereco_escritorio: Optional[str]
     telefone: Optional[str]
     email: Optional[str]
     nivel_parceria: str
+    vendedor_id: Optional[int]
+    vendedor_nome: Optional[str]
     is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+# === INTERAÇÃO COM ARQUITETO ===
+
+class InteracaoArquitetoCreate(BaseModel):
+    tipo: TipoInteracaoArquiteto
+    observacao: str
+
+
+class InteracaoArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    autor_id: int
+    autor_nome: Optional[str]
+    tipo: TipoInteracaoArquiteto
+    observacao: str
+    criado_em: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# === FUNCIONÁRIO DO ESCRITÓRIO (DECISORES) ===
+
+class FuncionarioArquitetoCreate(BaseModel):
+    nome: str
+    funcao: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    observacoes: Optional[str] = None
+    decisor: bool = False
+
+
+class FuncionarioArquitetoUpdate(BaseModel):
+    nome: Optional[str] = None
+    funcao: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    observacoes: Optional[str] = None
+    decisor: Optional[bool] = None
+
+
+class FuncionarioArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    nome: str
+    funcao: Optional[str]
+    telefone: Optional[str]
+    email: Optional[str]
+    observacoes: Optional[str]
+    decisor: bool
 
     class Config:
         from_attributes = True

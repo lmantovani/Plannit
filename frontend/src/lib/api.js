@@ -79,6 +79,7 @@ export const arquitetosApi = {
   get: (id) => api.get(`/arquitetos/${id}`),
   create: (data) => api.post('/arquitetos/', data),
   update: (id, data) => api.patch(`/arquitetos/${id}`, data),
+  score: (id) => api.get(`/arquitetos/${id}/score`),
   listarClientes: (id) => api.get(`/arquitetos/${id}/clientes`),
   listarInteracoes: (id) => api.get(`/arquitetos/${id}/interacoes`),
   registrarInteracao: (id, data) => api.post(`/arquitetos/${id}/interacoes`, data),

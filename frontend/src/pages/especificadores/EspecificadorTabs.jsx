@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Trash2, Plus, User } from 'lucide-react'
+import { Trash2, Plus, User } from 'lucide-react'
+import clsx from 'clsx'
 import { arquitetosApi, usersApi } from '../../lib/api'
-import { TIPO_ARQUITETO_LABELS, TIPO_INTERACAO_ARQUITETO_LABELS, timeAgo } from '../../lib/constants'
-import { EmptyState, Modal } from '../../components/ui'
+import {
+  TIPO_ARQUITETO_LABELS, TIPO_INTERACAO_ARQUITETO_LABELS, timeAgo,
+  STATUS_COLOR_CLASSES, SEGMENTO_CONFIG, FLAG_CONFIG,
+} from '../../lib/constants'
+import { EmptyState, Modal, Spinner, ScoreBar } from '../../components/ui'
 import { useAuthStore, podeVerTudo } from '../../store'
 
 function podeGerenciarRelacionamento(user, arquiteto) {
@@ -135,13 +139,93 @@ export function PerfilTab({ arquiteto, onUpdated }) {
 }
 
 // === Aba Score ===
-export function ScoreTab() {
+export function ScoreTab({ arquiteto }) {
+  const [score, setScore] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    setError('')
+    arquitetosApi.score(arquiteto.id)
+      .then(r => setScore(r.data))
+      .catch(err => setError(err.response?.data?.detail || 'Erro ao carregar score'))
+      .finally(() => setLoading(false))
+  }, [arquiteto.id])
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
+  if (error) return <p className="text-sm text-red-600">{error}</p>
+  if (!score) return null
+
+  const segmentoCfg = SEGMENTO_CONFIG[score.segmento] || { label: score.segmento, color: 'stone' }
+
   return (
-    <EmptyState
-      icon={TrendingUp}
-      title="Score ainda não disponível"
-      description="O RFV (Recência, Frequência, Valor) deste especificador depende de pedidos e fechamentos vinculados a ele — funcionalidade prevista para uma próxima etapa. Assim que houver dados suficientes, o score aparecerá aqui automaticamente."
-    />
+    <div className="space-y-5">
+      <div className="text-center py-2">
+        <p className="text-3xl font-display font-semibold text-stone-800">{score.score_geral.toFixed(0)}</p>
+        <p className="text-xs text-stone-400 mb-2">Score geral</p>
+        <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[segmentoCfg.color])}>
+          {segmentoCfg.label}
+        </span>
+      </div>
+
+      {score.flags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 justify-center">
+          {score.flags.map(flag => {
+            const cfg = FLAG_CONFIG[flag] || { label: flag, color: 'stone' }
+            return (
+              <span key={flag} className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[cfg.color])}>
+                {cfg.label}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <ScoreBar score={score.rfv} label="RFV (Recência, Frequência, Valor)" showMinimo={false} />
+        <ScoreBar score={score.potencial} label="Potencial" showMinimo={false} />
+        <ScoreBar score={score.lealdade} label="Lealdade" showMinimo={false} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm border-t border-stone-100 pt-3">
+        <div>
+          <p className="text-xs text-stone-400">Projetos ativos</p>
+          <p className="font-medium text-stone-700">{score.detalhes.projetos_ativos}</p>
+        </div>
+        <div>
+          <p className="text-xs text-stone-400">Leads ativos</p>
+          <p className="font-medium text-stone-700">{score.detalhes.leads_ativos}</p>
+        </div>
+        <div>
+          <p className="text-xs text-stone-400">Dias desde último projeto</p>
+          <p className="font-medium text-stone-700">{score.detalhes.dias_desde_ultimo_projeto ?? '—'}</p>
+        </div>
+        <div>
+          <p className="text-xs text-stone-400">Meses de parceria</p>
+          <p className="font-medium text-stone-700">{score.detalhes.meses_desde_cadastro}</p>
+        </div>
+      </div>
+
+      <div className="border-t border-stone-100 pt-3">
+        <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Risco de concorrência</p>
+        <p className="text-sm text-stone-700 mb-2">
+          Nível <strong className="capitalize">{score.concorrencia.nivel}</strong> ({score.concorrencia.risco.toFixed(0)}%)
+        </p>
+        {score.concorrencia.concorrentes.length === 0 ? (
+          <p className="text-sm text-stone-300">Nenhum concorrente cadastrado</p>
+        ) : (
+          <ul className="space-y-1">
+            {score.concorrencia.concorrentes.map(c => (
+              <li key={c.id} className="flex justify-between text-sm">
+                <span className="text-stone-600">{c.nome_concorrente}</span>
+                <span className="text-stone-400">{c.percentual_fechamento_estimado.toFixed(0)}%</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -242,7 +326,8 @@ function NovoFuncionarioModal({ open, onClose, onSaved, arquitetoId }) {
     setLoading(true)
     setError('')
     try {
-      await arquitetosApi.criarFuncionario(arquitetoId, form)
+      const payload = { ...form, email: form.email.trim() || null }
+      await arquitetosApi.criarFuncionario(arquitetoId, payload)
       onSaved()
       setForm(vazio)
     } catch (err) {
@@ -322,7 +407,7 @@ export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) 
       const payload = {
         nome: form.nome, tipo: form.tipo, escritorio: form.escritorio,
         endereco_escritorio: form.endereco_escritorio, telefone: form.telefone,
-        email: form.email, nivel_parceria: form.nivel_parceria,
+        email: (form.email || '').trim() || null, nivel_parceria: form.nivel_parceria,
       }
       if (podeEditarVendedor) payload.vendedor_id = form.vendedor_id || null
       await arquitetosApi.update(arquiteto.id, payload)

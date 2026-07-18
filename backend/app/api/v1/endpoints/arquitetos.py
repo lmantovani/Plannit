@@ -4,21 +4,40 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto
+from app.models.crm import (
+    Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoArquiteto,
+    Cliente, InteracaoArquiteto, FuncionarioArquiteto,
+)
 from app.schemas.crm import (
-    ArquitetoCreate, ArquitetoResponse,
+    ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
     ArquitetoScoreResponse,
+    ClienteResponse,
+    InteracaoArquitetoCreate, InteracaoArquitetoResponse,
+    FuncionarioArquitetoCreate, FuncionarioArquitetoUpdate, FuncionarioArquitetoResponse,
 )
 from app.services import arquiteto_score as score_service
 
 router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 
+GESTAO_ARQUITETOS = (PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO)
+
+
+def _checar_acesso_relacionamento(arquiteto: Arquiteto, user: User):
+    """Diretoria/Gerente/Recepção sempre podem. Vendedor só se for o vinculado."""
+    if user.perfil in GESTAO_ARQUITETOS:
+        return
+    if user.perfil == PerfilUsuario.VENDEDOR and arquiteto.vendedor_id == user.id:
+        return
+    raise HTTPException(403, "Sem permissão para esta ação")
+
 
 @router.get("/", response_model=List[ArquitetoResponse])
 def listar_arquitetos(
     nivel_parceria: Optional[str] = None,
+    tipo: Optional[TipoArquiteto] = None,
+    vendedor_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -27,6 +46,10 @@ def listar_arquitetos(
     query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
+    if tipo:
+        query = query.filter(Arquiteto.tipo == tipo)
+    if vendedor_id:
+        query = query.filter(Arquiteto.vendedor_id == vendedor_id)
     return query.order_by(Arquiteto.nome).offset(skip).limit(limit).all()
 
 
@@ -34,9 +57,7 @@ def listar_arquitetos(
 def criar_arquiteto(
     payload: ArquitetoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     if payload.email:
         existente = db.query(Arquiteto).filter(Arquiteto.email == payload.email).first()
@@ -65,17 +86,21 @@ def obter_arquiteto(
 @router.patch("/{arquiteto_id}", response_model=ArquitetoResponse)
 def atualizar_arquiteto(
     arquiteto_id: int,
-    payload: ArquitetoCreate,
+    payload: ArquitetoUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     arquiteto = db.query(Arquiteto).filter(Arquiteto.id == arquiteto_id).first()
     if not arquiteto:
         raise HTTPException(404, "Arquiteto não encontrado")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    dados = payload.model_dump(exclude_unset=True)
+    if "vendedor_id" in dados and current_user.perfil not in (
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    ):
+        raise HTTPException(403, "Apenas Diretoria ou Gerente podem definir o vendedor vinculado")
+
+    for field, value in dados.items():
         setattr(arquiteto, field, value)
 
     db.commit()
@@ -114,6 +139,140 @@ def obter_score_arquiteto(
 ):
     arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
     return score_service.calcular_score(db, arquiteto)
+
+
+# === CLIENTES VINCULADOS ===
+
+@router.get("/{arquiteto_id}/clientes", response_model=List[ClienteResponse])
+def listar_clientes_do_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(Cliente)
+        .filter(Cliente.arquiteto_id == arquiteto_id)
+        .order_by(Cliente.nome)
+        .all()
+    )
+
+
+# === HISTÓRICO DE INTERAÇÕES ===
+
+@router.get("/{arquiteto_id}/interacoes", response_model=List[InteracaoArquitetoResponse])
+def listar_interacoes(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(InteracaoArquiteto.criado_em.desc(), InteracaoArquiteto.id.desc())
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/interacoes", response_model=InteracaoArquitetoResponse, status_code=201)
+def registrar_interacao(
+    arquiteto_id: int,
+    payload: InteracaoArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+    _checar_acesso_relacionamento(arquiteto, current_user)
+
+    interacao = InteracaoArquiteto(
+        arquiteto_id=arquiteto_id,
+        autor_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(interacao)
+    db.commit()
+    db.refresh(interacao)
+    return interacao
+
+
+# === FUNCIONÁRIOS DO ESCRITÓRIO ===
+
+@router.get("/{arquiteto_id}/funcionarios", response_model=List[FuncionarioArquitetoResponse])
+def listar_funcionarios(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(FuncionarioArquiteto)
+        .filter(FuncionarioArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(FuncionarioArquiteto.nome)
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/funcionarios", response_model=FuncionarioArquitetoResponse, status_code=201)
+def criar_funcionario(
+    arquiteto_id: int,
+    payload: FuncionarioArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+    _checar_acesso_relacionamento(arquiteto, current_user)
+
+    funcionario = FuncionarioArquiteto(arquiteto_id=arquiteto_id, **payload.model_dump())
+    db.add(funcionario)
+    db.commit()
+    db.refresh(funcionario)
+    return funcionario
+
+
+@router.patch("/{arquiteto_id}/funcionarios/{funcionario_id}", response_model=FuncionarioArquitetoResponse)
+def atualizar_funcionario(
+    arquiteto_id: int,
+    funcionario_id: int,
+    payload: FuncionarioArquitetoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+    _checar_acesso_relacionamento(arquiteto, current_user)
+
+    funcionario = db.query(FuncionarioArquiteto).filter(
+        FuncionarioArquiteto.id == funcionario_id,
+        FuncionarioArquiteto.arquiteto_id == arquiteto_id,
+    ).first()
+    if not funcionario:
+        raise HTTPException(404, "Funcionário não encontrado")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(funcionario, field, value)
+    db.commit()
+    db.refresh(funcionario)
+    return funcionario
+
+
+@router.delete("/{arquiteto_id}/funcionarios/{funcionario_id}", status_code=204)
+def remover_funcionario(
+    arquiteto_id: int,
+    funcionario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+    _checar_acesso_relacionamento(arquiteto, current_user)
+
+    funcionario = db.query(FuncionarioArquiteto).filter(
+        FuncionarioArquiteto.id == funcionario_id,
+        FuncionarioArquiteto.arquiteto_id == arquiteto_id,
+    ).first()
+    if not funcionario:
+        raise HTTPException(404, "Funcionário não encontrado")
+    db.delete(funcionario)
+    db.commit()
 
 
 def _get_concorrente_ou_404(arquiteto_id: int, concorrente_id: int, db: Session) -> ConcorrenteArquiteto:

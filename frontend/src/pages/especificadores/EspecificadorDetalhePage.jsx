@@ -40,7 +40,7 @@ export default function EspecificadorDetalhePage() {
 
       <div className="mt-5 card p-5">
         {tab === 'perfil' && <PerfilTab arquiteto={arquiteto} onUpdated={carregar} />}
-        {tab === 'score' && <ScoreTab />}
+        {tab === 'score' && <ScoreTab arquiteto={arquiteto} />}
         {tab === 'decisores' && <DecisoresTab arquiteto={arquiteto} />}
       </div>
 

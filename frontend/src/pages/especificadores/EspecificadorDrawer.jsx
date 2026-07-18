@@ -59,7 +59,7 @@ export default function EspecificadorDrawer({ arquitetoId, onClose, onUpdated })
       {/* Conteúdo */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {tab === 'perfil' && <PerfilTab arquiteto={arquiteto} onUpdated={() => { carregar(); onUpdated?.() }} />}
-        {tab === 'score' && <ScoreTab />}
+        {tab === 'score' && <ScoreTab arquiteto={arquiteto} />}
         {tab === 'decisores' && <DecisoresTab arquiteto={arquiteto} />}
       </div>
 

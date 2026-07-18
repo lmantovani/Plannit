@@ -160,7 +160,8 @@ function NovoEspecificadorModal({ open, onClose, onSaved }) {
     setLoading(true)
     setError('')
     try {
-      await arquitetosApi.create(form)
+      const payload = { ...form, email: form.email.trim() || null }
+      await arquitetosApi.create(payload)
       onSaved()
       setForm(vazio)
     } catch (err) {
