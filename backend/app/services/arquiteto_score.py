@@ -219,7 +219,7 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
     projetos_ativos = [p for p in projetos if p.status not in PROJETO_STATUS_ENCERRADO]
     potencial = pontuar_potencial(len(leads_ativos) + len(projetos_ativos))
 
-    meses_desde_cadastro = meses_entre(arquiteto.criado_em, agora)
+    meses_desde_cadastro = meses_entre(_utc(arquiteto.criado_em), agora)
     tempo_parceria = pontuar_tempo_parceria(meses_desde_cadastro)
     meses_com_projeto = contar_meses_distintos(p.criado_em for p in projetos_12m)
     consistencia = pontuar_consistencia(meses_com_projeto)

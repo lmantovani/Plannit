@@ -1,7 +1,16 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from app.models.crm import OrigemLead, StatusFunil, TipoCliente, TipoArquiteto, TipoInteracaoArquiteto
+
+
+def _nao_permitir_nulo_explicito(cls, v):
+    """Validador reutilizável para campos Optional em schemas *Update que mapeiam
+    para colunas NOT NULL. Optional aqui só deve permitir OMITIR o campo (update
+    parcial) — enviar null explicitamente colidiria com a constraint do banco."""
+    if v is None:
+        raise ValueError("não pode ser definido como nulo")
+    return v
 
 
 # === LEAD ===
@@ -27,6 +36,8 @@ class LeadUpdate(BaseModel):
     status_funil: Optional[StatusFunil] = None
     vendedor_id: Optional[int] = None
     arquiteto_id: Optional[int] = None
+
+    _valida_nome_telefone = field_validator("nome", "telefone")(_nao_permitir_nulo_explicito)
 
 
 class LeadPerderRequest(BaseModel):
@@ -123,6 +134,8 @@ class ArquitetoUpdate(BaseModel):
     nivel_parceria: Optional[str] = None
     vendedor_id: Optional[int] = None
 
+    _valida_nome_nivel = field_validator("nome", "nivel_parceria")(_nao_permitir_nulo_explicito)
+
 
 class ArquitetoResponse(BaseModel):
     id: int
@@ -179,6 +192,8 @@ class FuncionarioArquitetoUpdate(BaseModel):
     email: Optional[EmailStr] = None
     observacoes: Optional[str] = None
     decisor: Optional[bool] = None
+
+    _valida_nome = field_validator("nome")(_nao_permitir_nulo_explicito)
 
 
 class FuncionarioArquitetoResponse(BaseModel):

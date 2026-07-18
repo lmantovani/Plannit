@@ -156,7 +156,7 @@ class Arquiteto(Base):
 
     vendedor = relationship("User", foreign_keys=[vendedor_id])
     interacoes = relationship(
-        "InteracaoArquiteto", back_populates="arquiteto", cascade="all, delete-orphan",
+        "InteracaoArquiteto", back_populates="arquiteto", cascade="all",
         order_by="(InteracaoArquiteto.criado_em.desc(), InteracaoArquiteto.id.desc())",
     )
     funcionarios = relationship(

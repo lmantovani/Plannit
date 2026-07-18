@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
@@ -22,6 +22,7 @@ from app.services import arquiteto_score as score_service
 router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 
 GESTAO_ARQUITETOS = (PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO)
+PODE_DEFINIR_VENDEDOR = (PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)
 
 
 def _checar_acesso_relacionamento(arquiteto: Arquiteto, user: User):
@@ -43,14 +44,34 @@ def listar_arquitetos(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
+    query = (
+        db.query(Arquiteto)
+        .options(joinedload(Arquiteto.vendedor))
+        .filter(Arquiteto.is_active == True)
+    )
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
     if tipo:
         query = query.filter(Arquiteto.tipo == tipo)
-    if vendedor_id:
+    if vendedor_id is not None:
         query = query.filter(Arquiteto.vendedor_id == vendedor_id)
     return query.order_by(Arquiteto.nome).offset(skip).limit(limit).all()
+
+
+def _validar_email_disponivel(db: Session, email: Optional[str], excluir_id: Optional[int] = None):
+    """Checa contra TODOS os arquitetos (ativos e inativos), não só os ativos —
+    a coluna email tem unique=True no banco sem índice parcial por is_active,
+    então um arquiteto desativado ainda ocupa o e-mail a nível de constraint.
+    Filtrar só por ativos aqui deixaria a API aceitar algo que o commit rejeita
+    com IntegrityError. Reuso de e-mail de arquiteto desativado exigiria um
+    índice único parcial via migração Alembic (ver Débito Técnico no CLAUDE.md)."""
+    if not email:
+        return
+    query = db.query(Arquiteto).filter(Arquiteto.email == email)
+    if excluir_id is not None:
+        query = query.filter(Arquiteto.id != excluir_id)
+    if query.first():
+        raise HTTPException(400, "E-mail já cadastrado para outro arquiteto")
 
 
 @router.post("/", response_model=ArquitetoResponse, status_code=201)
@@ -59,10 +80,7 @@ def criar_arquiteto(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
-    if payload.email:
-        existente = db.query(Arquiteto).filter(Arquiteto.email == payload.email).first()
-        if existente:
-            raise HTTPException(400, "E-mail já cadastrado para outro arquiteto")
+    _validar_email_disponivel(db, payload.email)
 
     arquiteto = Arquiteto(**payload.model_dump())
     db.add(arquiteto)
@@ -95,10 +113,11 @@ def atualizar_arquiteto(
         raise HTTPException(404, "Arquiteto não encontrado")
 
     dados = payload.model_dump(exclude_unset=True)
-    if "vendedor_id" in dados and current_user.perfil not in (
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
-    ):
+    if "vendedor_id" in dados and current_user.perfil not in PODE_DEFINIR_VENDEDOR:
         raise HTTPException(403, "Apenas Diretoria ou Gerente podem definir o vendedor vinculado")
+
+    if dados.get("email"):
+        _validar_email_disponivel(db, dados["email"], excluir_id=arquiteto_id)
 
     for field, value in dados.items():
         setattr(arquiteto, field, value)
@@ -112,9 +131,7 @@ def atualizar_arquiteto(
 def desativar_arquiteto(
     arquiteto_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
-    )),
+    current_user: User = Depends(require_roles(*PODE_DEFINIR_VENDEDOR)),
 ):
     arquiteto = db.query(Arquiteto).filter(Arquiteto.id == arquiteto_id).first()
     if not arquiteto:
@@ -169,6 +186,7 @@ def listar_interacoes(
     _get_arquiteto_ou_404(arquiteto_id, db)
     return (
         db.query(InteracaoArquiteto)
+        .options(joinedload(InteracaoArquiteto.autor))
         .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
         .order_by(InteracaoArquiteto.criado_em.desc(), InteracaoArquiteto.id.desc())
         .all()
@@ -308,9 +326,7 @@ def criar_decisor(
     arquiteto_id: int,
     payload: DecisorArquitetoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     _get_arquiteto_ou_404(arquiteto_id, db)
 
@@ -332,9 +348,7 @@ def atualizar_decisor(
     decisor_id: int,
     payload: DecisorArquitetoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     decisor = (
         db.query(DecisorArquiteto)
@@ -364,9 +378,7 @@ def remover_decisor(
     arquiteto_id: int,
     decisor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     decisor = (
         db.query(DecisorArquiteto)
@@ -401,9 +413,7 @@ def criar_concorrente(
     arquiteto_id: int,
     payload: ConcorrenteArquitetoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     _get_arquiteto_ou_404(arquiteto_id, db)
     concorrente = ConcorrenteArquiteto(
@@ -423,9 +433,7 @@ def atualizar_concorrente(
     concorrente_id: int,
     payload: ConcorrenteArquitetoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
 
@@ -442,9 +450,7 @@ def remover_concorrente(
     arquiteto_id: int,
     concorrente_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(
-        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
-    )),
+    current_user: User = Depends(require_roles(*GESTAO_ARQUITETOS)),
 ):
     concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
     db.delete(concorrente)
