@@ -81,6 +81,17 @@ def criar_lead(
     return lead
 
 
+@router.get("/verificar-duplicado")
+def verificar_duplicado(
+    telefone: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aviso não-bloqueante: verifica se telefone já existe como lead ou cliente."""
+    resultado = lead_atendimento_service.verificar_duplicado(db, telefone)
+    return {"duplicado": resultado is not None, "existente": resultado}
+
+
 @router.get("/{lead_id}", response_model=LeadResponse)
 def obter_lead(
     lead_id: int,
