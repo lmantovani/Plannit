@@ -5,7 +5,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Lead, InteracaoLead, StatusFunil, OrigemLead
+from app.models.crm import Lead, InteracaoLead, StatusFunil, OrigemLead, InteracaoArquiteto, TipoInteracaoArquiteto
 from app.schemas.crm import (
     LeadCreate, LeadUpdate, LeadResponse,
     InteracaoCreate, InteracaoResponse, LeadPerderRequest,
@@ -63,6 +63,20 @@ def criar_lead(
         lead_atendimento_service.registrar_primeira_interacao(db, lead, current_user.id)
         if lead.origem == OrigemLead.SHOWROOM:
             fila_atendimento_service.mover_para_final(db, lead.vendedor_id)
+
+    if lead.arquiteto_id:
+        tipo = (
+            TipoInteracaoArquiteto.VISITA_LOJA
+            if lead.origem == OrigemLead.SHOWROOM
+            else TipoInteracaoArquiteto.INDICACAO_LEAD
+        )
+        db.add(InteracaoArquiteto(
+            arquiteto_id=lead.arquiteto_id,
+            autor_id=current_user.id,
+            tipo=tipo,
+            observacao=f"Lead gerado: {lead.nome}",
+        ))
+        db.commit()
 
     return lead
 
