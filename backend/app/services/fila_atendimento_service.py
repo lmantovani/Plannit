@@ -1,0 +1,105 @@
+"""Serviço de fila de atendimento presencial — check-in/check-out de vendedores,
+indisponibilidade e reordenação. Sem job agendado: "ativo hoje" é recalculado a
+cada leitura comparando data_referencia com a data atual, e não por um processo
+rodando sozinho em background (decisão de 2026-07-21 — ver plano da Frente A)."""
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+from app.models.crm import FilaAtendimento, ConfigFilaAtendimento, MotivoIndisponibilidade
+
+
+def get_config(db: Session) -> ConfigFilaAtendimento:
+    config = db.query(ConfigFilaAtendimento).first()
+    if not config:
+        config = ConfigFilaAtendimento(minutos_alerta=15, minutos_escalonamento=30)
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+    return config
+
+
+def _proxima_posicao(db: Session) -> int:
+    maior = db.query(FilaAtendimento).order_by(FilaAtendimento.posicao.desc()).first()
+    return (maior.posicao + 1) if maior else 1
+
+
+def _get_fila_ou_404(db: Session, vendedor_id: int) -> FilaAtendimento:
+    fila = db.query(FilaAtendimento).filter(FilaAtendimento.vendedor_id == vendedor_id).first()
+    if not fila:
+        raise HTTPException(404, "Faça check-in antes de usar a fila de atendimento")
+    return fila
+
+
+def checkin(db: Session, vendedor_id: int) -> FilaAtendimento:
+    fila = db.query(FilaAtendimento).filter(FilaAtendimento.vendedor_id == vendedor_id).first()
+    agora = datetime.now(timezone.utc)
+    if not fila:
+        fila = FilaAtendimento(vendedor_id=vendedor_id, posicao=_proxima_posicao(db))
+        db.add(fila)
+    else:
+        fila.posicao = _proxima_posicao(db)
+    fila.disponivel = True
+    fila.motivo_indisponivel_categoria = None
+    fila.motivo_indisponivel_obs = None
+    fila.checkin_em = agora
+    fila.ativo_hoje = True
+    fila.data_referencia = agora.date()
+    db.commit()
+    db.refresh(fila)
+    return fila
+
+
+def checkout(db: Session, vendedor_id: int) -> FilaAtendimento:
+    fila = _get_fila_ou_404(db, vendedor_id)
+    fila.ativo_hoje = False
+    db.commit()
+    db.refresh(fila)
+    return fila
+
+
+def marcar_indisponivel(
+    db: Session, vendedor_id: int, categoria: MotivoIndisponibilidade, observacao: Optional[str]
+) -> FilaAtendimento:
+    fila = _get_fila_ou_404(db, vendedor_id)
+    fila.disponivel = False
+    fila.motivo_indisponivel_categoria = categoria
+    fila.motivo_indisponivel_obs = observacao
+    db.commit()
+    db.refresh(fila)
+    return fila
+
+
+def marcar_disponivel(db: Session, vendedor_id: int) -> FilaAtendimento:
+    fila = _get_fila_ou_404(db, vendedor_id)
+    fila.disponivel = True
+    fila.motivo_indisponivel_categoria = None
+    fila.motivo_indisponivel_obs = None
+    db.commit()
+    db.refresh(fila)
+    return fila
+
+
+def listar_fila_vendedores(db: Session) -> list[FilaAtendimento]:
+    """"Ativo hoje" é recalculado na leitura: só conta quem tem ativo_hoje=True
+    E data_referencia igual à data atual — evita depender de um job de reset
+    à meia-noite (quem não fizer novo check-in simplesmente some da lista)."""
+    hoje = datetime.now(timezone.utc).date()
+    return (
+        db.query(FilaAtendimento)
+        .filter(FilaAtendimento.ativo_hoje == True, FilaAtendimento.data_referencia == hoje)
+        .order_by(FilaAtendimento.posicao.asc())
+        .all()
+    )
+
+
+def mover_para_final(db: Session, vendedor_id: int) -> None:
+    """Fim do atendimento presencial: vendedor atribuído volta pro final da fila.
+    No-op se o vendedor não tiver feito check-in (não há posição a mover)."""
+    fila = db.query(FilaAtendimento).filter(FilaAtendimento.vendedor_id == vendedor_id).first()
+    if not fila:
+        return
+    fila.posicao = _proxima_posicao(db)
+    db.commit()

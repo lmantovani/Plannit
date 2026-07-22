@@ -1,7 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List
 from datetime import datetime
-from app.models.crm import OrigemLead, StatusFunil, TipoCliente, TipoArquiteto, TipoInteracaoArquiteto
+from app.models.crm import (
+    OrigemLead, StatusFunil, TipoCliente, TipoArquiteto, TipoInteracaoArquiteto,
+    MotivoIndisponibilidade,
+)
 
 
 def _nao_permitir_nulo_explicito(cls, v):
@@ -268,3 +271,31 @@ class ArquitetoScoreResponse(BaseModel):
     flags: List[str]
     detalhes: dict
     concorrencia: dict
+
+
+# === FILA DE ATENDIMENTO ===
+
+class FilaAtendimentoResponse(BaseModel):
+    id: int
+    vendedor_id: int
+    vendedor_nome: Optional[str] = None
+    posicao: int
+    disponivel: bool
+    motivo_indisponivel_categoria: Optional[MotivoIndisponibilidade]
+    motivo_indisponivel_obs: Optional[str]
+    checkin_em: Optional[datetime]
+    ativo_hoje: bool
+
+    class Config:
+        from_attributes = True
+
+
+class MarcarIndisponivelRequest(BaseModel):
+    categoria: MotivoIndisponibilidade
+    observacao: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _valida_observacao_outro(self):
+        if self.categoria == MotivoIndisponibilidade.OUTRO and not self.observacao:
+            raise ValueError("observação é obrigatória quando a categoria é 'outro'")
+        return self
