@@ -106,7 +106,10 @@ def mover_para_final(db: Session, vendedor_id: int) -> None:
 
 
 def reordenar(db: Session, ordem_vendedor_ids: list[int]) -> list[FilaAtendimento]:
-    filas = db.query(FilaAtendimento).all()
+    """Escopo restrito aos registros "ativos hoje" (mesmo filtro de
+    listar_fila_vendedores): vendedores com check-out feito ou de dias
+    anteriores não devem ser exigidos na lista para reordenar a fila atual."""
+    filas = listar_fila_vendedores(db)
     ids_existentes = {f.vendedor_id for f in filas}
     if set(ordem_vendedor_ids) != ids_existentes:
         raise HTTPException(400, "A lista precisa conter exatamente todos os vendedores da fila")
