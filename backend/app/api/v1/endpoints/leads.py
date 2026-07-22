@@ -5,11 +5,12 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Lead, InteracaoLead, StatusFunil
+from app.models.crm import Lead, InteracaoLead, StatusFunil, OrigemLead
 from app.schemas.crm import (
     LeadCreate, LeadUpdate, LeadResponse,
     InteracaoCreate, InteracaoResponse, LeadPerderRequest,
 )
+from app.services import fila_atendimento_service, lead_atendimento_service
 
 router = APIRouter(prefix="/leads", tags=["CRM — Leads"])
 
@@ -44,16 +45,25 @@ def criar_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cadastra novo lead — RF001."""
-    lead = Lead(**payload.model_dump())
-    if not lead.vendedor_id:
-        # Auto-atribuir ao vendedor logado
-        if current_user.perfil == PerfilUsuario.VENDEDOR:
-            lead.vendedor_id = current_user.id
+    """Cadastra novo lead — RF001. Vendedor só pode atribuir o lead a si mesmo."""
+    dados = payload.model_dump()
 
+    if not dados.get("vendedor_id"):
+        if current_user.perfil == PerfilUsuario.VENDEDOR:
+            dados["vendedor_id"] = current_user.id
+    elif current_user.perfil == PerfilUsuario.VENDEDOR and dados["vendedor_id"] != current_user.id:
+        raise HTTPException(403, "Vendedor só pode atribuir o lead a si mesmo")
+
+    lead = Lead(**dados, criado_por_id=current_user.id)
     db.add(lead)
     db.commit()
     db.refresh(lead)
+
+    if lead.vendedor_id:
+        lead_atendimento_service.registrar_primeira_interacao(db, lead, current_user.id)
+        if lead.origem == OrigemLead.SHOWROOM:
+            fila_atendimento_service.mover_para_final(db, lead.vendedor_id)
+
     return lead
 
 
