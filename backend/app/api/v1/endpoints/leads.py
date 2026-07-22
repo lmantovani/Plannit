@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
 from app.models.crm import Lead, InteracaoLead, StatusFunil, OrigemLead, InteracaoArquiteto, TipoInteracaoArquiteto
 from app.schemas.crm import (
     LeadCreate, LeadUpdate, LeadResponse,
     InteracaoCreate, InteracaoResponse, LeadPerderRequest,
+    DevolverLeadRequest, ReatribuirLeadRequest,
 )
 from app.services import fila_atendimento_service, lead_atendimento_service
 
@@ -171,6 +172,26 @@ def puxar_lead(
     if current_user.perfil != PerfilUsuario.VENDEDOR:
         raise HTTPException(403, "Apenas vendedores podem puxar leads da fila")
     return lead_atendimento_service.puxar_lead(db, lead_id, current_user.id)
+
+
+@router.post("/{lead_id}/devolver", response_model=LeadResponse)
+def devolver_lead(
+    lead_id: int,
+    payload: DevolverLeadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return lead_atendimento_service.devolver_lead(db, lead_id, payload.motivo, current_user)
+
+
+@router.post("/{lead_id}/reatribuir", response_model=LeadResponse)
+def reatribuir_lead(
+    lead_id: int,
+    payload: ReatribuirLeadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)),
+):
+    return lead_atendimento_service.reatribuir_lead(db, lead_id, payload.vendedor_id, current_user)
 
 
 # === INTERAÇÕES ===

@@ -4,6 +4,7 @@ adicionadas nas próximas tarefas deste plano."""
 from typing import Optional
 from fastapi import HTTPException
 from app.models.crm import Lead, InteracaoLead, OrigemLead, Cliente
+from app.models.user import User, PerfilUsuario
 
 ORIGEM_LABEL = {
     OrigemLead.INSTAGRAM: "Instagram",
@@ -83,4 +84,48 @@ def puxar_lead(db, lead_id: int, vendedor_id: int) -> Lead:
 
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     registrar_primeira_interacao(db, lead, vendedor_id)
+    return lead
+
+
+def devolver_lead(db, lead_id: int, motivo: str, quem_devolveu: User) -> Lead:
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+    if lead.vendedor_id is None:
+        raise HTTPException(400, "Lead já está na fila de aguardando")
+
+    e_gestor = quem_devolveu.perfil in (PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)
+    if not e_gestor and lead.vendedor_id != quem_devolveu.id:
+        raise HTTPException(403, "Apenas o vendedor responsável ou a gestão podem devolver este lead")
+
+    lead.vendedor_id = None
+    db.add(InteracaoLead(
+        lead_id=lead.id,
+        responsavel_id=quem_devolveu.id,
+        tipo="sistema",
+        resumo=f"Devolvido à fila: {motivo}",
+    ))
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+
+def reatribuir_lead(db, lead_id: int, novo_vendedor_id: int, quem_reatribuiu: User) -> Lead:
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead não encontrado")
+
+    novo_vendedor = db.query(User).filter(User.id == novo_vendedor_id).first()
+    if not novo_vendedor:
+        raise HTTPException(404, "Vendedor não encontrado")
+
+    lead.vendedor_id = novo_vendedor_id
+    db.add(InteracaoLead(
+        lead_id=lead.id,
+        responsavel_id=quem_reatribuiu.id,
+        tipo="sistema",
+        resumo=f"Reatribuído para {novo_vendedor.nome}",
+    ))
+    db.commit()
+    db.refresh(lead)
     return lead

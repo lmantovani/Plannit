@@ -303,3 +303,13 @@ class MarcarIndisponivelRequest(BaseModel):
 
 class ReordenarFilaRequest(BaseModel):
     ordem: List[int]
+
+
+# === ATRIBUIÇÃO DE LEAD ===
+
+class DevolverLeadRequest(BaseModel):
+    motivo: str
+
+
+class ReatribuirLeadRequest(BaseModel):
+    vendedor_id: int
