@@ -3,6 +3,7 @@ from app.models.user import User, PerfilUsuario
 from app.models.crm import (
     Lead, InteracaoLead, Cliente, Arquiteto, DecisorArquiteto, ConcorrenteArquiteto,
     TipoArquiteto, TipoInteracaoArquiteto, InteracaoArquiteto, FuncionarioArquiteto,
+    FilaAtendimento, ConfigFilaAtendimento, MotivoIndisponibilidade,
 )
 from app.models.projeto import (
     Projeto, HistoricoStatusProjeto, StatusProjeto,
@@ -16,6 +17,7 @@ __all__ = [
     "User", "PerfilUsuario",
     "Lead", "InteracaoLead", "Cliente", "Arquiteto", "DecisorArquiteto", "ConcorrenteArquiteto",
     "TipoArquiteto", "TipoInteracaoArquiteto", "InteracaoArquiteto", "FuncionarioArquiteto",
+    "FilaAtendimento", "ConfigFilaAtendimento", "MotivoIndisponibilidade",
     "Projeto", "HistoricoStatusProjeto", "StatusProjeto",
     "Briefing", "AmbienteBriefing", "TipoAmbiente",
     "FilaProjeto", "ConfigWIPProjetista",
