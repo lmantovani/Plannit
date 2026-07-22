@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
@@ -91,6 +91,41 @@ def verificar_duplicado(
     """Aviso não-bloqueante: verifica se telefone já existe como lead ou cliente."""
     resultado = lead_atendimento_service.verificar_duplicado(db, telefone)
     return {"duplicado": resultado is not None, "existente": resultado}
+
+
+@router.get("/aguardando")
+def listar_aguardando(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fluxo 2 — leads sem vendedor, mais antigo primeiro. Recalcula alerta visual
+    e dispara escalonamento na leitura (sem job agendado)."""
+    fila_atendimento_service.escalonar_leads_aguardando(db)
+    config = fila_atendimento_service.get_config(db)
+    agora = datetime.now(timezone.utc)
+
+    leads = (
+        db.query(Lead)
+        .filter(Lead.vendedor_id.is_(None))
+        .order_by(Lead.criado_em.asc(), Lead.id.asc())
+        .all()
+    )
+
+    resultado = []
+    for lead in leads:
+        criado = lead.criado_em if lead.criado_em.tzinfo else lead.criado_em.replace(tzinfo=timezone.utc)
+        minutos_esperando = int((agora - criado).total_seconds() / 60)
+        resultado.append({
+            "id": lead.id,
+            "nome": lead.nome,
+            "telefone": lead.telefone,
+            "origem": lead.origem,
+            "arquiteto_id": lead.arquiteto_id,
+            "criado_em": lead.criado_em.isoformat(),
+            "minutos_esperando": minutos_esperando,
+            "alerta": minutos_esperando >= config.minutos_alerta,
+        })
+    return resultado
 
 
 @router.get("/{lead_id}", response_model=LeadResponse)

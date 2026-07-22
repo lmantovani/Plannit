@@ -2,13 +2,15 @@
 indisponibilidade e reordenação. Sem job agendado: "ativo hoje" é recalculado a
 cada leitura comparando data_referencia com a data atual, e não por um processo
 rodando sozinho em background (decisão de 2026-07-21 — ver plano da Frente A)."""
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.models.crm import FilaAtendimento, ConfigFilaAtendimento, MotivoIndisponibilidade
+from app.models.crm import FilaAtendimento, ConfigFilaAtendimento, MotivoIndisponibilidade, Lead
+from app.models.user import User, PerfilUsuario
+from app.models.notificacao import Notificacao, TipoNotificacao
 
 
 def get_config(db: Session) -> ConfigFilaAtendimento:
@@ -119,3 +121,50 @@ def reordenar(db: Session, ordem_vendedor_ids: list[int]) -> list[FilaAtendiment
         por_vendedor[vendedor_id].posicao = posicao
     db.commit()
     return listar_fila_vendedores(db)
+
+
+def escalonar_leads_aguardando(db: Session) -> int:
+    """Verifica leads aguardando há mais tempo que o limiar configurado e cria
+    uma Notificacao para recepção/gestão — uma única vez por lead (idempotente,
+    checado via dados_extras.lead_id). Chamado na leitura de GET /leads/aguardando,
+    não por um job agendado (ver Global Constraints deste plano)."""
+    config = get_config(db)
+    limite = datetime.now(timezone.utc) - timedelta(minutes=config.minutos_escalonamento)
+
+    candidatos = db.query(Lead).filter(Lead.vendedor_id.is_(None), Lead.criado_em < limite).all()
+    if not candidatos:
+        return 0
+
+    ja_notificados = {
+        n.dados_extras.get("lead_id")
+        for n in db.query(Notificacao)
+        .filter(Notificacao.tipo == TipoNotificacao.LEAD_AGUARDANDO_ESCALONADO)
+        .all()
+        if n.dados_extras
+    }
+
+    destinatarios = (
+        db.query(User)
+        .filter(
+            User.perfil.in_([PerfilUsuario.RECEPCAO, PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL]),
+            User.is_active == True,
+        )
+        .all()
+    )
+
+    escalonados = 0
+    for lead in candidatos:
+        if lead.id in ja_notificados:
+            continue
+        for destinatario in destinatarios:
+            db.add(Notificacao(
+                tipo=TipoNotificacao.LEAD_AGUARDANDO_ESCALONADO,
+                titulo="Lead aguardando há muito tempo",
+                mensagem=f"{lead.nome} está aguardando atendimento há mais de {config.minutos_escalonamento} minutos.",
+                destinatario_id=destinatario.id,
+                dados_extras={"lead_id": lead.id},
+            ))
+        escalonados += 1
+    if escalonados:
+        db.commit()
+    return escalonados
