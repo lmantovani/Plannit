@@ -103,3 +103,16 @@ def mover_para_final(db: Session, vendedor_id: int) -> None:
         return
     fila.posicao = _proxima_posicao(db)
     db.commit()
+
+
+def reordenar(db: Session, ordem_vendedor_ids: list[int]) -> list[FilaAtendimento]:
+    filas = db.query(FilaAtendimento).all()
+    ids_existentes = {f.vendedor_id for f in filas}
+    if set(ordem_vendedor_ids) != ids_existentes:
+        raise HTTPException(400, "A lista precisa conter exatamente todos os vendedores da fila")
+
+    por_vendedor = {f.vendedor_id: f for f in filas}
+    for posicao, vendedor_id in enumerate(ordem_vendedor_ids, start=1):
+        por_vendedor[vendedor_id].posicao = posicao
+    db.commit()
+    return listar_fila_vendedores(db)

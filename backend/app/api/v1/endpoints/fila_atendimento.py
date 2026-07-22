@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.schemas.crm import FilaAtendimentoResponse, MarcarIndisponivelRequest
+from app.schemas.crm import FilaAtendimentoResponse, MarcarIndisponivelRequest, ReordenarFilaRequest
 from app.services import fila_atendimento_service
 
 router = APIRouter(prefix="/fila-atendimento", tags=["CRM — Fila de Atendimento"])
@@ -60,3 +60,15 @@ def marcar_disponivel(
 ):
     _exigir_vendedor(current_user)
     return fila_atendimento_service.marcar_disponivel(db, current_user.id)
+
+
+PODE_REORDENAR = (PerfilUsuario.RECEPCAO, PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)
+
+
+@router.patch("/reordenar", response_model=List[FilaAtendimentoResponse])
+def reordenar_fila(
+    payload: ReordenarFilaRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*PODE_REORDENAR)),
+):
+    return fila_atendimento_service.reordenar(db, payload.ordem)

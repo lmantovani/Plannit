@@ -299,3 +299,7 @@ class MarcarIndisponivelRequest(BaseModel):
         if self.categoria == MotivoIndisponibilidade.OUTRO and not self.observacao:
             raise ValueError("observação é obrigatória quando a categoria é 'outro'")
         return self
+
+
+class ReordenarFilaRequest(BaseModel):
+    ordem: List[int]
