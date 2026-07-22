@@ -173,7 +173,7 @@ VITE_API_URL=http://localhost:8000/api/v1
 | Conferente | conferente@lidermoveis.com.br | Teste@123 |
 
 ## Débito Técnico Conhecido
-- **Alembic sem migrações:** `backend/alembic/versions/` nunca existiu neste projeto — nenhuma migração foi gerada desde o início. O schema em produção foi criado via `Base.metadata.create_all()` (chamado em `seed.py`), que só cria tabelas ausentes e nunca altera tabelas existentes. Qualquer alteração de coluna/tabela em models feita desde então (incluindo o commit `010b459` — tipo/endereco_escritorio/vendedor_id em Arquiteto, arquiteto_id em Cliente, tabelas interacoes_arquiteto/funcionarios_arquiteto) não tem migração correspondente e vai quebrar em produção (Postgres/Railway) com `UndefinedColumn`/`UndefinedTable` até ser resolvido manualmente. Decisão pendente: criar uma migração baseline cobrindo o schema completo + Alembic real daqui pra frente, ou aplicar DDL manual em produção pontualmente.
+- **Alembic bootstrapado em 2026-07-21:** `backend/alembic/versions/` agora tem uma migração baseline cobrindo o schema que já estava em produção (criado historicamente via `Base.metadata.create_all()`), mais as migrações incrementais de cada mudança de model a partir da Frente A de Leads. **Produção (Railway) precisa ser "carimbada" na baseline sem executá-la** (as tabelas já existem lá): rodar `alembic stamp head` apontando pro `DATABASE_URL` de produção antes de aplicar qualquer migração nova — nunca `alembic upgrade head` direto em produção sem ter carimbado a baseline primeiro, ou vai falhar com "relation already exists". `seed.py` não roda mais `create_all()`; localmente, sempre `alembic upgrade head` antes de `python seed.py`.
 - **E-mail de arquiteto desativado não pode ser reaproveitado:** `Arquiteto.email` tem `unique=True` no banco sem índice parcial por `is_active`, então mesmo um arquiteto desativado (soft-delete) continua "ocupando" o e-mail a nível de constraint. `_validar_email_disponivel` (`backend/app/api/v1/endpoints/arquitetos.py`) checa contra todos os arquitetos, não só os ativos, para não deixar a API aceitar algo que o `commit()` rejeitaria com `IntegrityError`. Resolver isso de verdade (permitir reuso) exige um índice único parcial via migração Alembic — bloqueado pelo item acima.
 
 ## Lições Aprendidas (problemas já resolvidos)
@@ -198,5 +198,7 @@ npm run dev
 # Acesse: http://localhost:5173
 
 # Seed (popular banco)
-cd backend && python seed.py
+cd backend
+alembic upgrade head
+python seed.py
 ```

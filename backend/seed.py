@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.core.database import SessionLocal, engine, Base
+from app.core.database import SessionLocal
 from app.core.security import get_password_hash
 from app.core.config import settings
 from app.models.user import User, PerfilUsuario
@@ -17,10 +17,6 @@ import app.models  # Registra todos os models
 
 def seed():
     print("🌱 Iniciando seed do banco de dados...")
-
-    # Cria todas as tabelas
-    Base.metadata.create_all(bind=engine)
-    print("✅ Tabelas criadas")
 
     db = SessionLocal()
 
