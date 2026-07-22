@@ -161,6 +161,18 @@ def qualificar_lead(
     return lead
 
 
+@router.post("/{lead_id}/puxar", response_model=LeadResponse)
+def puxar_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fluxo 2 (redes sociais/telefone) — só é permitido puxar o lead mais antigo."""
+    if current_user.perfil != PerfilUsuario.VENDEDOR:
+        raise HTTPException(403, "Apenas vendedores podem puxar leads da fila")
+    return lead_atendimento_service.puxar_lead(db, lead_id, current_user.id)
+
+
 # === INTERAÇÕES ===
 
 @router.get("/{lead_id}/interacoes", response_model=List[InteracaoResponse])
