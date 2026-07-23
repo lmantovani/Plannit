@@ -119,7 +119,7 @@ def historico_dono(
     registros = (
         db.query(HistoricoDonoArquiteto)
         .filter(HistoricoDonoArquiteto.arquiteto_id == arquiteto_id)
-        .order_by(HistoricoDonoArquiteto.id.desc())
+        .order_by(HistoricoDonoArquiteto.alterado_em.desc(), HistoricoDonoArquiteto.id.desc())
         .all()
     )
     return [
