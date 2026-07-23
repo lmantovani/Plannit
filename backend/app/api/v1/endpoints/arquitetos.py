@@ -4,12 +4,13 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto
+from app.models.notificacao import Notificacao, TipoNotificacao
 from app.schemas.crm import (
     ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
-    ArquitetoScoreResponse,
+    ArquitetoScoreResponse, ArquitetoDonoUpdate, HistoricoDonoResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -69,6 +70,72 @@ def obter_arquiteto(
     if not arquiteto:
         raise HTTPException(404, "Arquiteto não encontrado")
     return arquiteto
+
+
+@router.patch("/{arquiteto_id}/dono", response_model=ArquitetoResponse)
+def reatribuir_dono(
+    arquiteto_id: int,
+    payload: ArquitetoDonoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+
+    novo_consultor = db.query(User).filter(User.id == payload.consultor_id, User.is_active == True).first()
+    if not novo_consultor:
+        raise HTTPException(400, "Consultor inválido")
+
+    consultor_anterior_id = arquiteto.consultor_id
+    arquiteto.consultor_id = payload.consultor_id
+
+    db.add(HistoricoDonoArquiteto(
+        arquiteto_id=arquiteto.id,
+        consultor_anterior_id=consultor_anterior_id,
+        consultor_novo_id=payload.consultor_id,
+        alterado_por_id=current_user.id,
+    ))
+    db.add(Notificacao(
+        tipo=TipoNotificacao.ESPECIFICADOR_TRANSFERIDO,
+        titulo="Novo especificador na sua carteira",
+        mensagem=f"Você recebeu {arquiteto.nome} ({arquiteto.tipo.value}) na sua carteira.",
+        destinatario_id=payload.consultor_id,
+        arquiteto_id=arquiteto.id,
+    ))
+
+    db.commit()
+    db.refresh(arquiteto)
+    return arquiteto
+
+
+@router.get("/{arquiteto_id}/historico-dono", response_model=List[HistoricoDonoResponse])
+def historico_dono(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    registros = (
+        db.query(HistoricoDonoArquiteto)
+        .filter(HistoricoDonoArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(HistoricoDonoArquiteto.id.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "arquiteto_id": r.arquiteto_id,
+            "consultor_anterior_id": r.consultor_anterior_id,
+            "consultor_anterior_nome": r.consultor_anterior.nome if r.consultor_anterior else None,
+            "consultor_novo_id": r.consultor_novo_id,
+            "consultor_novo_nome": r.consultor_novo.nome,
+            "alterado_por_id": r.alterado_por_id,
+            "alterado_por_nome": r.alterado_por.nome if r.alterado_por else None,
+            "alterado_em": r.alterado_em,
+        }
+        for r in registros
+    ]
 
 
 @router.patch("/{arquiteto_id}", response_model=ArquitetoResponse)

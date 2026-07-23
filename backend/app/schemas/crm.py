@@ -143,6 +143,22 @@ class ArquitetoResponse(BaseModel):
         from_attributes = True
 
 
+class ArquitetoDonoUpdate(BaseModel):
+    consultor_id: int
+
+
+class HistoricoDonoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    consultor_anterior_id: Optional[int]
+    consultor_anterior_nome: Optional[str]
+    consultor_novo_id: int
+    consultor_novo_nome: str
+    alterado_por_id: Optional[int]
+    alterado_por_nome: Optional[str]
+    alterado_em: datetime
+
+
 # === DECISOR ARQUITETO ===
 
 class DecisorArquitetoCreate(BaseModel):
