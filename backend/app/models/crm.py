@@ -32,6 +32,19 @@ class TipoCliente(str, enum.Enum):
     PESSOA_JURIDICA = "pessoa_juridica"
 
 
+class TipoEspecificador(str, enum.Enum):
+    ARQUITETO = "arquiteto"
+    DESIGNER_INTERIORES = "designer_interiores"
+    DECORADOR = "decorador"
+    ENGENHEIRO = "engenheiro"
+
+
+class StatusCarteiraEspecificador(str, enum.Enum):
+    ATIVO = "ativo"
+    EM_PROSPECCAO = "em_prospeccao"
+    INATIVO = "inativo"
+
+
 class Lead(Base):
     __tablename__ = "leads"
 
@@ -128,8 +141,17 @@ class Arquiteto(Base):
     email = Column(String(200), nullable=True, unique=True)
     nivel_parceria = Column(String(50), default="parceiro")  # parceiro, premium, vip
 
+    tipo = Column(SAEnum(TipoEspecificador), nullable=False, default=TipoEspecificador.ARQUITETO)
+    especialidade = Column(String(200), nullable=True)
+
+    # Dono da carteira — RECEPCAO/gestão pode reatribuir (ver HistoricoDonoArquiteto)
+    consultor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    status_carteira = Column(SAEnum(StatusCarteiraEspecificador), nullable=False, default=StatusCarteiraEspecificador.EM_PROSPECCAO)
+
     is_active = Column(Boolean, default=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+    consultor = relationship("User", foreign_keys=[consultor_id])
 
     def __repr__(self):
         return f"<Arquiteto {self.nome}>"
@@ -178,3 +200,61 @@ class ConcorrenteArquiteto(Base):
 
     def __repr__(self):
         return f"<ConcorrenteArquiteto {self.nome_concorrente} [arquiteto={self.arquiteto_id}]>"
+
+
+class HistoricoDonoArquiteto(Base):
+    """Log imutável de reatribuições de dono da carteira (RN017 — mesmo padrão de HistoricoStatusProjeto)."""
+    __tablename__ = "historico_dono_arquitetos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
+    consultor_anterior_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    consultor_novo_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    alterado_por_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    alterado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
+    consultor_anterior = relationship("User", foreign_keys=[consultor_anterior_id])
+    consultor_novo = relationship("User", foreign_keys=[consultor_novo_id])
+    alterado_por = relationship("User", foreign_keys=[alterado_por_id])
+
+    def __repr__(self):
+        return f"<HistoricoDonoArquiteto arquiteto={self.arquiteto_id} novo_consultor={self.consultor_novo_id}>"
+
+
+class InteracaoArquiteto(Base):
+    """Registro de contato/visita com especificador (mesmo padrão de InteracaoLead)."""
+    __tablename__ = "interacoes_arquitetos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
+    responsavel_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    tipo = Column(String(50), nullable=False)  # ligacao, whatsapp, email, visita, reuniao
+    resumo = Column(Text, nullable=False)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)  # rastreabilidade: interação → lead gerado
+    data = Column(DateTime(timezone=True), server_default=func.now())
+
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
+    responsavel = relationship("User", foreign_keys=[responsavel_id])
+    lead = relationship("Lead", foreign_keys=[lead_id])
+
+    def __repr__(self):
+        return f"<InteracaoArquiteto {self.tipo} [arquiteto={self.arquiteto_id}]>"
+
+
+class MetaVisitasConsultor(Base):
+    """Meta mensal de visitas a especificadores, configurada pelo gestor por vendedor."""
+    __tablename__ = "metas_visitas_consultor"
+
+    id = Column(Integer, primary_key=True, index=True)
+    consultor_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    meta_visitas_mes = Column(Integer, nullable=False, default=0)
+    configurado_por_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    atualizado_em = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    consultor = relationship("User", foreign_keys=[consultor_id])
+    configurado_por = relationship("User", foreign_keys=[configurado_por_id])
+
+    def __repr__(self):
+        return f"<MetaVisitasConsultor consultor={self.consultor_id} meta={self.meta_visitas_mes}>"
