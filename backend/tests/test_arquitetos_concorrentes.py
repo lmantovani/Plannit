@@ -1,5 +1,5 @@
 def _criar_arquiteto(auth_client, nome="Ana Arquiteta"):
-    resp = auth_client.post("/api/v1/arquitetos/", json={"nome": nome})
+    resp = auth_client.post("/api/v1/arquitetos/", json={"nome": nome, "tipo": "arquiteto"})
     assert resp.status_code == 201
     return resp.json()
 

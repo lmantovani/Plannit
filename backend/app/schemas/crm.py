@@ -1,7 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.models.crm import OrigemLead, StatusFunil, TipoCliente
+from app.models.crm import (
+    OrigemLead, StatusFunil, TipoCliente,
+    TipoEspecificador, StatusCarteiraEspecificador,
+)
 
 
 # === LEAD ===
@@ -108,6 +111,19 @@ class ArquitetoCreate(BaseModel):
     telefone: Optional[str] = None
     email: Optional[EmailStr] = None
     nivel_parceria: str = "parceiro"
+    tipo: TipoEspecificador
+    especialidade: Optional[str] = None
+
+
+class ArquitetoUpdate(BaseModel):
+    nome: Optional[str] = None
+    escritorio: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    nivel_parceria: Optional[str] = None
+    tipo: Optional[TipoEspecificador] = None
+    especialidade: Optional[str] = None
+    status_carteira: Optional[StatusCarteiraEspecificador] = None
 
 
 class ArquitetoResponse(BaseModel):
@@ -117,6 +133,10 @@ class ArquitetoResponse(BaseModel):
     telefone: Optional[str]
     email: Optional[str]
     nivel_parceria: str
+    tipo: TipoEspecificador
+    especialidade: Optional[str]
+    consultor_id: Optional[int]
+    status_carteira: StatusCarteiraEspecificador
     is_active: bool
 
     class Config:

@@ -4,9 +4,9 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador
 from app.schemas.crm import (
-    ArquitetoCreate, ArquitetoResponse,
+    ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
     ArquitetoScoreResponse,
@@ -19,6 +19,9 @@ router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 @router.get("/", response_model=List[ArquitetoResponse])
 def listar_arquitetos(
     nivel_parceria: Optional[str] = None,
+    tipo: Optional[TipoEspecificador] = None,
+    status_carteira: Optional[StatusCarteiraEspecificador] = None,
+    consultor_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -27,6 +30,12 @@ def listar_arquitetos(
     query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
+    if tipo:
+        query = query.filter(Arquiteto.tipo == tipo)
+    if status_carteira:
+        query = query.filter(Arquiteto.status_carteira == status_carteira)
+    if consultor_id:
+        query = query.filter(Arquiteto.consultor_id == consultor_id)
     return query.order_by(Arquiteto.nome).offset(skip).limit(limit).all()
 
 
@@ -65,7 +74,7 @@ def obter_arquiteto(
 @router.patch("/{arquiteto_id}", response_model=ArquitetoResponse)
 def atualizar_arquiteto(
     arquiteto_id: int,
-    payload: ArquitetoCreate,
+    payload: ArquitetoUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(
         PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
