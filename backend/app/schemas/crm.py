@@ -206,6 +206,27 @@ class ConcorrenteArquitetoResponse(BaseModel):
         from_attributes = True
 
 
+# === INTERAÇÃO COM ARQUITETO/ESPECIFICADOR ===
+
+class InteracaoArquitetoCreate(BaseModel):
+    tipo: str  # ligacao | whatsapp | email | visita | reuniao
+    resumo: str
+    lead_id: Optional[int] = None
+
+
+class InteracaoArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    responsavel_id: int
+    tipo: str
+    resumo: str
+    lead_id: Optional[int]
+    data: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # === SCORE DO ARQUITETO ===
 
 class ArquitetoScoreResponse(BaseModel):

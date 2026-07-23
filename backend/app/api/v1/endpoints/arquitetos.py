@@ -4,13 +4,14 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto
 from app.models.notificacao import Notificacao, TipoNotificacao
 from app.schemas.crm import (
     ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
     ArquitetoScoreResponse, ArquitetoDonoUpdate, HistoricoDonoResponse,
+    InteracaoArquitetoCreate, InteracaoArquitetoResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -366,3 +367,39 @@ def remover_concorrente(
     concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
     db.delete(concorrente)
     db.commit()
+
+
+# === INTERAÇÕES ===
+
+@router.get("/{arquiteto_id}/interacoes", response_model=List[InteracaoArquitetoResponse])
+def listar_interacoes_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(InteracaoArquiteto.data.desc(), InteracaoArquiteto.id.desc())
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/interacoes", response_model=InteracaoArquitetoResponse, status_code=201)
+def registrar_interacao_arquiteto(
+    arquiteto_id: int,
+    payload: InteracaoArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    interacao = InteracaoArquiteto(
+        arquiteto_id=arquiteto_id,
+        responsavel_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(interacao)
+    db.commit()
+    db.refresh(interacao)
+    return interacao
