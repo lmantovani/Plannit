@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.crm import Arquiteto, Lead, StatusFunil, ConcorrenteArquiteto
+from app.models.crm import Arquiteto, Lead, StatusFunil, ConcorrenteArquiteto, InteracaoArquiteto
 from app.models.projeto import Projeto, StatusProjeto
 
 
@@ -144,6 +144,8 @@ def determinar_flags(
     potencial: float,
     valor_pontos: float,
     em_risco: bool,
+    tem_dono: bool = False,
+    dias_desde_ultima_interacao: Optional[int] = None,
 ) -> list[str]:
     flags = []
     if score_geral >= 85:
@@ -154,6 +156,8 @@ def determinar_flags(
         flags.append("alto_potencial")
     if valor_pontos >= 90:
         flags.append("indicacao_alto_valor")
+    if em_risco and tem_dono and (dias_desde_ultima_interacao is None or dias_desde_ultima_interacao > 30):
+        flags.append("especificador_esfriando")
     return flags
 
 
@@ -187,6 +191,14 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
         .filter(ConcorrenteArquiteto.arquiteto_id == arquiteto.id)
         .all()
     )
+    interacoes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.arquiteto_id == arquiteto.id)
+        .all()
+    )
+    datas_interacoes = [i.data for i in interacoes if i.data]
+    ultima_interacao_em = max(datas_interacoes) if datas_interacoes else None
+    dias_desde_ultima_interacao = (agora - ultima_interacao_em).days if ultima_interacao_em else None
 
     projetos_12m = [p for p in projetos if p.criado_em and p.criado_em >= limite_12_meses]
 
@@ -243,6 +255,8 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
         potencial=potencial,
         valor_pontos=valor,
         em_risco=em_risco,
+        tem_dono=arquiteto.consultor_id is not None,
+        dias_desde_ultima_interacao=dias_desde_ultima_interacao,
     )
 
     concorrencia = calcular_risco_concorrencia(
