@@ -238,3 +238,13 @@ class ArquitetoScoreResponse(BaseModel):
     flags: List[str]
     detalhes: dict
     concorrencia: dict
+
+
+# === KPIs DA CARTEIRA DE ESPECIFICADORES ===
+
+class EspecificadoresKpiResponse(BaseModel):
+    especificadores_ativos: int
+    pct_venda_mes: float
+    pct_venda_ano: float
+    atendimentos_mes: int
+    visitas_escritorio_mes: int

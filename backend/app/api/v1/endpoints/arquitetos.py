@@ -1,17 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
+from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
 from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto
 from app.models.notificacao import Notificacao, TipoNotificacao
+from app.models.projeto import Projeto
 from app.schemas.crm import (
     ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
     ArquitetoScoreResponse, ArquitetoDonoUpdate, HistoricoDonoResponse,
     InteracaoArquitetoCreate, InteracaoArquitetoResponse,
+    EspecificadoresKpiResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -59,6 +63,48 @@ def criar_arquiteto(
     db.commit()
     db.refresh(arquiteto)
     return arquiteto
+
+
+@router.get("/kpis", response_model=EspecificadoresKpiResponse)
+def kpis_especificadores(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    agora = datetime.utcnow()
+    inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    inicio_ano = agora.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    especificadores_ativos = db.query(Arquiteto).filter(Arquiteto.is_active == True).count()
+
+    def _pct_venda_desde(desde: datetime) -> float:
+        total = db.query(func.sum(Projeto.valor_contrato)).filter(
+            Projeto.criado_em >= desde, Projeto.arquivado == False
+        ).scalar() or 0.0
+        com_especificador = db.query(func.sum(Projeto.valor_contrato)).filter(
+            Projeto.criado_em >= desde, Projeto.arquivado == False, Projeto.arquiteto_id.isnot(None)
+        ).scalar() or 0.0
+        if not total:
+            return 0.0
+        return round((com_especificador / total) * 100, 1)
+
+    atendimentos_mes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita")
+        .count()
+    )
+    visitas_escritorio_mes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita")
+        .count()
+    )
+
+    return {
+        "especificadores_ativos": especificadores_ativos,
+        "pct_venda_mes": _pct_venda_desde(inicio_mes),
+        "pct_venda_ano": _pct_venda_desde(inicio_ano),
+        "atendimentos_mes": atendimentos_mes,
+        "visitas_escritorio_mes": visitas_escritorio_mes,
+    }
 
 
 @router.get("/{arquiteto_id}", response_model=ArquitetoResponse)
