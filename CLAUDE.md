@@ -213,6 +213,10 @@ Mesmas variáveis do backend, com:
 | Projetista | projetista@lidermoveis.com.br | Teste@123 |
 | Conferente | conferente@lidermoveis.com.br | Teste@123 |
 
+## Débito Técnico Conhecido
+- **Alembic bootstrapado em 2026-07-21:** `backend/alembic/versions/` agora tem uma migração baseline cobrindo o schema que já estava em produção (criado historicamente via `Base.metadata.create_all()`), mais as migrações incrementais de cada mudança de model a partir da Frente A de Leads. **Produção (Railway) precisa ser "carimbada" na baseline sem executá-la** (as tabelas já existem lá): rodar `alembic stamp head` apontando pro `DATABASE_URL` de produção antes de aplicar qualquer migração nova — nunca `alembic upgrade head` direto em produção sem ter carimbado a baseline primeiro, ou vai falhar com "relation already exists". `seed.py` não roda mais `create_all()`; localmente, sempre `alembic upgrade head` antes de `python seed.py`.
+- **E-mail de arquiteto desativado não pode ser reaproveitado:** `Arquiteto.email` tem `unique=True` no banco sem índice parcial por `is_active`, então mesmo um arquiteto desativado (soft-delete) continua "ocupando" o e-mail a nível de constraint. `_validar_email_disponivel` (`backend/app/api/v1/endpoints/arquitetos.py`) checa contra todos os arquitetos, não só os ativos, para não deixar a API aceitar algo que o `commit()` rejeitaria com `IntegrityError`. Resolver isso de verdade (permitir reuso) exige um índice único parcial via migração Alembic — bloqueado pelo item acima.
+
 ## Lições Aprendidas (problemas já resolvidos)
 - `pydantic-settings` requer `extra="ignore"` para ignorar variáveis extras do .env
 - `ALLOWED_ORIGINS` no .env precisa ser JSON array: `["http://..."]`
@@ -237,7 +241,9 @@ npm run dev
 # Acesse: http://localhost:5173
 
 # Seed (popular banco)
-cd backend && python seed.py
+cd backend
+alembic upgrade head
+python seed.py
 ```
 
 ## Como Trabalhar Neste Projeto (para novos colaboradores)

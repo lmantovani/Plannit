@@ -11,6 +11,20 @@ from app.schemas.crm import ClienteCreate, ClienteResponse
 router = APIRouter(prefix="/clientes", tags=["CRM — Clientes"])
 
 
+def _validar_cpf_cnpj_disponivel(db: Session, cpf_cnpj: Optional[str], excluir_id: Optional[int] = None):
+    """Checa contra TODOS os clientes (ativos e inativos), não só os ativos —
+    cpf_cnpj tem unique=True no banco sem índice parcial por is_active, então um
+    cliente desativado ainda ocupa o documento a nível de constraint. Mesmo
+    raciocínio de _validar_email_disponivel em arquitetos.py."""
+    if not cpf_cnpj:
+        return
+    query = db.query(Cliente).filter(Cliente.cpf_cnpj == cpf_cnpj)
+    if excluir_id is not None:
+        query = query.filter(Cliente.id != excluir_id)
+    if query.first():
+        raise HTTPException(400, "CPF/CNPJ já cadastrado")
+
+
 @router.get("/", response_model=List[ClienteResponse])
 def listar_clientes(
     aprovado: Optional[bool] = None,
@@ -31,10 +45,7 @@ def criar_cliente(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if payload.cpf_cnpj:
-        existente = db.query(Cliente).filter(Cliente.cpf_cnpj == payload.cpf_cnpj).first()
-        if existente:
-            raise HTTPException(400, "CPF/CNPJ já cadastrado")
+    _validar_cpf_cnpj_disponivel(db, payload.cpf_cnpj)
 
     cliente = Cliente(**payload.model_dump())
     db.add(cliente)
@@ -66,7 +77,11 @@ def atualizar_cliente(
     if not cliente:
         raise HTTPException(404, "Cliente não encontrado")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    dados = payload.model_dump(exclude_unset=True)
+    if dados.get("cpf_cnpj"):
+        _validar_cpf_cnpj_disponivel(db, dados["cpf_cnpj"], excluir_id=cliente_id)
+
+    for field, value in dados.items():
         setattr(cliente, field, value)
 
     db.commit()

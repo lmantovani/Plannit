@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Lead, InteracaoLead, StatusFunil
+from app.models.crm import Lead, InteracaoLead, StatusFunil, OrigemLead, InteracaoArquiteto, TipoInteracaoArquiteto
 from app.schemas.crm import (
     LeadCreate, LeadUpdate, LeadResponse,
     InteracaoCreate, InteracaoResponse, LeadPerderRequest,
+    DevolverLeadRequest, ReatribuirLeadRequest,
 )
+from app.services import fila_atendimento_service, lead_atendimento_service
 
 router = APIRouter(prefix="/leads", tags=["CRM — Leads"])
 
@@ -44,17 +46,86 @@ def criar_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cadastra novo lead — RF001."""
-    lead = Lead(**payload.model_dump())
-    if not lead.vendedor_id:
-        # Auto-atribuir ao vendedor logado
-        if current_user.perfil == PerfilUsuario.VENDEDOR:
-            lead.vendedor_id = current_user.id
+    """Cadastra novo lead — RF001. Vendedor só pode atribuir o lead a si mesmo."""
+    dados = payload.model_dump()
 
+    if not dados.get("vendedor_id"):
+        if current_user.perfil == PerfilUsuario.VENDEDOR:
+            dados["vendedor_id"] = current_user.id
+    elif current_user.perfil == PerfilUsuario.VENDEDOR and dados["vendedor_id"] != current_user.id:
+        raise HTTPException(403, "Vendedor só pode atribuir o lead a si mesmo")
+
+    lead = Lead(**dados, criado_por_id=current_user.id)
     db.add(lead)
     db.commit()
     db.refresh(lead)
+
+    if lead.vendedor_id:
+        lead_atendimento_service.registrar_primeira_interacao(db, lead, current_user.id)
+        if lead.origem == OrigemLead.SHOWROOM:
+            fila_atendimento_service.mover_para_final(db, lead.vendedor_id)
+
+    if lead.arquiteto_id:
+        tipo = (
+            TipoInteracaoArquiteto.VISITA_LOJA
+            if lead.origem == OrigemLead.SHOWROOM
+            else TipoInteracaoArquiteto.INDICACAO_LEAD
+        )
+        db.add(InteracaoArquiteto(
+            arquiteto_id=lead.arquiteto_id,
+            autor_id=current_user.id,
+            tipo=tipo,
+            observacao=f"Lead gerado: {lead.nome}",
+        ))
+        db.commit()
+
     return lead
+
+
+@router.get("/verificar-duplicado")
+def verificar_duplicado(
+    telefone: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aviso não-bloqueante: verifica se telefone já existe como lead ou cliente."""
+    resultado = lead_atendimento_service.verificar_duplicado(db, telefone)
+    return {"duplicado": resultado is not None, "existente": resultado}
+
+
+@router.get("/aguardando")
+def listar_aguardando(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fluxo 2 — leads sem vendedor, mais antigo primeiro. Recalcula alerta visual
+    e dispara escalonamento na leitura (sem job agendado)."""
+    fila_atendimento_service.escalonar_leads_aguardando(db)
+    config = fila_atendimento_service.get_config(db)
+    agora = datetime.now(timezone.utc)
+
+    leads = (
+        db.query(Lead)
+        .filter(Lead.vendedor_id.is_(None))
+        .order_by(Lead.criado_em.asc(), Lead.id.asc())
+        .all()
+    )
+
+    resultado = []
+    for lead in leads:
+        criado = lead.criado_em if lead.criado_em.tzinfo else lead.criado_em.replace(tzinfo=timezone.utc)
+        minutos_esperando = int((agora - criado).total_seconds() / 60)
+        resultado.append({
+            "id": lead.id,
+            "nome": lead.nome,
+            "telefone": lead.telefone,
+            "origem": lead.origem,
+            "arquiteto_id": lead.arquiteto_id,
+            "criado_em": lead.criado_em.isoformat(),
+            "minutos_esperando": minutos_esperando,
+            "alerta": minutos_esperando >= config.minutos_alerta,
+        })
+    return resultado
 
 
 @router.get("/{lead_id}", response_model=LeadResponse)
@@ -124,6 +195,38 @@ def qualificar_lead(
     db.commit()
     db.refresh(lead)
     return lead
+
+
+@router.post("/{lead_id}/puxar", response_model=LeadResponse)
+def puxar_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fluxo 2 (redes sociais/telefone) — só é permitido puxar o lead mais antigo."""
+    if current_user.perfil != PerfilUsuario.VENDEDOR:
+        raise HTTPException(403, "Apenas vendedores podem puxar leads da fila")
+    return lead_atendimento_service.puxar_lead(db, lead_id, current_user.id)
+
+
+@router.post("/{lead_id}/devolver", response_model=LeadResponse)
+def devolver_lead(
+    lead_id: int,
+    payload: DevolverLeadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return lead_atendimento_service.devolver_lead(db, lead_id, payload.motivo, current_user)
+
+
+@router.post("/{lead_id}/reatribuir", response_model=LeadResponse)
+def reatribuir_lead(
+    lead_id: int,
+    payload: ReatribuirLeadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)),
+):
+    return lead_atendimento_service.reatribuir_lead(db, lead_id, payload.vendedor_id, current_user)
 
 
 # === INTERAÇÕES ===

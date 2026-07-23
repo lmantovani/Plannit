@@ -69,7 +69,7 @@ def require_roles(*roles):
         if current_user.perfil not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Acesso negado. Perfil necessário: {', '.join(roles)}",
+                detail=f"Acesso negado. Perfil necessário: {', '.join([str(r) for r in roles])}",
             )
         return current_user
     return role_checker

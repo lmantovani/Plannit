@@ -10,7 +10,8 @@ import {
   MontagemPage, FinanceiroPage, PosVendaPage, RelatoriosPage, ConfiguracoesPage,
 } from './pages/PlaceholderPages'
 import BriefingPage from './pages/briefing/BriefingPage'
-import ArquitetosPage from './pages/arquitetos/ArquitetosPage'
+import EspecificadoresPage from './pages/especificadores/EspecificadoresPage'
+import EspecificadorDetalhePage from './pages/especificadores/EspecificadorDetalhePage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
@@ -21,7 +22,6 @@ const ROUTE_TITLES = {
   '/crm':           { title: 'CRM & Leads',         subtitle: 'Pipeline comercial' },
   '/projetos':      { title: 'Projetos',            subtitle: 'Fila e desenvolvimento' },
   '/briefing':      { title: 'Briefings',           subtitle: 'Formulários e score' },
-  '/arquitetos':    { title: 'Arquitetos',          subtitle: 'Parceiros e indicações' },
   '/conferencia':   { title: 'Conferência',         subtitle: 'Medições e adequações' },
   '/logistica':     { title: 'Logística',           subtitle: 'Pedidos e entregas' },
   '/montagem':      { title: 'Montagem',            subtitle: 'Agendamento e checklist' },
@@ -33,7 +33,9 @@ const ROUTE_TITLES = {
 
 function ProtectedLayout() {
   const path = window.location.pathname
-  const meta = ROUTE_TITLES[path] || { title: 'Líder Móveis', subtitle: '' }
+  const meta = path.startsWith('/especificadores')
+    ? { title: 'Especificadores', subtitle: 'Carteira de arquitetos e designers' }
+    : (ROUTE_TITLES[path] || { title: 'Líder Móveis', subtitle: '' })
   return (
     <AuthGuard>
       <AppLayout title={meta.title} subtitle={meta.subtitle} />
@@ -51,9 +53,10 @@ export default function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/dashboard"     element={<DashboardPage />} />
             <Route path="/crm"           element={<CRMPage />} />
+            <Route path="/especificadores"     element={<EspecificadoresPage />} />
+            <Route path="/especificadores/:id" element={<EspecificadorDetalhePage />} />
             <Route path="/projetos"      element={<ProjetosPage />} />
             <Route path="/briefing"      element={<BriefingPage />} />
-            <Route path="/arquitetos"    element={<ArquitetosPage />} />
             <Route path="/conferencia"   element={<ConferenciaPage />} />
             <Route path="/logistica"     element={<LogisticaPage />} />
             <Route path="/montagem"      element={<MontagemPage />} />

@@ -27,6 +27,7 @@ class TipoNotificacao(str, enum.Enum):
     SLA_AT_VENCENDO = "sla_at_vencendo"
     AT_CAUSA_REPETIDA = "at_causa_repetida"
     PROJETO_PARADO = "projeto_parado"
+    LEAD_AGUARDANDO_ESCALONADO = "lead_aguardando_escalonado"
 
 
 class CanalNotificacao(str, enum.Enum):

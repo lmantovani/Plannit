@@ -94,6 +94,31 @@ export const timeAgo = (date) => {
   return `${days}d atrás`
 }
 
+export const TIPO_ARQUITETO_LABELS = {
+  arquiteto:  'Arquiteto',
+  engenheiro: 'Engenheiro',
+  designer:   'Designer',
+  corretor:   'Corretor',
+  outro:      'Outro',
+}
+
+export const TIPO_ARQUITETO_COLORS = {
+  arquiteto:  'blue',
+  engenheiro: 'purple',
+  designer:   'amber',
+  corretor:   'green',
+  outro:      'stone',
+}
+
+export const TIPO_INTERACAO_ARQUITETO_LABELS = {
+  visita_escritorio: 'Visita ao escritório',
+  ligacao:            'Ligação',
+  visita_loja:        'Visita à loja',
+  evento:              'Evento',
+  viagem:              'Viagem',
+  envio_brinde:        'Envio de brinde',
+}
+
 // Score de Arquitetos (Módulo Arquitetos)
 export const SEGMENTO_CONFIG = {
   campeao:        { label: 'Campeão',        color: 'primary' },

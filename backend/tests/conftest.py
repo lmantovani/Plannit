@@ -78,18 +78,51 @@ def projetista_user(db_session):
     return user
 
 
+class _ClientComUser:
+    """Wrapper ao redor de TestClient que restaura o override correto antes de cada requisição."""
+    def __init__(self, user, db_session, get_db, get_current_user):
+        self.user = user
+        self.db_session = db_session
+        self.get_db = get_db
+        self.get_current_user = get_current_user
+        self.client = TestClient(fastapi_app)
+
+    def _set_overrides(self):
+        """Restaura os overrides para este cliente."""
+        def _override_get_db():
+            yield self.db_session
+
+        def _override_get_current_user():
+            return self.user
+
+        fastapi_app.dependency_overrides[self.get_db] = _override_get_db
+        fastapi_app.dependency_overrides[self.get_current_user] = _override_get_current_user
+
+    def _make_request(self, method, url, **kwargs):
+        """Faz uma requisição com os overrides corretos."""
+        self._set_overrides()
+        return method(url, **kwargs)
+
+    def get(self, url, **kwargs):
+        return self._make_request(self.client.get, url, **kwargs)
+
+    def post(self, url, **kwargs):
+        return self._make_request(self.client.post, url, **kwargs)
+
+    def patch(self, url, **kwargs):
+        return self._make_request(self.client.patch, url, **kwargs)
+
+    def put(self, url, **kwargs):
+        return self._make_request(self.client.put, url, **kwargs)
+
+    def delete(self, url, **kwargs):
+        return self._make_request(self.client.delete, url, **kwargs)
+
+
 @pytest.fixture()
 def create_client_com_user(db_session):
     """Factory fixture para criar clientes autenticados com usuários específicos."""
     def _create_client(user):
-        def _override_get_db():
-            yield db_session
-
-        def _override_get_current_user():
-            return user
-
-        fastapi_app.dependency_overrides[get_db] = _override_get_db
-        fastapi_app.dependency_overrides[get_current_user] = _override_get_current_user
-        return TestClient(fastapi_app)
+        return _ClientComUser(user, db_session, get_db, get_current_user)
 
     return _create_client
