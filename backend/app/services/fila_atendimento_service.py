@@ -35,6 +35,15 @@ def _get_fila_ou_404(db: Session, vendedor_id: int) -> FilaAtendimento:
     return fila
 
 
+def _utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normaliza para timezone-aware UTC. SQLite (usado nos testes) devolve datetimes
+    naive mesmo para colunas `DateTime(timezone=True)`; Postgres devolve aware. Sem isso,
+    subtrair/comparar com `agora` (aware) explode com `TypeError` num dos dois ambientes."""
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
 def checkin(db: Session, vendedor_id: int) -> FilaAtendimento:
     fila = db.query(FilaAtendimento).filter(FilaAtendimento.vendedor_id == vendedor_id).first()
     agora = datetime.now(timezone.utc)
@@ -196,7 +205,7 @@ def resumo_fila(db: Session) -> dict:
         for lead in aguardando:
             if not lead.criado_em:
                 continue
-            criado = lead.criado_em if lead.criado_em.tzinfo else lead.criado_em.replace(tzinfo=timezone.utc)
+            criado = _utc(lead.criado_em)
             tempos.append((agora - criado).total_seconds() / 60)
         tempo_medio_espera_min = round(sum(tempos) / len(tempos), 1) if tempos else 0
     else:
