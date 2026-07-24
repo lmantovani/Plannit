@@ -7,6 +7,7 @@ from app.core.security import get_current_user
 from app.models.user import User, PerfilUsuario
 from app.models.crm import Lead, StatusFunil
 from app.models.projeto import Projeto, StatusProjeto, FilaProjeto
+from app.services import fila_atendimento_service
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -163,3 +164,12 @@ def projetos_ativos_completo(
         })
 
     return resultado
+
+
+@router.get("/fila-atendimento")
+def dashboard_fila_atendimento(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """KPI da fila de atendimento (Frente A do módulo Leads) — card do dashboard."""
+    return fila_atendimento_service.resumo_fila(db)

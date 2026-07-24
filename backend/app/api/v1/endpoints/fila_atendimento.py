@@ -100,3 +100,19 @@ def atualizar_config(
     db.commit()
     db.refresh(config)
     return config
+
+
+@router.get("/contador-hoje")
+def contador_hoje(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return {"leads_atendidos_hoje": fila_atendimento_service.contador_leads_hoje(db, current_user.id)}
+
+
+@router.get("/resumo")
+def resumo(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return fila_atendimento_service.resumo_fila(db)

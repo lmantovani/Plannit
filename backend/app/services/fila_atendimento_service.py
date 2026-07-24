@@ -168,3 +168,52 @@ def escalonar_leads_aguardando(db: Session) -> int:
     if escalonados:
         db.commit()
     return escalonados
+
+
+def contador_leads_hoje(db: Session, vendedor_id: int) -> int:
+    """Conta leads atribuídos ao vendedor hoje, usando Lead.criado_em como
+    aproximação. Para leads presenciais/atribuição direta é exato; um lead
+    puxado da fila de aguardando após esperar dias só entra nesta contagem se
+    também tiver sido CRIADO hoje (subconta esse caso). Aceito como
+    simplificação — a spec da Frente A não previu um timestamp de atribuição
+    dedicado, e criar um exigiria expandir o modelo de dados além do escopo."""
+    inicio_hoje = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    return (
+        db.query(Lead)
+        .filter(Lead.vendedor_id == vendedor_id, Lead.criado_em >= inicio_hoje)
+        .count()
+    )
+
+
+def resumo_fila(db: Session) -> dict:
+    hoje = datetime.now(timezone.utc).date()
+    agora = datetime.now(timezone.utc)
+
+    aguardando = db.query(Lead).filter(Lead.vendedor_id.is_(None)).all()
+    qtd_aguardando = len(aguardando)
+    if qtd_aguardando:
+        tempos = []
+        for lead in aguardando:
+            if not lead.criado_em:
+                continue
+            criado = lead.criado_em if lead.criado_em.tzinfo else lead.criado_em.replace(tzinfo=timezone.utc)
+            tempos.append((agora - criado).total_seconds() / 60)
+        tempo_medio_espera_min = round(sum(tempos) / len(tempos), 1) if tempos else 0
+    else:
+        tempo_medio_espera_min = 0
+
+    vendedores_disponiveis = (
+        db.query(FilaAtendimento)
+        .filter(
+            FilaAtendimento.ativo_hoje == True,
+            FilaAtendimento.data_referencia == hoje,
+            FilaAtendimento.disponivel == True,
+        )
+        .count()
+    )
+
+    return {
+        "leads_aguardando": qtd_aguardando,
+        "tempo_medio_espera_minutos": tempo_medio_espera_min,
+        "vendedores_disponiveis": vendedores_disponiveis,
+    }
