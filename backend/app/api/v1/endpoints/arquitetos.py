@@ -246,6 +246,11 @@ def historico_dono(
     _get_arquiteto_ou_404(arquiteto_id, db)
     registros = (
         db.query(HistoricoDonoArquiteto)
+        .options(
+            joinedload(HistoricoDonoArquiteto.consultor_anterior),
+            joinedload(HistoricoDonoArquiteto.consultor_novo),
+            joinedload(HistoricoDonoArquiteto.alterado_por),
+        )
         .filter(HistoricoDonoArquiteto.arquiteto_id == arquiteto_id)
         .order_by(HistoricoDonoArquiteto.alterado_em.desc(), HistoricoDonoArquiteto.id.desc())
         .all()
