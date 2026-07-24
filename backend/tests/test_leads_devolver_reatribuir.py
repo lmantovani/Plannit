@@ -88,3 +88,31 @@ def test_vendedor_nao_pode_reatribuir(db_session, create_client_com_user):
     vendedor = _criar_vendedor(db_session, "Sem Permissao", "sempermissao@plannit.com.br")
     resp = create_client_com_user(vendedor).post("/api/v1/leads/1/reatribuir", json={"vendedor_id": vendedor.id})
     assert resp.status_code == 403
+
+
+def test_gestor_nao_pode_reatribuir_para_nao_vendedor(db_session, create_client_com_user):
+    gestor = _criar_user(db_session, "Gestor", "gestor5@plannit.com.br", PerfilUsuario.DIRETORIA)
+    gestor_client = create_client_com_user(gestor)
+
+    lead_id, _vendedor, _client = _criar_lead_puxado(
+        gestor_client, db_session, create_client_com_user, "AlvoInvalido", "11955558888", "dev5@plannit.com.br"
+    )
+    projetista = _criar_user(db_session, "Projetista", "projetista.reatr@plannit.com.br", PerfilUsuario.PROJETISTA)
+
+    resp = gestor_client.post(f"/api/v1/leads/{lead_id}/reatribuir", json={"vendedor_id": projetista.id})
+    assert resp.status_code == 400
+
+
+def test_gestor_nao_pode_reatribuir_para_vendedor_inativo(db_session, create_client_com_user):
+    gestor = _criar_user(db_session, "Gestor", "gestor6@plannit.com.br", PerfilUsuario.DIRETORIA)
+    gestor_client = create_client_com_user(gestor)
+
+    lead_id, _vendedor, _client = _criar_lead_puxado(
+        gestor_client, db_session, create_client_com_user, "AlvoInativo", "11966669999", "dev6@plannit.com.br"
+    )
+    vendedor_inativo = _criar_vendedor(db_session, "Vendedor Inativo", "vendedor.inativo@plannit.com.br")
+    vendedor_inativo.is_active = False
+    db_session.commit()
+
+    resp = gestor_client.post(f"/api/v1/leads/{lead_id}/reatribuir", json={"vendedor_id": vendedor_inativo.id})
+    assert resp.status_code == 400

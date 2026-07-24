@@ -113,7 +113,9 @@ def listar_aguardando(
 
     resultado = []
     for lead in leads:
-        criado = lead.criado_em if lead.criado_em.tzinfo else lead.criado_em.replace(tzinfo=timezone.utc)
+        criado = fila_atendimento_service._utc(lead.criado_em)
+        if criado is None:
+            continue
         minutos_esperando = int((agora - criado).total_seconds() / 60)
         resultado.append({
             "id": lead.id,

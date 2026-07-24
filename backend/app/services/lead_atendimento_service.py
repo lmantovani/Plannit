@@ -118,6 +118,8 @@ def reatribuir_lead(db, lead_id: int, novo_vendedor_id: int, quem_reatribuiu: Us
     novo_vendedor = db.query(User).filter(User.id == novo_vendedor_id).first()
     if not novo_vendedor:
         raise HTTPException(404, "Vendedor não encontrado")
+    if novo_vendedor.perfil != PerfilUsuario.VENDEDOR or not novo_vendedor.is_active:
+        raise HTTPException(400, "Só é possível reatribuir o lead a um vendedor ativo")
 
     lead.vendedor_id = novo_vendedor_id
     db.add(InteracaoLead(
