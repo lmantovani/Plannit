@@ -248,3 +248,24 @@ class EspecificadoresKpiResponse(BaseModel):
     pct_venda_ano: float
     atendimentos_mes: int
     visitas_escritorio_mes: int
+
+
+# === META DE VISITAS ===
+
+class MetaVisitasUpsert(BaseModel):
+    consultor_id: int
+    meta_visitas_mes: int = Field(..., ge=0)
+
+
+class MetaVisitasResponse(BaseModel):
+    id: int
+    consultor_id: int
+    consultor_nome: str
+    meta_visitas_mes: int
+    configurado_por_id: Optional[int]
+    atualizado_em: Optional[datetime]
+
+
+class MinhaMetaResponse(BaseModel):
+    meta_visitas_mes: int
+    visitas_realizadas_mes: int

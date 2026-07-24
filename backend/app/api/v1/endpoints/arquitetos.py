@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor
 from app.models.notificacao import Notificacao, TipoNotificacao
 from app.models.projeto import Projeto
 from app.schemas.crm import (
@@ -16,6 +16,7 @@ from app.schemas.crm import (
     ArquitetoScoreResponse, ArquitetoDonoUpdate, HistoricoDonoResponse,
     InteracaoArquitetoCreate, InteracaoArquitetoResponse,
     EspecificadoresKpiResponse,
+    MetaVisitasUpsert, MetaVisitasResponse, MinhaMetaResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -105,6 +106,86 @@ def kpis_especificadores(
         "atendimentos_mes": atendimentos_mes,
         "visitas_escritorio_mes": visitas_escritorio_mes,
     }
+
+
+@router.get("/metas-visitas", response_model=List[MetaVisitasResponse])
+def listar_metas_visitas(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    metas = db.query(MetaVisitasConsultor).options(joinedload(MetaVisitasConsultor.consultor)).all()
+    return [
+        {
+            "id": m.id,
+            "consultor_id": m.consultor_id,
+            "consultor_nome": m.consultor.nome,
+            "meta_visitas_mes": m.meta_visitas_mes,
+            "configurado_por_id": m.configurado_por_id,
+            "atualizado_em": m.atualizado_em,
+        }
+        for m in metas
+    ]
+
+
+@router.put("/metas-visitas", response_model=MetaVisitasResponse)
+def definir_meta_visitas(
+    payload: MetaVisitasUpsert,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    consultor = db.query(User).filter(User.id == payload.consultor_id).first()
+    if not consultor:
+        raise HTTPException(400, "Consultor inválido")
+
+    meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == payload.consultor_id).first()
+    if meta:
+        meta.meta_visitas_mes = payload.meta_visitas_mes
+        meta.configurado_por_id = current_user.id
+    else:
+        meta = MetaVisitasConsultor(
+            consultor_id=payload.consultor_id,
+            meta_visitas_mes=payload.meta_visitas_mes,
+            configurado_por_id=current_user.id,
+        )
+        db.add(meta)
+    db.commit()
+    db.refresh(meta)
+
+    return {
+        "id": meta.id,
+        "consultor_id": meta.consultor_id,
+        "consultor_nome": consultor.nome,
+        "meta_visitas_mes": meta.meta_visitas_mes,
+        "configurado_por_id": meta.configurado_por_id,
+        "atualizado_em": meta.atualizado_em,
+    }
+
+
+@router.get("/metas-visitas/me", response_model=MinhaMetaResponse)
+def minha_meta_visitas(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == current_user.id).first()
+    meta_valor = meta.meta_visitas_mes if meta else 0
+
+    agora = datetime.utcnow()
+    inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    visitas_realizadas = (
+        db.query(InteracaoArquiteto)
+        .filter(
+            InteracaoArquiteto.responsavel_id == current_user.id,
+            InteracaoArquiteto.tipo == "visita",
+            InteracaoArquiteto.data >= inicio_mes,
+        )
+        .count()
+    )
+
+    return {"meta_visitas_mes": meta_valor, "visitas_realizadas_mes": visitas_realizadas}
 
 
 @router.get("/{arquiteto_id}", response_model=ArquitetoResponse)
