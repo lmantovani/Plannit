@@ -37,6 +37,8 @@ class TipoEspecificador(str, enum.Enum):
     DESIGNER_INTERIORES = "designer_interiores"
     DECORADOR = "decorador"
     ENGENHEIRO = "engenheiro"
+    CORRETOR = "corretor"
+    OUTRO = "outro"
 
 
 class StatusCarteiraEspecificador(str, enum.Enum):

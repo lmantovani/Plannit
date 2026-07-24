@@ -59,3 +59,15 @@ def test_patch_sem_tipo_nao_falha(auth_client):
     assert resp.status_code == 200
     assert resp.json()["escritorio"] == "Novo Escritório"
     assert resp.json()["tipo"] == "arquiteto"
+
+
+def test_criar_arquiteto_tipo_corretor(auth_client):
+    resp = auth_client.post("/api/v1/arquitetos/", json={"nome": "Corretor Ana", "tipo": "corretor"})
+    assert resp.status_code == 201
+    assert resp.json()["tipo"] == "corretor"
+
+
+def test_criar_arquiteto_tipo_outro(auth_client):
+    resp = auth_client.post("/api/v1/arquitetos/", json={"nome": "Caso Especial", "tipo": "outro"})
+    assert resp.status_code == 201
+    assert resp.json()["tipo"] == "outro"
