@@ -4,7 +4,10 @@ from typing import List
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.schemas.crm import FilaAtendimentoResponse, MarcarIndisponivelRequest, ReordenarFilaRequest
+from app.schemas.crm import (
+    FilaAtendimentoResponse, MarcarIndisponivelRequest, ReordenarFilaRequest,
+    ConfigFilaAtendimentoResponse, ConfigFilaAtendimentoUpdate,
+)
 from app.services import fila_atendimento_service
 
 router = APIRouter(prefix="/fila-atendimento", tags=["CRM — Fila de Atendimento"])
@@ -72,3 +75,28 @@ def reordenar_fila(
     current_user: User = Depends(require_roles(*PODE_REORDENAR)),
 ):
     return fila_atendimento_service.reordenar(db, payload.ordem)
+
+
+GESTAO_FILA = (PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL)
+
+
+@router.get("/config", response_model=ConfigFilaAtendimentoResponse)
+def obter_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*GESTAO_FILA)),
+):
+    return fila_atendimento_service.get_config(db)
+
+
+@router.patch("/config", response_model=ConfigFilaAtendimentoResponse)
+def atualizar_config(
+    payload: ConfigFilaAtendimentoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*GESTAO_FILA)),
+):
+    config = fila_atendimento_service.get_config(db)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(config, field, value)
+    db.commit()
+    db.refresh(config)
+    return config

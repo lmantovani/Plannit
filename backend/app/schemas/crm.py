@@ -305,6 +305,19 @@ class ReordenarFilaRequest(BaseModel):
     ordem: List[int]
 
 
+class ConfigFilaAtendimentoResponse(BaseModel):
+    minutos_alerta: int
+    minutos_escalonamento: int
+
+    class Config:
+        from_attributes = True
+
+
+class ConfigFilaAtendimentoUpdate(BaseModel):
+    minutos_alerta: Optional[int] = Field(None, ge=1)
+    minutos_escalonamento: Optional[int] = Field(None, ge=1)
+
+
 # === ATRIBUIÇÃO DE LEAD ===
 
 class DevolverLeadRequest(BaseModel):
