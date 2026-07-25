@@ -122,12 +122,15 @@ class Cliente(Base):
     cadastro_aprovado_por = Column(Integer, ForeignKey("users.id"), nullable=True)
     cadastro_aprovado_em = Column(DateTime(timezone=True), nullable=True)
 
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=True)
+
     is_active = Column(Boolean, default=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     projetos = relationship("Projeto", back_populates="cliente")
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
 
     def __repr__(self):
         return f"<Cliente {self.nome}>"

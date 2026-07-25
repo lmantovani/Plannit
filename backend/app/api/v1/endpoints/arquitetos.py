@@ -6,7 +6,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor, Cliente
 from app.models.notificacao import Notificacao, TipoNotificacao
 from app.models.projeto import Projeto
 from app.schemas.crm import (
@@ -17,6 +17,7 @@ from app.schemas.crm import (
     InteracaoArquitetoCreate, InteracaoArquitetoResponse,
     EspecificadoresKpiResponse,
     MetaVisitasUpsert, MetaVisitasResponse, MinhaMetaResponse,
+    ClienteResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -535,3 +536,20 @@ def registrar_interacao_arquiteto(
     db.commit()
     db.refresh(interacao)
     return interacao
+
+
+# === CLIENTES VINCULADOS ===
+
+@router.get("/{arquiteto_id}/clientes", response_model=List[ClienteResponse])
+def listar_clientes_do_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(Cliente)
+        .filter(Cliente.arquiteto_id == arquiteto_id)
+        .order_by(Cliente.nome)
+        .all()
+    )

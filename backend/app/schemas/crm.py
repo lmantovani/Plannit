@@ -86,6 +86,7 @@ class ClienteCreate(BaseModel):
     estado: Optional[str] = None
     endereco: Optional[str] = None
     tipo: TipoCliente = TipoCliente.PESSOA_FISICA
+    arquiteto_id: Optional[int] = None
 
 
 class ClienteResponse(BaseModel):
@@ -97,6 +98,7 @@ class ClienteResponse(BaseModel):
     cidade: Optional[str]
     tipo: TipoCliente
     cadastro_aprovado: bool
+    arquiteto_id: Optional[int]
     criado_em: datetime
 
     class Config:
