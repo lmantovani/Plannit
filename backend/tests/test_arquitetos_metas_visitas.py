@@ -72,10 +72,10 @@ def test_minha_meta_com_progresso(auth_client, create_client_com_user, db_sessio
 
     agora = datetime.utcnow()
     db_session.add_all([
-        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita", resumo="V1", data=agora),
-        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita", resumo="V2", data=agora),
+        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita_escritorio", resumo="V1", data=agora),
+        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita_escritorio", resumo="V2", data=agora),
         InteracaoArquiteto(
-            arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita", resumo="Mes passado",
+            arquiteto_id=arquiteto.id, responsavel_id=vendedor.id, tipo="visita_escritorio", resumo="Mes passado",
             data=agora - timedelta(days=60),
         ),
     ])

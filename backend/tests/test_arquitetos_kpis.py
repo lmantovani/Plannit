@@ -53,11 +53,11 @@ def test_kpis_atendimentos_e_visitas_mes(auth_client, db_session, diretoria_user
 
     agora = datetime.utcnow()
     db_session.add_all([
-        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita", resumo="V1", data=agora),
-        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita", resumo="V2", data=agora),
+        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita_escritorio", resumo="V1", data=agora),
+        InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita_escritorio", resumo="V2", data=agora),
         InteracaoArquiteto(arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="ligacao", resumo="L1", data=agora),
         InteracaoArquiteto(
-            arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita", resumo="Mes passado",
+            arquiteto_id=arquiteto.id, responsavel_id=diretoria_user.id, tipo="visita_escritorio", resumo="Mes passado",
             data=agora - timedelta(days=60),
         ),
     ])

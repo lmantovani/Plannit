@@ -91,12 +91,12 @@ def kpis_especificadores(
 
     atendimentos_mes = (
         db.query(InteracaoArquiteto)
-        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita")
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita_escritorio")
         .count()
     )
     visitas_escritorio_mes = (
         db.query(InteracaoArquiteto)
-        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita")
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita_escritorio")
         .count()
     )
 
@@ -180,7 +180,7 @@ def minha_meta_visitas(
         db.query(InteracaoArquiteto)
         .filter(
             InteracaoArquiteto.responsavel_id == current_user.id,
-            InteracaoArquiteto.tipo == "visita",
+            InteracaoArquiteto.tipo == "visita_escritorio",
             InteracaoArquiteto.data >= inicio_mes,
         )
         .count()
