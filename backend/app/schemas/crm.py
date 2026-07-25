@@ -223,6 +223,7 @@ class InteracaoArquitetoResponse(BaseModel):
     id: int
     arquiteto_id: int
     responsavel_id: int
+    responsavel_nome: Optional[str]
     tipo: str
     resumo: str
     lead_id: Optional[int]

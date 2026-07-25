@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SAEnum, Text, ForeignKey, Date, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from typing import Optional
 import enum
 from app.core.database import Base
 
@@ -236,7 +237,8 @@ class InteracaoArquiteto(Base):
     arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
     responsavel_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    tipo = Column(String(50), nullable=False)  # ligacao, whatsapp, email, visita, reuniao
+    # ligacao, whatsapp, email, visita_escritorio, visita_loja, reuniao, evento, viagem, envio_brinde
+    tipo = Column(String(50), nullable=False)
     resumo = Column(Text, nullable=False)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)  # rastreabilidade: interação → lead gerado
     data = Column(DateTime(timezone=True), server_default=func.now())
@@ -244,6 +246,10 @@ class InteracaoArquiteto(Base):
     arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
     responsavel = relationship("User", foreign_keys=[responsavel_id])
     lead = relationship("Lead", foreign_keys=[lead_id])
+
+    @property
+    def responsavel_nome(self) -> Optional[str]:
+        return self.responsavel.nome if self.responsavel else None
 
     def __repr__(self):
         return f"<InteracaoArquiteto {self.tipo} [arquiteto={self.arquiteto_id}]>"

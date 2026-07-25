@@ -59,3 +59,16 @@ def test_listar_interacoes_ordem_mais_recente_primeiro(auth_client):
     resp = auth_client.get(f"/api/v1/arquitetos/{arquiteto['id']}/interacoes")
     resumos = [i["resumo"] for i in resp.json()]
     assert resumos == ["Segunda", "Primeira"]
+
+
+def test_interacao_traz_responsavel_nome(auth_client):
+    arquiteto = _criar_arquiteto(auth_client)
+    resp = auth_client.post(
+        f"/api/v1/arquitetos/{arquiteto['id']}/interacoes",
+        json={"tipo": "visita_loja", "resumo": "Especificador veio conhecer o showroom"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["responsavel_nome"] is not None
+
+    listagem = auth_client.get(f"/api/v1/arquitetos/{arquiteto['id']}/interacoes").json()
+    assert listagem[0]["responsavel_nome"] == resp.json()["responsavel_nome"]

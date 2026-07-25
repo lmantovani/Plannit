@@ -513,6 +513,7 @@ def listar_interacoes_arquiteto(
     _get_arquiteto_ou_404(arquiteto_id, db)
     return (
         db.query(InteracaoArquiteto)
+        .options(joinedload(InteracaoArquiteto.responsavel))
         .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
         .order_by(InteracaoArquiteto.data.desc(), InteracaoArquiteto.id.desc())
         .all()
