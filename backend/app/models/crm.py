@@ -139,6 +139,7 @@ class Arquiteto(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(200), nullable=False)
     escritorio = Column(String(200), nullable=True)
+    endereco_escritorio = Column(String(300), nullable=True)
     telefone = Column(String(20), nullable=True)
     email = Column(String(200), nullable=True, unique=True)
     nivel_parceria = Column(String(50), default="parceiro")  # parceiro, premium, vip

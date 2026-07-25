@@ -71,3 +71,21 @@ def test_criar_arquiteto_tipo_outro(auth_client):
     resp = auth_client.post("/api/v1/arquitetos/", json={"nome": "Caso Especial", "tipo": "outro"})
     assert resp.status_code == 201
     assert resp.json()["tipo"] == "outro"
+
+
+def test_criar_arquiteto_com_endereco_escritorio(auth_client):
+    resp = auth_client.post("/api/v1/arquitetos/", json={
+        "nome": "Escritorio Central", "tipo": "arquiteto",
+        "endereco_escritorio": "Av. Paulista, 1000",
+    })
+    assert resp.status_code == 201
+    assert resp.json()["endereco_escritorio"] == "Av. Paulista, 1000"
+
+
+def test_patch_endereco_escritorio(auth_client):
+    criado = auth_client.post("/api/v1/arquitetos/", json={"nome": "Teste Endereco", "tipo": "arquiteto"}).json()
+    assert criado["endereco_escritorio"] is None
+
+    resp = auth_client.patch(f"/api/v1/arquitetos/{criado['id']}", json={"endereco_escritorio": "Rua Nova, 50"})
+    assert resp.status_code == 200
+    assert resp.json()["endereco_escritorio"] == "Rua Nova, 50"
