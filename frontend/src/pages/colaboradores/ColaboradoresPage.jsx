@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Settings } from 'lucide-react'
+import { Plus, Search, Settings, Lock } from 'lucide-react'
 import { colaboradoresApi, departamentosApi, cargosApi } from '../../lib/api'
 import { Modal, EmptyState, LoadingPage } from '../../components/ui'
 import { REGIME_CONFIG, STATUS_COLOR_CLASSES, validarCPF } from '../../lib/constants'
+import { useAuthStore, podeGerenciarColaboradores } from '../../store'
 import ColaboradorDrawer from './ColaboradorDrawer'
 import clsx from 'clsx'
 
@@ -14,6 +15,8 @@ function extractErrorMessage(err, fallback) {
 }
 
 export default function ColaboradoresPage() {
+  const { user } = useAuthStore()
+  const podeGerenciar = podeGerenciarColaboradores(user?.perfil)
   const [colaboradores, setColaboradores] = useState([])
   const [todosColaboradoresAtivos, setTodosColaboradoresAtivos] = useState([])
   const [departamentos, setDepartamentos] = useState([])
@@ -47,9 +50,13 @@ export default function ColaboradoresPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { carregarDepartamentosECargos() }, [])
+  useEffect(() => {
+    if (!podeGerenciar) return
+    carregarDepartamentosECargos()
+  }, [podeGerenciar])
 
   useEffect(() => {
+    if (!podeGerenciar) return
     let ignore = false
     const fetchData = async () => {
       setLoading(true)
@@ -70,7 +77,19 @@ export default function ColaboradoresPage() {
     }
     fetchData()
     return () => { ignore = true }
-  }, [busca, filtroDepartamento, filtroCargo, filtroRegime, filtroStatus])
+  }, [podeGerenciar, busca, filtroDepartamento, filtroCargo, filtroRegime, filtroStatus])
+
+  if (!podeGerenciar) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          icon={Lock}
+          title="Acesso restrito"
+          description="Esta área é exclusiva para RH e Diretoria."
+        />
+      </div>
+    )
+  }
 
   if (loading && colaboradores.length === 0) return <LoadingPage />
 
@@ -217,17 +236,26 @@ function DepartamentosCargosModal({ open, onClose, departamentos, cargos, onChan
   }
 
   const toggleDeptAtivo = async (dept) => {
-    await departamentosApi.update(dept.id, { ativo: !dept.ativo })
-    onChanged()
+    try {
+      await departamentosApi.update(dept.id, { ativo: !dept.ativo })
+      onChanged()
+    } catch (err) { setError(extractErrorMessage(err, 'Erro ao atualizar departamento')) }
   }
 
   const toggleCargoAtivo = async (cargo) => {
-    await cargosApi.update(cargo.id, { ativo: !cargo.ativo })
-    onChanged()
+    try {
+      await cargosApi.update(cargo.id, { ativo: !cargo.ativo })
+      onChanged()
+    } catch (err) { setError(extractErrorMessage(err, 'Erro ao atualizar cargo')) }
+  }
+
+  const handleClose = () => {
+    setError('')
+    onClose()
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Departamentos & Cargos" size="lg">
+    <Modal open={open} onClose={handleClose} title="Departamentos & Cargos" size="lg">
       <div className="grid grid-cols-2 gap-6">
         <div>
           <h3 className="font-medium text-stone-700 text-sm mb-2">Departamentos</h3>
@@ -296,6 +324,16 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
     ? cargos.filter(c => String(c.departamento_id) === String(form.departamento_id))
     : cargos
 
+  const resetForm = () => {
+    setForm(vazio)
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validarCPF(form.cpf)) {
@@ -314,10 +352,11 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
         pj_valor_mensal: form.pj_valor_mensal ? Number(form.pj_valor_mensal) : null,
         data_vigencia_salario: form.data_vigencia_salario || null,
         data_nascimento: form.data_nascimento || null,
+        modalidade: form.modalidade || null,
       }
       await colaboradoresApi.create(payload)
       onSaved()
-      setForm(vazio)
+      resetForm()
     } catch (err) {
       setError(extractErrorMessage(err, 'Erro ao salvar colaborador'))
     } finally {
@@ -326,7 +365,7 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Novo Colaborador" size="xl">
+    <Modal open={open} onClose={handleClose} title="Novo Colaborador" size="xl">
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Identificação</p>
@@ -462,7 +501,7 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2 sticky bottom-0 bg-white">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Cadastrar Colaborador'}
           </button>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS } from '../../lib/constants'
-import { Modal, Spinner } from '../../components/ui'
+import { Modal, Spinner, ConfirmDialog } from '../../components/ui'
 import { colaboradoresApi, cargosApi } from '../../lib/api'
 
 function extractErrorMessage(err, fallback) {
@@ -133,12 +133,18 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const handleClose = () => {
+    setForm(buildEditForm(colaborador))
+    setError('')
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      await colaboradoresApi.update(colaborador.id, form)
+      await colaboradoresApi.update(colaborador.id, { ...form, modalidade: form.modalidade || null })
       onSaved()
     } catch (err) {
       setError(extractErrorMessage(err, 'Erro ao salvar colaborador'))
@@ -148,7 +154,7 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Colaborador" size="lg">
+    <Modal open={open} onClose={handleClose} title="Editar Colaborador" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <input className="input" placeholder="Telefone" value={form.telefone} onChange={e => set('telefone', e.target.value)} />
@@ -172,7 +178,7 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
@@ -183,12 +189,24 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
 }
 
 // === Modal Desligar ===
+const desligarFormVazio = { data_desligamento: '', tipo_desligamento: '', motivo_desligamento: '', entrevista_saida: '' }
+
 export function DesligarModal({ open, onClose, colaborador, onSaved }) {
-  const [form, setForm] = useState({ data_desligamento: '', tipo_desligamento: '', motivo_desligamento: '', entrevista_saida: '' })
+  const [form, setForm] = useState(desligarFormVazio)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const resetForm = () => {
+    setForm(desligarFormVazio)
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -196,6 +214,7 @@ export function DesligarModal({ open, onClose, colaborador, onSaved }) {
     setError('')
     try {
       await colaboradoresApi.desligar(colaborador.id, form)
+      resetForm()
       onSaved()
     } catch (err) {
       setError(extractErrorMessage(err, 'Erro ao desligar colaborador'))
@@ -205,7 +224,7 @@ export function DesligarModal({ open, onClose, colaborador, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Desligar ${colaborador.nome}`} size="md">
+    <Modal open={open} onClose={handleClose} title={`Desligar ${colaborador.nome}`} size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">Data de desligamento *</label>
@@ -230,7 +249,7 @@ export function DesligarModal({ open, onClose, colaborador, onSaved }) {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-danger" disabled={loading}>
             {loading ? 'Desligando...' : 'Confirmar desligamento'}
           </button>
@@ -357,7 +376,7 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Lançar'}
           </button>
@@ -501,6 +520,8 @@ export function DocumentosTab({ colaborador }) {
   const [documentos, setDocumentos] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdicionar, setShowAdicionar] = useState(false)
+  const [documentoParaRemover, setDocumentoParaRemover] = useState(null)
+  const [error, setError] = useState('')
 
   const carregar = () => {
     colaboradoresApi.listarDocumentos(colaborador.id)
@@ -512,9 +533,15 @@ export function DocumentosTab({ colaborador }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { carregar() }, [colaborador.id])
 
-  const remover = async (documentoId) => {
-    await colaboradoresApi.removerDocumento(colaborador.id, documentoId)
-    carregar()
+  const confirmarRemocao = async () => {
+    try {
+      await colaboradoresApi.removerDocumento(colaborador.id, documentoParaRemover.id)
+      setDocumentoParaRemover(null)
+      carregar()
+    } catch (err) {
+      setDocumentoParaRemover(null)
+      setError(extractErrorMessage(err, 'Erro ao remover documento'))
+    }
   }
 
   return (
@@ -522,6 +549,8 @@ export function DocumentosTab({ colaborador }) {
       <div className="flex justify-end">
         <button className="btn-secondary btn-sm" onClick={() => setShowAdicionar(true)}>Adicionar documento</button>
       </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {loading ? <Spinner size={18} /> : documentos.length === 0 ? (
         <p className="text-sm text-stone-400">Nenhum documento cadastrado.</p>
@@ -534,7 +563,7 @@ export function DocumentosTab({ colaborador }) {
                 <a href={d.url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Abrir documento</a>
                 {d.data_vencimento && <p className="text-xs text-stone-400">Vence em {formatDate(d.data_vencimento)}</p>}
               </div>
-              <button className="text-xs text-red-600" onClick={() => remover(d.id)}>Remover</button>
+              <button className="text-xs text-red-600" onClick={() => setDocumentoParaRemover(d)}>Remover</button>
             </li>
           ))}
         </ul>
@@ -545,6 +574,16 @@ export function DocumentosTab({ colaborador }) {
         onClose={() => setShowAdicionar(false)}
         colaborador={colaborador}
         onSaved={() => { setShowAdicionar(false); carregar() }}
+      />
+
+      <ConfirmDialog
+        open={!!documentoParaRemover}
+        onClose={() => setDocumentoParaRemover(null)}
+        onConfirm={confirmarRemocao}
+        title="Remover documento"
+        message={`Remover o documento "${TIPO_DOCUMENTO_COLABORADOR_LABELS[documentoParaRemover?.tipo] || documentoParaRemover?.tipo}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        danger
       />
     </div>
   )
