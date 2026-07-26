@@ -172,3 +172,15 @@ class HistoricoCargoColaborador(Base):
     cargo_anterior = relationship("Cargo", foreign_keys=[cargo_anterior_id])
     cargo_novo = relationship("Cargo", foreign_keys=[cargo_novo_id])
     aprovado_por = relationship("User", foreign_keys=[aprovado_por_id])
+
+    @property
+    def cargo_anterior_nome(self):
+        return self.cargo_anterior.nome if self.cargo_anterior else None
+
+    @property
+    def cargo_novo_nome(self):
+        return self.cargo_novo.nome if self.cargo_novo else None
+
+    @property
+    def aprovado_por_nome(self):
+        return self.aprovado_por.nome if self.aprovado_por else None

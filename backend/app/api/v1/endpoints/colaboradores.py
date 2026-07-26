@@ -13,6 +13,7 @@ from app.schemas.colaborador import (
     CargoCreate, CargoUpdate, CargoResponse,
     ColaboradorCreate, ColaboradorUpdate, ColaboradorResponse,
     HistoricoSalarialCreate, HistoricoSalarialResponse,
+    HistoricoCargoCreate, HistoricoCargoResponse,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -238,6 +239,47 @@ def listar_historico_salarial(
         db.query(HistoricoSalarialColaborador)
         .filter(HistoricoSalarialColaborador.colaborador_id == colaborador_id)
         .order_by(HistoricoSalarialColaborador.data_vigencia.desc(), HistoricoSalarialColaborador.id.desc())
+        .all()
+    )
+
+
+@router.post("/{colaborador_id}/historico-cargo", response_model=HistoricoCargoResponse, status_code=201)
+def lancar_historico_cargo(
+    colaborador_id: int,
+    payload: HistoricoCargoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    colaborador = _get_colaborador_ou_404(colaborador_id, db)
+    if not db.query(Cargo).filter(Cargo.id == payload.cargo_novo_id).first():
+        raise HTTPException(400, "Cargo inválido")
+
+    registro = HistoricoCargoColaborador(
+        colaborador_id=colaborador_id,
+        cargo_anterior_id=colaborador.cargo_id,
+        aprovado_por_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(registro)
+
+    colaborador.cargo_id = payload.cargo_novo_id
+
+    db.commit()
+    db.refresh(registro)
+    return registro
+
+
+@router.get("/{colaborador_id}/historico-cargo", response_model=List[HistoricoCargoResponse])
+def listar_historico_cargo(
+    colaborador_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    return (
+        db.query(HistoricoCargoColaborador)
+        .filter(HistoricoCargoColaborador.colaborador_id == colaborador_id)
+        .order_by(HistoricoCargoColaborador.data.desc(), HistoricoCargoColaborador.id.desc())
         .all()
     )
 

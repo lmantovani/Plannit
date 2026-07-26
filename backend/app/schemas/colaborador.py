@@ -261,3 +261,28 @@ class HistoricoSalarialResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# === HISTÓRICO DE CARGO ===
+
+class HistoricoCargoCreate(BaseModel):
+    cargo_novo_id: int
+    data: date
+    justificativa: Optional[str] = None
+
+
+class HistoricoCargoResponse(BaseModel):
+    id: int
+    colaborador_id: int
+    cargo_anterior_id: Optional[int]
+    cargo_anterior_nome: Optional[str] = None
+    cargo_novo_id: int
+    cargo_novo_nome: Optional[str] = None
+    data: date
+    aprovado_por_id: int
+    aprovado_por_nome: Optional[str] = None
+    justificativa: Optional[str]
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
