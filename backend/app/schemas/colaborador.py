@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime
 import re
+import enum
 from app.models.colaborador import RegimeContratacao, ModalidadeTrabalho
 
 
@@ -286,3 +287,18 @@ class HistoricoCargoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# === DESLIGAMENTO ===
+
+class TipoDesligamento(str, enum.Enum):
+    PEDIDO_DEMISSAO = "pedido_demissao"
+    DISPENSA_SEM_JUSTA_CAUSA = "dispensa_sem_justa_causa"
+    DISPENSA_COM_JUSTA_CAUSA = "dispensa_com_justa_causa"
+
+
+class DesligamentoRequest(BaseModel):
+    data_desligamento: date
+    tipo_desligamento: TipoDesligamento
+    motivo_desligamento: str
+    entrevista_saida: Optional[str] = None

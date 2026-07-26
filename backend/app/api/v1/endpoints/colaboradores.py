@@ -14,6 +14,7 @@ from app.schemas.colaborador import (
     ColaboradorCreate, ColaboradorUpdate, ColaboradorResponse,
     HistoricoSalarialCreate, HistoricoSalarialResponse,
     HistoricoCargoCreate, HistoricoCargoResponse,
+    DesligamentoRequest,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -282,6 +283,28 @@ def listar_historico_cargo(
         .order_by(HistoricoCargoColaborador.data.desc(), HistoricoCargoColaborador.id.desc())
         .all()
     )
+
+
+@router.post("/{colaborador_id}/desligar", response_model=ColaboradorResponse)
+def desligar_colaborador(
+    colaborador_id: int,
+    payload: DesligamentoRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    colaborador = _get_colaborador_ou_404(colaborador_id, db)
+    if not colaborador.is_active:
+        raise HTTPException(400, "Colaborador já está desligado")
+
+    colaborador.is_active = False
+    colaborador.data_desligamento = payload.data_desligamento
+    colaborador.tipo_desligamento = payload.tipo_desligamento
+    colaborador.motivo_desligamento = payload.motivo_desligamento
+    colaborador.entrevista_saida = payload.entrevista_saida
+
+    db.commit()
+    db.refresh(colaborador)
+    return colaborador
 
 
 def _get_colaborador_ou_404(colaborador_id: int, db: Session) -> Colaborador:
