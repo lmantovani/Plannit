@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import date, datetime
 import re
@@ -94,12 +94,12 @@ class ColaboradorCreate(BaseModel):
 
     pj_cnpj: Optional[str] = None
     pj_contrato_url: Optional[str] = None
-    pj_valor_mensal: Optional[float] = None
+    pj_valor_mensal: Optional[float] = Field(default=None, ge=0)
     pj_vigencia_inicio: Optional[date] = None
     pj_vigencia_fim: Optional[date] = None
 
-    salario_clt: Optional[float] = None
-    remuneracao_complementar: Optional[float] = None
+    salario_clt: Optional[float] = Field(default=None, ge=0)
+    remuneracao_complementar: Optional[float] = Field(default=None, ge=0)
     data_vigencia_salario: Optional[date] = None
 
     carga_horaria: Optional[str] = None
@@ -142,7 +142,6 @@ class ColaboradorUpdate(BaseModel):
     endereco_estado: Optional[str] = None
     endereco_cep: Optional[str] = None
 
-    departamento_id: Optional[int] = None
     tipo_contrato: Optional[str] = None
 
     pj_cnpj: Optional[str] = None
@@ -243,8 +242,8 @@ class ColaboradorResponse(BaseModel):
 # === HISTÓRICO SALARIAL ===
 
 class HistoricoSalarialCreate(BaseModel):
-    salario_clt: float
-    remuneracao_complementar: Optional[float] = None
+    salario_clt: float = Field(ge=0)
+    remuneracao_complementar: Optional[float] = Field(default=None, ge=0)
     data_vigencia: date
     motivo: str
 

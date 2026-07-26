@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date as date_type
 from app.core.database import get_db
 from app.core.security import require_roles
 from app.models.user import User, PerfilUsuario
 from app.models.colaborador import (
     Departamento, Cargo, Colaborador, HistoricoSalarialColaborador, HistoricoCargoColaborador,
-    DocumentoColaborador,
+    DocumentoColaborador, RegimeContratacao,
 )
 from app.schemas.colaborador import (
     DepartamentoCreate, DepartamentoUpdate, DepartamentoResponse,
@@ -119,7 +118,7 @@ def atualizar_cargo(
 def listar_colaboradores(
     departamento_id: Optional[int] = None,
     cargo_id: Optional[int] = None,
-    regime: Optional[str] = None,
+    regime: Optional[RegimeContratacao] = None,
     is_active: Optional[bool] = None,
     busca: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -147,17 +146,21 @@ def criar_colaborador(
 ):
     if db.query(Colaborador).filter(Colaborador.cpf == payload.cpf).first():
         raise HTTPException(400, "CPF já cadastrado para outro colaborador")
-    if not db.query(Cargo).filter(Cargo.id == payload.cargo_id).first():
+    cargo = db.query(Cargo).filter(Cargo.id == payload.cargo_id).first()
+    if not cargo:
         raise HTTPException(400, "Cargo inválido")
     if not db.query(Departamento).filter(Departamento.id == payload.departamento_id).first():
         raise HTTPException(400, "Departamento inválido")
+    if cargo.departamento_id != payload.departamento_id:
+        raise HTTPException(400, "O departamento informado não corresponde ao departamento do cargo selecionado")
     if payload.gestor_id and not db.query(Colaborador).filter(Colaborador.id == payload.gestor_id).first():
         raise HTTPException(400, "Gestor inválido")
+    if payload.user_id and not db.query(User).filter(User.id == payload.user_id).first():
+        raise HTTPException(400, "Usuário inválido")
 
     colaborador = Colaborador(**payload.model_dump())
     db.add(colaborador)
-    db.commit()
-    db.refresh(colaborador)
+    db.flush()  # gera o id sem encerrar a transação — histórico entra no mesmo commit
 
     if colaborador.salario_clt is not None:
         db.add(HistoricoSalarialColaborador(
@@ -199,7 +202,20 @@ def atualizar_colaborador(
     current_user: User = Depends(require_roles(*_ROLES_MODULO)),
 ):
     colaborador = _get_colaborador_ou_404(colaborador_id, db)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    dados = payload.model_dump(exclude_unset=True)
+
+    gestor_id = dados.get("gestor_id")
+    if gestor_id is not None:
+        if gestor_id == colaborador_id:
+            raise HTTPException(400, "Colaborador não pode ser gestor de si mesmo")
+        if not db.query(Colaborador).filter(Colaborador.id == gestor_id).first():
+            raise HTTPException(400, "Gestor inválido")
+
+    user_id = dados.get("user_id")
+    if user_id is not None and not db.query(User).filter(User.id == user_id).first():
+        raise HTTPException(400, "Usuário inválido")
+
+    for field, value in dados.items():
         setattr(colaborador, field, value)
     db.commit()
     db.refresh(colaborador)
@@ -222,9 +238,18 @@ def lancar_historico_salarial(
     )
     db.add(registro)
 
-    colaborador.salario_clt = payload.salario_clt
-    colaborador.remuneracao_complementar = payload.remuneracao_complementar
-    colaborador.data_vigencia_salario = payload.data_vigencia
+    # Só atualiza o valor atual denormalizado se este lançamento for o mais recente —
+    # um lançamento retroativo não pode sobrescrever um salário mais novo já vigente.
+    e_mais_recente = (
+        colaborador.data_vigencia_salario is None
+        or payload.data_vigencia >= colaborador.data_vigencia_salario
+    )
+    if e_mais_recente:
+        colaborador.salario_clt = payload.salario_clt
+        # Carry-forward: complementar omitida no payload não zera o valor atual.
+        if payload.remuneracao_complementar is not None:
+            colaborador.remuneracao_complementar = payload.remuneracao_complementar
+        colaborador.data_vigencia_salario = payload.data_vigencia
 
     db.commit()
     db.refresh(registro)
@@ -254,8 +279,16 @@ def lancar_historico_cargo(
     current_user: User = Depends(require_roles(*_ROLES_MODULO)),
 ):
     colaborador = _get_colaborador_ou_404(colaborador_id, db)
-    if not db.query(Cargo).filter(Cargo.id == payload.cargo_novo_id).first():
+    cargo_novo = db.query(Cargo).filter(Cargo.id == payload.cargo_novo_id).first()
+    if not cargo_novo:
         raise HTTPException(400, "Cargo inválido")
+
+    ultimo = (
+        db.query(HistoricoCargoColaborador)
+        .filter(HistoricoCargoColaborador.colaborador_id == colaborador_id)
+        .order_by(HistoricoCargoColaborador.data.desc(), HistoricoCargoColaborador.id.desc())
+        .first()
+    )
 
     registro = HistoricoCargoColaborador(
         colaborador_id=colaborador_id,
@@ -265,7 +298,11 @@ def lancar_historico_cargo(
     )
     db.add(registro)
 
-    colaborador.cargo_id = payload.cargo_novo_id
+    # Só atualiza cargo/departamento atuais se este lançamento for o mais recente.
+    # Departamento é sempre derivado do cargo — nunca informado separadamente.
+    if ultimo is None or payload.data >= ultimo.data:
+        colaborador.cargo_id = payload.cargo_novo_id
+        colaborador.departamento_id = cargo_novo.departamento_id
 
     db.commit()
     db.refresh(registro)
@@ -343,7 +380,7 @@ def listar_documentos(
     return (
         db.query(DocumentoColaborador)
         .filter(DocumentoColaborador.colaborador_id == colaborador_id)
-        .order_by(DocumentoColaborador.criado_em.desc())
+        .order_by(DocumentoColaborador.criado_em.desc(), DocumentoColaborador.id.desc())
         .all()
     )
 

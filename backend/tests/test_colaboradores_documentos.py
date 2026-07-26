@@ -42,3 +42,25 @@ def test_remover_documento(auth_client):
 
     listagem = auth_client.get(f"/api/v1/colaboradores/{criado['id']}/documentos").json()
     assert listagem == []
+
+
+def test_listar_documentos_ordena_mais_recente_primeiro(auth_client):
+    """criado_em tem granularidade de 1s — sem desempate por id, inserções no
+    mesmo segundo voltavam na ordem de inserção (mais antigo primeiro)."""
+    dep, cargo = _criar_departamento_e_cargo(auth_client)
+    criado = auth_client.post("/api/v1/colaboradores/", json=_payload_base(cargo["id"], dep["id"])).json()
+
+    ids = []
+    for tipo, url in [
+        ("ctps", "https://exemplo.com/1.pdf"),
+        ("aso_admissional", "https://exemplo.com/2.pdf"),
+        ("certidao", "https://exemplo.com/3.pdf"),
+    ]:
+        doc = auth_client.post(
+            f"/api/v1/colaboradores/{criado['id']}/documentos", json={"tipo": tipo, "url": url}
+        ).json()
+        ids.append(doc["id"])
+
+    listagem = auth_client.get(f"/api/v1/colaboradores/{criado['id']}/documentos").json()
+    assert [d["id"] for d in listagem] == sorted(ids, reverse=True)
+    assert listagem[0]["url"] == "https://exemplo.com/3.pdf"
