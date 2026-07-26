@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { colaboradoresApi } from '../../lib/api'
 import { Tabs, Spinner } from '../../components/ui'
-import { PerfilTab, RemuneracaoTab } from './ColaboradorTabs'
+import { PerfilTab, RemuneracaoTab, CargoProgressaoTab } from './ColaboradorTabs'
 
 export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated }) {
   const [colaborador, setColaborador] = useState(null)
@@ -65,6 +65,5 @@ export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated })
   )
 }
 
-// Placeholders até as Tasks 4-5 substituírem por imports reais de ColaboradorTabs.jsx.
-function CargoProgressaoTab() { return null }
+// Placeholder até a Task 5 substituir por import real de ColaboradorTabs.jsx.
 function DocumentosTab() { return null }

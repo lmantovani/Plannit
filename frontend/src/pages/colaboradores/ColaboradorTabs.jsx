@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS } from '../../lib/constants'
 import { Modal, Spinner } from '../../components/ui'
-import { colaboradoresApi } from '../../lib/api'
+import { colaboradoresApi, cargosApi } from '../../lib/api'
 
 function extractErrorMessage(err, fallback) {
   const detail = err.response?.data?.detail
@@ -360,6 +360,135 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Lançar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// === Aba Cargo & Progressão ===
+export function CargoProgressaoTab({ colaborador, onUpdated }) {
+  const [historico, setHistorico] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showPromover, setShowPromover] = useState(false)
+
+  const carregar = () => {
+    colaboradoresApi.historicoCargo(colaborador.id)
+      .then(r => setHistorico(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl bg-stone-50 p-4">
+        <p className="text-xs text-stone-400">Cargo atual</p>
+        <p className="text-lg font-semibold text-stone-800">{colaborador.cargo_nome}</p>
+        <p className="text-xs text-stone-400 mt-1">{colaborador.departamento_nome}</p>
+      </div>
+
+      <div className="flex justify-end">
+        <button className="btn-secondary btn-sm" onClick={() => setShowPromover(true)}>Registrar promoção</button>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Histórico</h3>
+        {loading ? <Spinner size={18} /> : historico.length === 0 ? (
+          <p className="text-sm text-stone-400">Nenhum registro.</p>
+        ) : (
+          <ul className="space-y-2">
+            {historico.map(h => (
+              <li key={h.id} className="text-sm border-l-2 border-stone-200 pl-3">
+                <p className="text-stone-700 font-medium">
+                  {h.cargo_anterior_nome ? `${h.cargo_anterior_nome} → ${h.cargo_novo_nome}` : h.cargo_novo_nome}
+                </p>
+                <p className="text-xs text-stone-400">{formatDate(h.data)} — {h.justificativa || 'Sem justificativa'} — {h.aprovado_por_nome}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <PromoverModal
+        open={showPromover}
+        onClose={() => setShowPromover(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowPromover(false); carregar(); onUpdated?.() }}
+      />
+    </div>
+  )
+}
+
+function PromoverModal({ open, onClose, colaborador, onSaved }) {
+  const [cargos, setCargos] = useState([])
+  const [form, setForm] = useState({ cargo_novo_id: '', data: '', justificativa: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open) cargosApi.list().then(r => setCargos(r.data.filter(c => c.ativo))).catch(console.error)
+  }, [open])
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const resetForm = () => {
+    setForm({ cargo_novo_id: '', data: '', justificativa: '' })
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.promover(colaborador.id, {
+        cargo_novo_id: Number(form.cargo_novo_id),
+        data: form.data,
+        justificativa: form.justificativa || null,
+      })
+      resetForm()
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao registrar promoção'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Registrar promoção" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Novo cargo *</label>
+          <select className="input" required value={form.cargo_novo_id} onChange={e => set('cargo_novo_id', e.target.value)}>
+            <option value="" disabled>Selecione...</option>
+            {cargos.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.departamento_nome}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Data *</label>
+          <input type="date" className="input" required value={form.data} onChange={e => set('data', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Justificativa</label>
+          <textarea className="input" rows={3} value={form.justificativa} onChange={e => set('justificativa', e.target.value)} />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Registrar'}
           </button>
         </div>
       </form>
