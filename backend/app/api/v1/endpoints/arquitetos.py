@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
@@ -72,7 +72,7 @@ def kpis_especificadores(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     inicio_ano = agora.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -174,7 +174,7 @@ def minha_meta_visitas(
     meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == current_user.id).first()
     meta_valor = meta.meta_visitas_mes if meta else 0
 
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     visitas_realizadas = (
         db.query(InteracaoArquiteto)
