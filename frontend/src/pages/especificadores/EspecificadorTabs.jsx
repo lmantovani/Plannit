@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Plus, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import clsx from 'clsx'
 import { arquitetosApi, usersApi, leadsApi } from '../../lib/api'
 import {
   TIPO_ARQUITETO_LABELS, TIPO_INTERACAO_ARQUITETO_LABELS, timeAgo,
   STATUS_COLOR_CLASSES, SEGMENTO_CONFIG, FLAG_CONFIG,
 } from '../../lib/constants'
-import { EmptyState, Modal, Spinner, ScoreBar, AlertBanner, ConfirmDialog } from '../../components/ui'
+import { Modal, Spinner, ScoreBar, AlertBanner, ConfirmDialog } from '../../components/ui'
 import { useAuthStore, podeVerTudo } from '../../store'
 
 function extractErrorMessage(err, fallback) {
@@ -330,96 +330,198 @@ export function ScoreTab({ arquiteto }) {
   )
 }
 
-// === Aba Decisores ===
-export function DecisoresTab({ arquiteto }) {
-  const { user } = useAuthStore()
-  const [funcionarios, setFuncionarios] = useState([])
-  const [showModal, setShowModal] = useState(false)
+// === Aba Decisores & Concorrentes ===
+export function ContatosTabContent({ arquitetoId }) {
+  const [contatos, setContatos] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [editingDecisor, setEditingDecisor] = useState(undefined)
+  const [editingConcorrente, setEditingConcorrente] = useState(undefined)
+  const [removerDecisor, setRemoverDecisor] = useState(null)
+  const [removerConcorrente, setRemoverConcorrente] = useState(null)
+  const [removeError, setRemoveError] = useState('')
 
-  const podeGerenciar = podeGerenciarRelacionamento(user, arquiteto)
-
-  const carregar = () => {
-    arquitetosApi.listarFuncionarios(arquiteto.id).then(r => setFuncionarios(r.data)).catch(console.error)
-  }
-
-  useEffect(() => { carregar() }, [arquiteto.id])
-
-  const toggleDecisor = async (funcionario) => {
+  const fetchContatos = async () => {
+    setLoading(true)
+    setError('')
     try {
-      await arquitetosApi.atualizarFuncionario(arquiteto.id, funcionario.id, { decisor: !funcionario.decisor })
-      carregar()
-    } catch (e) { console.error(e) }
+      const [d, c] = await Promise.all([
+        arquitetosApi.listarDecisores(arquitetoId),
+        arquitetosApi.listarConcorrentes(arquitetoId),
+      ])
+      setContatos({ decisores: d.data, concorrentes: c.data })
+    } catch (e) {
+      console.error(e)
+      setError('Não foi possível carregar decisores e concorrentes.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const remover = async (funcionarioId) => {
-    try {
-      await arquitetosApi.removerFuncionario(arquiteto.id, funcionarioId)
-      carregar()
-    } catch (e) { console.error(e) }
-  }
+  useEffect(() => { fetchContatos() }, [arquitetoId])
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
+  if (error) return <p className="text-sm text-red-600">{error}</p>
+  if (!contatos) return null
+
+  const decisores = contatos.decisores
+  const concorrentes = contatos.concorrentes
 
   return (
-    <div className="space-y-4">
-      {podeGerenciar && (
-        <button onClick={() => setShowModal(true)} className="btn-secondary btn-sm gap-1.5">
-          <Plus size={13} /> Adicionar funcionário
-        </button>
+    <div className="space-y-6">
+      {removeError && (
+        <AlertBanner type="error" message={removeError} onDismiss={() => setRemoveError('')} />
       )}
 
-      {funcionarios.length === 0 ? (
-        <EmptyState title="Nenhum funcionário cadastrado" description="Adicione as pessoas do escritório e marque quem participa das decisões de compra." />
-      ) : (
-        <div className="space-y-3">
-          {funcionarios.map(f => (
-            <div key={f.id} className="card p-3 flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-stone-800 text-sm">{f.nome}</p>
-                  {f.funcao && <span className="text-xs text-stone-400">— {f.funcao}</span>}
-                </div>
-                <div className="text-xs text-stone-400 mt-0.5 space-x-2">
-                  {f.telefone && <span>{f.telefone}</span>}
-                  {f.email && <span>{f.email}</span>}
-                </div>
-                {f.observacoes && <p className="text-sm text-stone-500 mt-1">{f.observacoes}</p>}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <label className="flex items-center gap-1.5 text-xs text-stone-500">
-                  <input
-                    type="checkbox"
-                    checked={f.decisor}
-                    disabled={!podeGerenciar}
-                    onChange={() => toggleDecisor(f)}
-                  />
-                  Decisor
-                </label>
-                {podeGerenciar && (
-                  <button onClick={() => remover(f.id)} className="text-stone-300 hover:text-red-500 transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Decisores</p>
+          {editingDecisor === undefined && (
+            <button className="btn-secondary btn-sm" onClick={() => setEditingDecisor(null)}>Adicionar</button>
+          )}
         </div>
-      )}
 
-      <NovoFuncionarioModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        onSaved={() => { setShowModal(false); carregar() }}
-        arquitetoId={arquiteto.id}
+        {editingDecisor !== undefined && (
+          <DecisorForm
+            key={editingDecisor?.id ?? 'novo'}
+            initial={editingDecisor ? {
+              nome: editingDecisor.nome,
+              cargo: editingDecisor.cargo || '',
+              telefone: editingDecisor.telefone || '',
+              email: editingDecisor.email || '',
+              observacoes: editingDecisor.observacoes || '',
+              is_principal: editingDecisor.is_principal,
+            } : { nome: '', cargo: '', telefone: '', email: '', observacoes: '', is_principal: false }}
+            onCancel={() => setEditingDecisor(undefined)}
+            onSubmit={async (form) => {
+              if (editingDecisor?.id) {
+                await arquitetosApi.atualizarDecisor(arquitetoId, editingDecisor.id, form)
+              } else {
+                await arquitetosApi.criarDecisor(arquitetoId, form)
+              }
+              setEditingDecisor(undefined)
+              fetchContatos()
+            }}
+          />
+        )}
+
+        {decisores.length === 0 ? (
+          <p className="text-sm text-stone-300">Nenhum decisor cadastrado</p>
+        ) : (
+          <ul className="space-y-2">
+            {decisores.map(d => (
+              <li key={d.id} className="flex items-start justify-between gap-2 text-sm border-b border-stone-50 pb-2">
+                <div>
+                  <p className="font-medium text-stone-700">
+                    {d.nome} {d.is_principal && <span className="badge badge-ativo ml-1">Principal</span>}
+                  </p>
+                  <p className="text-xs text-stone-400">{d.cargo || '—'} · {d.telefone || d.email || 'sem contato'}</p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button className="text-xs text-stone-500 hover:text-stone-800" onClick={() => setEditingDecisor(d)}>Editar</button>
+                  <button className="text-xs text-red-500 hover:text-red-700" onClick={() => setRemoverDecisor(d)}>Remover</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Concorrentes</p>
+          {editingConcorrente === undefined && (
+            <button className="btn-secondary btn-sm" onClick={() => setEditingConcorrente(null)}>Adicionar</button>
+          )}
+        </div>
+
+        {editingConcorrente !== undefined && (
+          <ConcorrenteForm
+            key={editingConcorrente?.id ?? 'novo'}
+            initial={editingConcorrente ? {
+              nome_concorrente: editingConcorrente.nome_concorrente,
+              percentual_fechamento_estimado: editingConcorrente.percentual_fechamento_estimado,
+              observacoes: editingConcorrente.observacoes || '',
+            } : { nome_concorrente: '', percentual_fechamento_estimado: 0, observacoes: '' }}
+            onCancel={() => setEditingConcorrente(undefined)}
+            onSubmit={async (form) => {
+              const payload = { ...form, percentual_fechamento_estimado: Number(form.percentual_fechamento_estimado) }
+              if (editingConcorrente?.id) {
+                await arquitetosApi.atualizarConcorrente(arquitetoId, editingConcorrente.id, payload)
+              } else {
+                await arquitetosApi.criarConcorrente(arquitetoId, payload)
+              }
+              setEditingConcorrente(undefined)
+              fetchContatos()
+            }}
+          />
+        )}
+
+        {concorrentes.length === 0 ? (
+          <p className="text-sm text-stone-300">Nenhum concorrente cadastrado</p>
+        ) : (
+          <ul className="space-y-2">
+            {concorrentes.map(c => (
+              <li key={c.id} className="flex items-start justify-between gap-2 text-sm border-b border-stone-50 pb-2">
+                <div>
+                  <p className="font-medium text-stone-700">{c.nome_concorrente}</p>
+                  <p className="text-xs text-stone-400">{c.percentual_fechamento_estimado.toFixed(0)}% de fechamento estimado</p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button className="text-xs text-stone-500 hover:text-stone-800" onClick={() => setEditingConcorrente(c)}>Editar</button>
+                  <button className="text-xs text-red-500 hover:text-red-700" onClick={() => setRemoverConcorrente(c)}>Remover</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={!!removerDecisor}
+        onClose={() => setRemoverDecisor(null)}
+        onConfirm={async () => {
+          try {
+            await arquitetosApi.removerDecisor(arquitetoId, removerDecisor.id)
+            setRemoverDecisor(null)
+            fetchContatos()
+          } catch (err) {
+            setRemoverDecisor(null)
+            setRemoveError(extractErrorMessage(err, 'Erro ao remover decisor'))
+          }
+        }}
+        title="Remover decisor"
+        message={`Remover ${removerDecisor?.nome} da lista de decisores?`}
+        confirmLabel="Remover"
+        danger
+      />
+
+      <ConfirmDialog
+        open={!!removerConcorrente}
+        onClose={() => setRemoverConcorrente(null)}
+        onConfirm={async () => {
+          try {
+            await arquitetosApi.removerConcorrente(arquitetoId, removerConcorrente.id)
+            setRemoverConcorrente(null)
+            fetchContatos()
+          } catch (err) {
+            setRemoverConcorrente(null)
+            setRemoveError(extractErrorMessage(err, 'Erro ao remover concorrente'))
+          }
+        }}
+        title="Remover concorrente"
+        message={`Remover ${removerConcorrente?.nome_concorrente} da lista de concorrentes?`}
+        confirmLabel="Remover"
+        danger
       />
     </div>
   )
 }
 
-function NovoFuncionarioModal({ open, onClose, onSaved, arquitetoId }) {
-  const vazio = { nome: '', funcao: '', telefone: '', email: '', observacoes: '', decisor: false }
-  const [form, setForm] = useState(vazio)
+function DecisorForm({ initial, onSubmit, onCancel }) {
+  const [form, setForm] = useState(initial)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = async (e) => {
@@ -427,57 +529,69 @@ function NovoFuncionarioModal({ open, onClose, onSaved, arquitetoId }) {
     setLoading(true)
     setError('')
     try {
-      const payload = { ...form, email: form.email.trim() || null }
-      await arquitetosApi.criarFuncionario(arquitetoId, payload)
-      onSaved()
-      setForm(vazio)
+      await onSubmit(form)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar funcionário')
-    } finally {
+      setError(extractErrorMessage(err, 'Erro ao salvar decisor'))
       setLoading(false)
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Novo funcionário" size="sm">
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label className="label">Nome *</label>
-          <input className="input" required value={form.nome} onChange={e => set('nome', e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Função</label>
-          <input className="input" value={form.funcao} onChange={e => set('funcao', e.target.value)} placeholder="Ex: Sócio, Estagiário" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Telefone</label>
-            <input className="input" value={form.telefone} onChange={e => set('telefone', e.target.value)} />
-          </div>
-          <div>
-            <label className="label">E-mail</label>
-            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <label className="label">Observações</label>
-          <textarea className="input resize-none h-16" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-stone-600">
-          <input type="checkbox" checked={form.decisor} onChange={e => set('decisor', e.target.checked)} />
-          É decisor
-        </label>
+    <form onSubmit={handleSubmit} className="space-y-2 mb-3 p-3 bg-stone-50 rounded-lg">
+      <input className="input" required value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Nome *" />
+      <div className="grid grid-cols-2 gap-2">
+        <input className="input" value={form.cargo} onChange={e => set('cargo', e.target.value)} placeholder="Cargo" />
+        <input className="input" value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="Telefone" />
+      </div>
+      <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="E-mail" />
+      <textarea className="input resize-none h-16" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Observações" />
+      <label className="flex items-center gap-2 text-sm text-stone-600">
+        <input type="checkbox" checked={form.is_principal} onChange={e => set('is_principal', e.target.checked)} />
+        Contato principal
+      </label>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button type="button" className="btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-primary btn-sm" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+      </div>
+    </form>
+  )
+}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+function ConcorrenteForm({ initial, onSubmit, onCancel }) {
+  const [form, setForm] = useState(initial)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-        <div className="flex gap-2 justify-end pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Salvando...' : 'Adicionar'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao salvar concorrente'))
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 mb-3 p-3 bg-stone-50 rounded-lg">
+      <input className="input" required value={form.nome_concorrente} onChange={e => set('nome_concorrente', e.target.value)} placeholder="Nome do concorrente *" />
+      <input
+        className="input" type="number" min="0" max="100" required
+        value={form.percentual_fechamento_estimado}
+        onChange={e => set('percentual_fechamento_estimado', e.target.value)}
+        placeholder="% estimado de fechamento"
+      />
+      <textarea className="input resize-none h-16" value={form.observacoes} onChange={e => set('observacoes', e.target.value)} placeholder="Observações" />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button type="button" className="btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-primary btn-sm" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+      </div>
+    </form>
   )
 }
 

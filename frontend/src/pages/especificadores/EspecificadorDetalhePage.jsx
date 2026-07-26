@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { arquitetosApi } from '../../lib/api'
 import { Tabs, LoadingPage } from '../../components/ui'
-import { PerfilTab, ScoreTab, DecisoresTab, EditarEspecificadorModal } from './EspecificadorTabs'
+import { PerfilTab, ScoreTab, ContatosTabContent, EditarEspecificadorModal } from './EspecificadorTabs'
 
 export default function EspecificadorDetalhePage() {
   const { id } = useParams()
@@ -32,7 +32,7 @@ export default function EspecificadorDetalhePage() {
         tabs={[
           { key: 'perfil', label: 'Perfil' },
           { key: 'score', label: 'Score' },
-          { key: 'decisores', label: 'Decisores' },
+          { key: 'decisores', label: 'Decisores & Concorrentes' },
         ]}
         active={tab}
         onChange={setTab}
@@ -41,7 +41,7 @@ export default function EspecificadorDetalhePage() {
       <div className="mt-5 card p-5">
         {tab === 'perfil' && <PerfilTab arquiteto={arquiteto} onUpdated={carregar} />}
         {tab === 'score' && <ScoreTab arquiteto={arquiteto} />}
-        {tab === 'decisores' && <DecisoresTab arquiteto={arquiteto} />}
+        {tab === 'decisores' && <ContatosTabContent arquitetoId={arquiteto.id} />}
       </div>
 
       <EditarEspecificadorModal

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { arquitetosApi } from '../../lib/api'
 import { Tabs, Spinner } from '../../components/ui'
-import { PerfilTab, ScoreTab, DecisoresTab, EditarEspecificadorModal } from './EspecificadorTabs'
+import { PerfilTab, ScoreTab, ContatosTabContent, EditarEspecificadorModal } from './EspecificadorTabs'
 
 export default function EspecificadorDrawer({ arquitetoId, onClose, onUpdated }) {
   const navigate = useNavigate()
@@ -49,7 +49,7 @@ export default function EspecificadorDrawer({ arquitetoId, onClose, onUpdated })
           tabs={[
             { key: 'perfil', label: 'Perfil' },
             { key: 'score', label: 'Score' },
-            { key: 'decisores', label: 'Decisores' },
+            { key: 'decisores', label: 'Decisores & Concorrentes' },
           ]}
           active={tab}
           onChange={setTab}
@@ -60,7 +60,7 @@ export default function EspecificadorDrawer({ arquitetoId, onClose, onUpdated })
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {tab === 'perfil' && <PerfilTab arquiteto={arquiteto} onUpdated={() => { carregar(); onUpdated?.() }} />}
         {tab === 'score' && <ScoreTab arquiteto={arquiteto} />}
-        {tab === 'decisores' && <DecisoresTab arquiteto={arquiteto} />}
+        {tab === 'decisores' && <ContatosTabContent arquitetoId={arquiteto.id} />}
       </div>
 
       <EditarEspecificadorModal
