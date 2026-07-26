@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS } from '../../lib/constants'
+import { Modal, Spinner } from '../../components/ui'
 import { colaboradoresApi } from '../../lib/api'
-import { formatDate, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS } from '../../lib/constants'
-import { Modal } from '../../components/ui'
 
 function extractErrorMessage(err, fallback) {
   const detail = err.response?.data?.detail
@@ -233,6 +233,122 @@ export function DesligarModal({ open, onClose, colaborador, onSaved }) {
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn-danger" disabled={loading}>
             {loading ? 'Desligando...' : 'Confirmar desligamento'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// === Aba Remuneração ===
+export function RemuneracaoTab({ colaborador, onUpdated }) {
+  const [historico, setHistorico] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showLancar, setShowLancar] = useState(false)
+
+  const carregar = () => {
+    colaboradoresApi.historicoSalarial(colaborador.id)
+      .then(r => setHistorico(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl bg-stone-50 p-4">
+        <p className="text-xs text-stone-400">Salário CLT atual</p>
+        <p className="text-xl font-semibold text-stone-800">{formatCurrency(colaborador.salario_clt)}</p>
+        {colaborador.remuneracao_complementar > 0 && (
+          <p className="text-xs text-stone-500 mt-1">+ {formatCurrency(colaborador.remuneracao_complementar)} complementar</p>
+        )}
+        <p className="text-xs text-stone-400 mt-1">Vigente desde {formatDate(colaborador.data_vigencia_salario)}</p>
+      </div>
+
+      <div className="flex justify-end">
+        <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar novo salário</button>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Histórico</h3>
+        {loading ? <Spinner size={18} /> : historico.length === 0 ? (
+          <p className="text-sm text-stone-400">Nenhum registro.</p>
+        ) : (
+          <ul className="space-y-2">
+            {historico.map(h => (
+              <li key={h.id} className="text-sm border-l-2 border-stone-200 pl-3">
+                <p className="text-stone-700 font-medium">{formatCurrency(h.salario_clt)}</p>
+                <p className="text-xs text-stone-400">{formatDate(h.data_vigencia)} — {h.motivo} — {h.registrado_por_nome}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <LancarSalarioModal
+        open={showLancar}
+        onClose={() => setShowLancar(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowLancar(false); carregar(); onUpdated?.() }}
+      />
+    </div>
+  )
+}
+
+function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState({ salario_clt: '', remuneracao_complementar: '', data_vigencia: '', motivo: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.lancarSalario(colaborador.id, {
+        salario_clt: Number(form.salario_clt),
+        remuneracao_complementar: form.remuneracao_complementar ? Number(form.remuneracao_complementar) : null,
+        data_vigencia: form.data_vigencia,
+        motivo: form.motivo,
+      })
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao lançar salário'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Lançar novo salário" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Salário CLT *</label>
+          <input type="number" step="0.01" className="input" required value={form.salario_clt} onChange={e => set('salario_clt', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Remuneração complementar</label>
+          <input type="number" step="0.01" className="input" value={form.remuneracao_complementar} onChange={e => set('remuneracao_complementar', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Vigência *</label>
+          <input type="date" className="input" required value={form.data_vigencia} onChange={e => set('data_vigencia', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Motivo *</label>
+          <input className="input" required value={form.motivo} onChange={e => set('motivo', e.target.value)} placeholder="Ex: Reajuste anual" />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Lançar'}
           </button>
         </div>
       </form>
