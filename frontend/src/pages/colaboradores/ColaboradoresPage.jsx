@@ -15,6 +15,7 @@ function extractErrorMessage(err, fallback) {
 
 export default function ColaboradoresPage() {
   const [colaboradores, setColaboradores] = useState([])
+  const [todosColaboradoresAtivos, setTodosColaboradoresAtivos] = useState([])
   const [departamentos, setDepartamentos] = useState([])
   const [cargos, setCargos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,7 @@ export default function ColaboradoresPage() {
   const carregarDepartamentosECargos = () => {
     departamentosApi.list().then(r => setDepartamentos(r.data)).catch(console.error)
     cargosApi.list().then(r => setCargos(r.data)).catch(console.error)
+    colaboradoresApi.list({ is_active: 'true' }).then(r => setTodosColaboradoresAtivos(r.data)).catch(console.error)
   }
 
   const fetchLista = () => {
@@ -174,8 +176,8 @@ export default function ColaboradoresPage() {
         onClose={() => setShowNovoModal(false)}
         departamentos={departamentos}
         cargos={cargos}
-        colaboradores={colaboradores}
-        onSaved={() => { setShowNovoModal(false); fetchLista() }}
+        colaboradoresAtivos={todosColaboradoresAtivos}
+        onSaved={() => { setShowNovoModal(false); fetchLista(); carregarDepartamentosECargos() }}
       />
 
       {selecionadoId && (
@@ -272,7 +274,7 @@ function DepartamentosCargosModal({ open, onClose, departamentos, cargos, onChan
 }
 
 // === Modal Novo Colaborador ===
-function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaboradores, onSaved }) {
+function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaboradoresAtivos, onSaved }) {
   const vazio = {
     nome: '', cpf: '', data_nascimento: '', sexo: '', estado_civil: '',
     telefone: '', email_pessoal: '', email_corporativo: '',
@@ -403,7 +405,7 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
               <label className="label">Gestor direto</label>
               <select className="input" value={form.gestor_id} onChange={e => set('gestor_id', e.target.value)}>
                 <option value="">Sem gestor</option>
-                {colaboradores.filter(c => c.is_active).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {colaboradoresAtivos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
           </div>
