@@ -104,8 +104,8 @@ function Campo({ label, valor }) {
 }
 
 // === Modal Editar (dados cadastrais — nunca salario/cargo atuais) ===
-export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) {
-  const [form, setForm] = useState(() => ({
+function buildEditForm(colaborador) {
+  return {
     telefone: colaborador.telefone || '',
     email_pessoal: colaborador.email_pessoal || '',
     email_corporativo: colaborador.email_corporativo || '',
@@ -117,9 +117,19 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
     endereco_cep: colaborador.endereco_cep || '',
     carga_horaria: colaborador.carga_horaria || '',
     modalidade: colaborador.modalidade || '',
-  }))
+  }
+}
+
+export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState(() => buildEditForm(colaborador))
+  const [prevColaborador, setPrevColaborador] = useState(colaborador)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  if (colaborador !== prevColaborador) {
+    setPrevColaborador(colaborador)
+    setForm(buildEditForm(colaborador))
+  }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
