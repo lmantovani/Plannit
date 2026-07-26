@@ -14,7 +14,13 @@ export default function EspecificadorDrawer({ arquitetoId, onClose, onUpdated })
     arquitetosApi.get(arquitetoId).then(r => setArquiteto(r.data)).catch(console.error)
   }
 
-  useEffect(() => { carregar() }, [arquitetoId])
+  useEffect(() => {
+    let ignore = false
+    arquitetosApi.get(arquitetoId)
+      .then(r => { if (!ignore) setArquiteto(r.data) })
+      .catch(err => { if (!ignore) console.error(err) })
+    return () => { ignore = true }
+  }, [arquitetoId])
 
   if (!arquiteto) {
     return (

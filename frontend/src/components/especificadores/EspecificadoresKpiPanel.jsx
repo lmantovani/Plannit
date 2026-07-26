@@ -14,21 +14,27 @@ export default function EspecificadoresKpiPanel() {
   const [loading, setLoading] = useState(true)
   const [showMetas, setShowMetas] = useState(false)
 
-  const fetchTudo = async () => {
-    try {
-      const promessas = [arquitetosApi.kpis()]
-      if (!gestor) promessas.push(arquitetosApi.minhaMetaVisitas())
-      const [k, m] = await Promise.all(promessas)
-      setKpis(k.data)
-      if (m) setMinhaMeta(m.data)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    let ignore = false
 
-  useEffect(() => { fetchTudo() }, [])
+    async function fetchTudo() {
+      try {
+        const promessas = [arquitetosApi.kpis()]
+        if (!gestor) promessas.push(arquitetosApi.minhaMetaVisitas())
+        const [k, m] = await Promise.all(promessas)
+        if (ignore) return
+        setKpis(k.data)
+        if (m) setMinhaMeta(m.data)
+      } catch (e) {
+        if (!ignore) console.error(e)
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+
+    fetchTudo()
+    return () => { ignore = true }
+  }, [gestor])
 
   if (loading) return <div className="flex justify-center py-8"><Spinner size={22} /></div>
   if (!kpis) return null

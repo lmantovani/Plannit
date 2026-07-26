@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { User } from 'lucide-react'
 import clsx from 'clsx'
 import { arquitetosApi, usersApi, leadsApi } from '../../lib/api'
@@ -50,20 +50,20 @@ export function PerfilTab({ arquiteto, onUpdated, onDesativado }) {
   const [reatribuindo, setReatribuindo] = useState(false)
   const [reatribuirError, setReatribuirError] = useState('')
 
-  const carregar = () => {
+  const carregar = useCallback(() => {
     arquitetosApi.listarClientes(arquiteto.id).then(r => setClientes(r.data)).catch(console.error)
     arquitetosApi.listarInteracoes(arquiteto.id).then(r => setInteracoes(r.data)).catch(console.error)
     leadsApi.list().then(r => setLeadsDoEspecificador(r.data.filter(l => l.arquiteto_id === arquiteto.id))).catch(console.error)
-  }
+  }, [arquiteto.id])
 
-  const carregarHistorico = () => {
+  const carregarHistorico = useCallback(() => {
     arquitetosApi.historicoDono(arquiteto.id)
       .then(r => setHistorico(r.data))
       .catch(console.error)
       .finally(() => setHistoricoLoading(false))
-  }
+  }, [arquiteto.id])
 
-  useEffect(() => { carregar(); carregarHistorico() }, [arquiteto.id])
+  useEffect(() => { carregar(); carregarHistorico() }, [carregar, carregarHistorico])
 
   const registrar = async () => {
     if (!resumo.trim()) return
@@ -85,7 +85,7 @@ export function PerfilTab({ arquiteto, onUpdated, onDesativado }) {
       try {
         const { data } = await usersApi.list()
         setConsultores(data.filter(u => u.perfil === 'vendedor'))
-      } catch (e) {
+      } catch {
         setReatribuirError('Não foi possível carregar a lista de vendedores.')
       }
     }
@@ -276,12 +276,23 @@ export function ScoreTab({ arquiteto }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
-    arquitetosApi.score(arquiteto.id)
-      .then(r => setScore(r.data))
-      .catch(err => setError(err.response?.data?.detail || 'Erro ao carregar score'))
-      .finally(() => setLoading(false))
+    let ignore = false
+
+    async function fetchScore() {
+      setLoading(true)
+      setError('')
+      try {
+        const r = await arquitetosApi.score(arquiteto.id)
+        if (!ignore) setScore(r.data)
+      } catch (err) {
+        if (!ignore) setError(err.response?.data?.detail || 'Erro ao carregar score')
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+
+    fetchScore()
+    return () => { ignore = true }
   }, [arquiteto.id])
 
   if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
@@ -388,7 +399,31 @@ export function ContatosTabContent({ arquitetoId }) {
     }
   }
 
-  useEffect(() => { fetchContatos() }, [arquitetoId])
+  useEffect(() => {
+    let ignore = false
+
+    async function fetchInicial() {
+      setLoading(true)
+      setError('')
+      try {
+        const [d, c] = await Promise.all([
+          arquitetosApi.listarDecisores(arquitetoId),
+          arquitetosApi.listarConcorrentes(arquitetoId),
+        ])
+        if (!ignore) setContatos({ decisores: d.data, concorrentes: c.data })
+      } catch (e) {
+        if (!ignore) {
+          console.error(e)
+          setError('Não foi possível carregar decisores e concorrentes.')
+        }
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+
+    fetchInicial()
+    return () => { ignore = true }
+  }, [arquitetoId])
 
   if (loading) return <div className="flex justify-center py-8"><Spinner size={24} /></div>
   if (error) return <p className="text-sm text-red-600">{error}</p>
@@ -628,10 +663,14 @@ function ConcorrenteForm({ initial, onSubmit, onCancel }) {
 // === Modal de edição dos dados principais ===
 export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) {
   const [form, setForm] = useState(arquiteto)
+  const [prevArquiteto, setPrevArquiteto] = useState(arquiteto)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { setForm(arquiteto) }, [arquiteto])
+  if (arquiteto !== prevArquiteto) {
+    setPrevArquiteto(arquiteto)
+    setForm(arquiteto)
+  }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 

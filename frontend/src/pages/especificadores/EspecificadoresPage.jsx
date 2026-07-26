@@ -46,7 +46,18 @@ export default function EspecificadoresPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchLista() }, [filtroTipo, filtroStatus, filtroConsultor])
+  useEffect(() => {
+    let ignore = false
+    const params = {}
+    if (filtroTipo) params.tipo = filtroTipo
+    if (filtroStatus) params.status_carteira = filtroStatus
+    if (filtroConsultor) params.consultor_id = filtroConsultor
+    arquitetosApi.list(params)
+      .then(({ data }) => { if (!ignore) setEspecificadores(data) })
+      .catch(e => { if (!ignore) console.error(e) })
+      .finally(() => { if (!ignore) setLoading(false) })
+    return () => { ignore = true }
+  }, [filtroTipo, filtroStatus, filtroConsultor])
 
   useEffect(() => {
     if (podeGerenciarConsultores) {

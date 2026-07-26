@@ -15,7 +15,13 @@ export default function EspecificadorDetalhePage() {
     arquitetosApi.get(id).then(r => setArquiteto(r.data)).catch(console.error)
   }
 
-  useEffect(() => { carregar() }, [id])
+  useEffect(() => {
+    let ignore = false
+    arquitetosApi.get(id)
+      .then(r => { if (!ignore) setArquiteto(r.data) })
+      .catch(err => { if (!ignore) console.error(err) })
+    return () => { ignore = true }
+  }, [id])
 
   if (!arquiteto) return <LoadingPage />
 

@@ -16,22 +16,31 @@ export default function MetasVisitasModal({ open, onClose }) {
   const [error, setError] = useState('')
   const [salvandoId, setSalvandoId] = useState(null)
 
-  const fetchTudo = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [u, m] = await Promise.all([usersApi.list(), arquitetosApi.listarMetasVisitas()])
-      setVendedores(u.data.filter(x => x.perfil === 'vendedor'))
-      setMetas(Object.fromEntries(m.data.map(x => [x.consultor_id, x.meta_visitas_mes])))
-    } catch (e) {
-      console.error(e)
-      setError('Não foi possível carregar vendedores e metas.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    if (!open) return
+    let ignore = false
 
-  useEffect(() => { if (open) fetchTudo() }, [open])
+    async function fetchTudo() {
+      setLoading(true)
+      setError('')
+      try {
+        const [u, m] = await Promise.all([usersApi.list(), arquitetosApi.listarMetasVisitas()])
+        if (ignore) return
+        setVendedores(u.data.filter(x => x.perfil === 'vendedor'))
+        setMetas(Object.fromEntries(m.data.map(x => [x.consultor_id, x.meta_visitas_mes])))
+      } catch (e) {
+        if (!ignore) {
+          console.error(e)
+          setError('Não foi possível carregar vendedores e metas.')
+        }
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+
+    fetchTudo()
+    return () => { ignore = true }
+  }, [open])
 
   const salvar = async (consultorId, valor) => {
     setSalvandoId(consultorId)
