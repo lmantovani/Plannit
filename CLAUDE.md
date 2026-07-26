@@ -78,6 +78,7 @@ lider-moveis/                    ← raiz do projeto
     │   │   ├── auth/LoginPage.jsx
     │   │   ├── dashboard/DashboardPage.jsx
     │   │   ├── crm/CRMPage.jsx
+    │   │   ├── briefing/BriefingPage.jsx      ← formulário + score em tempo real (mirror local de briefing_score.py)
     │   │   ├── projetos/ProjetosPage.jsx      ← Kanban + Lista + Fila WIP
     │   │   ├── especificadores/               ← módulo Especificadores (renomeado de "Arquitetos" nesta reconciliação; ArquitetosPage.jsx antigo foi removido)
     │   │   │   ├── EspecificadoresPage.jsx     ← listagem + filtros + modal de criação
@@ -108,14 +109,14 @@ lider-moveis/                    ← raiz do projeto
 - **Login:** dark, branding Líder Móveis
 - **Dashboard:** KPIs + funil + tabela projetos + auto-refresh 60s
 - **CRM:** Kanban + Lista + Drawer + histórico interações
+- **Briefing:** formulário com score em tempo real
 - **Projetos:** Kanban (5 fases) + Lista + Fila WIP + Drawer (Detalhes/Status/Histórico)
 - **Especificadores:** listagem + filtros (tipo/status/consultor) + painel de KPIs + drawer com abas (Perfil/Score/Decisores e concorrentes) + modal de metas de visita
 
 ## Módulos Pendentes (MVP Fase 1) ⏳
-1. **Briefing frontend** — formulário com score em tempo real (backend já existe)
-2. **Fechamento + Handoff** — checklist 8 itens, contrato, bloqueios RN006 (model já existe em fechamento.py)
-3. **Financeiro básico** — parcelas, aprovação cadastro, bloqueios RN011
-4. **Gestão Documental** — centralização arquivos com versionamento
+1. **Fechamento + Handoff** — checklist 8 itens, contrato, bloqueios RN006 (model já existe em fechamento.py)
+2. **Financeiro básico** — parcelas, aprovação cadastro, bloqueios RN011
+3. **Gestão Documental** — centralização arquivos com versionamento
 
 ## Regras de Negócio Implementadas
 | RN | Descrição | Implementado em |
