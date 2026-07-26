@@ -237,9 +237,11 @@ export function PerfilTab({ arquiteto, onUpdated, onDesativado }) {
       {desativarError && (
         <AlertBanner type="error" message={desativarError} onDismiss={() => setDesativarError('')} />
       )}
-      <div className="border-t border-stone-100 pt-3">
-        <button className="btn-danger btn-sm" onClick={() => setConfirmDesativar(true)}>Desativar</button>
-      </div>
+      {gestor && (
+        <div className="border-t border-stone-100 pt-3">
+          <button className="btn-danger btn-sm" onClick={() => setConfirmDesativar(true)}>Desativar</button>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmDesativar}
@@ -285,7 +287,7 @@ export function ScoreTab({ arquiteto }) {
         const r = await arquitetosApi.score(arquiteto.id)
         if (!ignore) setScore(r.data)
       } catch (err) {
-        if (!ignore) setError(err.response?.data?.detail || 'Erro ao carregar score')
+        if (!ignore) setError(extractErrorMessage(err, 'Erro ao carregar score'))
       } finally {
         if (!ignore) setLoading(false)
       }
@@ -688,7 +690,7 @@ export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) 
       await arquitetosApi.update(arquiteto.id, payload)
       onSaved()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar')
+      setError(extractErrorMessage(err, 'Erro ao salvar'))
     } finally {
       setLoading(false)
     }

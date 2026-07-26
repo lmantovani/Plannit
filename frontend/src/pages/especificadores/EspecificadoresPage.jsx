@@ -10,6 +10,13 @@ import EspecificadoresKpiPanel from '../../components/especificadores/Especifica
 import EspecificadorDrawer from './EspecificadorDrawer'
 import clsx from 'clsx'
 
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg || String(d)).join('; ')
+  return fallback
+}
+
 export function TipoBadge({ tipo }) {
   if (!tipo) return <span className="text-stone-300 text-xs">—</span>
   const color = TIPO_ARQUITETO_COLORS[tipo] || 'stone'
@@ -196,7 +203,7 @@ function NovoEspecificadorModal({ open, onClose, onSaved }) {
       onSaved()
       setForm(vazio)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao salvar especificador')
+      setError(extractErrorMessage(err, 'Erro ao salvar especificador'))
     } finally {
       setLoading(false)
     }
