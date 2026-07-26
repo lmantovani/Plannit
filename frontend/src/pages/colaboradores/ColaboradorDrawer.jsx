@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { colaboradoresApi } from '../../lib/api'
 import { Tabs, Spinner } from '../../components/ui'
-import { PerfilTab, RemuneracaoTab, CargoProgressaoTab, DocumentosTab } from './ColaboradorTabs'
+import { PerfilTab, ContratacaoTab, RemuneracaoTab, CargoProgressaoTab, DocumentosTab } from './ColaboradorTabs'
 
 export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated }) {
   const [colaborador, setColaborador] = useState(null)
@@ -41,6 +41,7 @@ export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated })
         <Tabs
           tabs={[
             { key: 'perfil', label: 'Perfil' },
+            { key: 'contratacao', label: 'Contratação' },
             { key: 'remuneracao', label: 'Remuneração' },
             { key: 'cargo', label: 'Cargo & Progressão' },
             { key: 'documentos', label: 'Documentos' },
@@ -57,6 +58,7 @@ export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated })
             onUpdated={() => { carregar(); onUpdated?.() }}
           />
         )}
+        {tab === 'contratacao' && <ContratacaoTab colaborador={colaborador} onUpdated={() => { carregar(); onUpdated?.() }} />}
         {tab === 'remuneracao' && <RemuneracaoTab colaborador={colaborador} onUpdated={() => { carregar(); onUpdated?.() }} />}
         {tab === 'cargo' && <CargoProgressaoTab colaborador={colaborador} onUpdated={() => { carregar(); onUpdated?.() }} />}
         {tab === 'documentos' && <DocumentosTab colaborador={colaborador} />}

@@ -656,3 +656,194 @@ function AdicionarDocumentoModal({ open, onClose, colaborador, onSaved }) {
     </Modal>
   )
 }
+
+// === Aba Contratação ===
+export function ContratacaoTab({ colaborador, onUpdated }) {
+  const [showEdit, setShowEdit] = useState(false)
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <button className="btn-secondary btn-sm" onClick={() => setShowEdit(true)}>Editar</button>
+      </div>
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Regime" valor={REGIME_CONFIG[colaborador.regime]?.label || colaborador.regime} />
+          <Campo label="Tipo de contrato" valor={colaborador.tipo_contrato} />
+        </dl>
+      </section>
+
+      {colaborador.regime === 'pj' && (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados PJ</h3>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <Campo label="CNPJ" valor={colaborador.pj_cnpj} />
+            <Campo label="Valor mensal" valor={colaborador.pj_valor_mensal ? formatCurrency(colaborador.pj_valor_mensal) : null} />
+            <Campo label="Vigência início" valor={formatDate(colaborador.pj_vigencia_inicio)} />
+            <Campo label="Vigência fim" valor={formatDate(colaborador.pj_vigencia_fim)} />
+          </dl>
+          {colaborador.pj_contrato_url && (
+            <a href={colaborador.pj_contrato_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Abrir contrato</a>
+          )}
+        </section>
+      )}
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Regime de trabalho</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Escala" valor={colaborador.escala} />
+          <Campo label="Jornada especial" valor={colaborador.jornada_especial} />
+        </dl>
+      </section>
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados bancários</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Banco" valor={colaborador.banco} />
+          <Campo label="Agência" valor={colaborador.agencia} />
+          <Campo label="Conta" valor={colaborador.conta} />
+          <Campo label="Tipo de conta" valor={colaborador.tipo_conta === 'corrente' ? 'Corrente' : colaborador.tipo_conta === 'poupanca' ? 'Poupança' : colaborador.tipo_conta} />
+        </dl>
+      </section>
+
+      <EditarContratacaoModal
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowEdit(false); onUpdated?.() }}
+      />
+    </div>
+  )
+}
+
+function buildContratacaoForm(colaborador) {
+  return {
+    tipo_contrato: colaborador.tipo_contrato || '',
+    pj_cnpj: colaborador.pj_cnpj || '',
+    pj_contrato_url: colaborador.pj_contrato_url || '',
+    pj_valor_mensal: colaborador.pj_valor_mensal ?? '',
+    pj_vigencia_inicio: colaborador.pj_vigencia_inicio || '',
+    pj_vigencia_fim: colaborador.pj_vigencia_fim || '',
+    escala: colaborador.escala || '',
+    jornada_especial: colaborador.jornada_especial || '',
+    banco: colaborador.banco || '',
+    agencia: colaborador.agencia || '',
+    conta: colaborador.conta || '',
+    tipo_conta: colaborador.tipo_conta || '',
+    gestor_id: colaborador.gestor_id || '',
+  }
+}
+
+function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState(() => buildContratacaoForm(colaborador))
+  const [prevColaborador, setPrevColaborador] = useState(colaborador)
+  const [gestores, setGestores] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  if (colaborador !== prevColaborador) {
+    setPrevColaborador(colaborador)
+    setForm(buildContratacaoForm(colaborador))
+  }
+
+  useEffect(() => {
+    if (open) {
+      colaboradoresApi.list({ is_active: 'true' })
+        .then(r => setGestores(r.data.filter(c => c.id !== colaborador.id)))
+        .catch(console.error)
+    }
+  }, [open, colaborador.id])
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.update(colaborador.id, {
+        ...form,
+        pj_valor_mensal: form.pj_valor_mensal === '' ? null : Number(form.pj_valor_mensal),
+        pj_vigencia_inicio: form.pj_vigencia_inicio || null,
+        pj_vigencia_fim: form.pj_vigencia_fim || null,
+        gestor_id: form.gestor_id ? Number(form.gestor_id) : null,
+      })
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao salvar contratação'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Editar Contratação" size="lg">
+      <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</p>
+          <input className="input" placeholder="Tipo de contrato" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)} />
+        </div>
+
+        {colaborador.regime === 'pj' && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados PJ</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input" placeholder="CNPJ" value={form.pj_cnpj} onChange={e => set('pj_cnpj', e.target.value)} />
+              <input className="input" type="number" step="0.01" placeholder="Valor mensal" value={form.pj_valor_mensal} onChange={e => set('pj_valor_mensal', e.target.value)} />
+              <input className="input col-span-2" type="url" placeholder="URL do contrato" value={form.pj_contrato_url} onChange={e => set('pj_contrato_url', e.target.value)} />
+              <div>
+                <label className="label">Vigência início</label>
+                <input type="date" className="input" value={form.pj_vigencia_inicio} onChange={e => set('pj_vigencia_inicio', e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Vigência fim</label>
+                <input type="date" className="input" value={form.pj_vigencia_fim} onChange={e => set('pj_vigencia_fim', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Regime de trabalho</p>
+          <div className="grid grid-cols-2 gap-3">
+            <input className="input" placeholder="Escala" value={form.escala} onChange={e => set('escala', e.target.value)} />
+            <input className="input" placeholder="Jornada especial" value={form.jornada_especial} onChange={e => set('jornada_especial', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados bancários</p>
+          <div className="grid grid-cols-4 gap-3">
+            <input className="input" placeholder="Banco" value={form.banco} onChange={e => set('banco', e.target.value)} />
+            <input className="input" placeholder="Agência" value={form.agencia} onChange={e => set('agencia', e.target.value)} />
+            <input className="input" placeholder="Conta" value={form.conta} onChange={e => set('conta', e.target.value)} />
+            <select className="input" value={form.tipo_conta} onChange={e => set('tipo_conta', e.target.value)}>
+              <option value="">Tipo...</option>
+              <option value="corrente">Corrente</option>
+              <option value="poupanca">Poupança</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Organograma</p>
+          <select className="input" value={form.gestor_id} onChange={e => set('gestor_id', e.target.value)}>
+            <option value="">Sem gestor</option>
+            {gestores.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+          </select>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2 sticky bottom-0 bg-white">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
