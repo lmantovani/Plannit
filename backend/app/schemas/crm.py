@@ -141,6 +141,7 @@ class ArquitetoResponse(BaseModel):
     especialidade: Optional[str]
     endereco_escritorio: Optional[str]
     consultor_id: Optional[int]
+    consultor_nome: Optional[str] = None
     status_carteira: StatusCarteiraEspecificador
     is_active: bool
 

@@ -35,7 +35,7 @@ def listar_arquitetos(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
+    query = db.query(Arquiteto).options(joinedload(Arquiteto.consultor)).filter(Arquiteto.is_active == True)
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
     if tipo:

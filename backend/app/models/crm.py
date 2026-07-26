@@ -160,6 +160,10 @@ class Arquiteto(Base):
 
     consultor = relationship("User", foreign_keys=[consultor_id])
 
+    @property
+    def consultor_nome(self) -> Optional[str]:
+        return self.consultor.nome if self.consultor else None
+
     def __repr__(self):
         return f"<Arquiteto {self.nome}>"
 
