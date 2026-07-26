@@ -18,12 +18,26 @@ router = APIRouter(prefix="/leads", tags=["CRM — Leads"])
 def listar_leads(
     status_funil: Optional[StatusFunil] = None,
     vendedor_id: Optional[int] = None,
+    arquiteto_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Lista leads — vendedor vê apenas os seus; gestor vê todos."""
+    """Lista leads — vendedor vê apenas os seus; gestor vê todos.
+
+    Quando `arquiteto_id` é informado, o filtro é "quais leads este especificador
+    gerou" (visibilidade aberta, decisão da reconciliação Especificadores): retorna
+    todos os leads vinculados a ele, de qualquer vendedor e independente de já
+    terem sido convertidos em cliente — sem aplicar a restrição de carteira do
+    vendedor nem a exclusão padrão de convertidos.
+    """
+    if arquiteto_id is not None:
+        query = db.query(Lead).filter(Lead.arquiteto_id == arquiteto_id)
+        if status_funil:
+            query = query.filter(Lead.status_funil == status_funil)
+        return query.order_by(Lead.criado_em.desc()).offset(skip).limit(limit).all()
+
     query = db.query(Lead).filter(Lead.convertido_em_cliente == False)
 
     # Vendedor só vê sua carteira (SRS Seção 2)

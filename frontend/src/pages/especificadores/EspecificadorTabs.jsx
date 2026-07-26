@@ -53,7 +53,7 @@ export function PerfilTab({ arquiteto, onUpdated, onDesativado }) {
   const carregar = useCallback(() => {
     arquitetosApi.listarClientes(arquiteto.id).then(r => setClientes(r.data)).catch(console.error)
     arquitetosApi.listarInteracoes(arquiteto.id).then(r => setInteracoes(r.data)).catch(console.error)
-    leadsApi.list().then(r => setLeadsDoEspecificador(r.data.filter(l => l.arquiteto_id === arquiteto.id))).catch(console.error)
+    leadsApi.list({ arquiteto_id: arquiteto.id }).then(r => setLeadsDoEspecificador(r.data)).catch(console.error)
   }, [arquiteto.id])
 
   const carregarHistorico = useCallback(() => {
