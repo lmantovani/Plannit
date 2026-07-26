@@ -17,9 +17,22 @@ function extractErrorMessage(err, fallback) {
 }
 
 // === Aba Perfil ===
-export function PerfilTab({ arquiteto, onUpdated }) {
+export function PerfilTab({ arquiteto, onUpdated, onDesativado }) {
   const { user } = useAuthStore()
   const gestor = podeVerTudo(user?.perfil)
+  const [confirmDesativar, setConfirmDesativar] = useState(false)
+  const [desativarError, setDesativarError] = useState('')
+
+  const handleDesativar = async () => {
+    try {
+      await arquitetosApi.desativar(arquiteto.id)
+      setConfirmDesativar(false)
+      onDesativado?.()
+    } catch (err) {
+      setConfirmDesativar(false)
+      setDesativarError(extractErrorMessage(err, 'Erro ao desativar especificador'))
+    }
+  }
 
   const [clientes, setClientes] = useState([])
   const [interacoes, setInteracoes] = useState([])
@@ -220,6 +233,23 @@ export function PerfilTab({ arquiteto, onUpdated }) {
           </div>
         )}
       </div>
+
+      {desativarError && (
+        <AlertBanner type="error" message={desativarError} onDismiss={() => setDesativarError('')} />
+      )}
+      <div className="border-t border-stone-100 pt-3">
+        <button className="btn-danger btn-sm" onClick={() => setConfirmDesativar(true)}>Desativar</button>
+      </div>
+
+      <ConfirmDialog
+        open={confirmDesativar}
+        onClose={() => setConfirmDesativar(false)}
+        onConfirm={handleDesativar}
+        title="Desativar especificador"
+        message={`Tem certeza que deseja desativar ${arquiteto.nome}? Ele deixará de aparecer na listagem.`}
+        confirmLabel="Desativar"
+        danger
+      />
 
       <Modal open={showReatribuir} onClose={() => setShowReatribuir(false)} title="Reatribuir dono da carteira" size="sm">
         {reatribuirError && <div className="mb-3"><AlertBanner type="error" message={reatribuirError} onDismiss={() => setReatribuirError('')} /></div>}

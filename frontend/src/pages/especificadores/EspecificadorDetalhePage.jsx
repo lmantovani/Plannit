@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { arquitetosApi } from '../../lib/api'
 import { Tabs, LoadingPage } from '../../components/ui'
 import { PerfilTab, ScoreTab, ContatosTabContent, EditarEspecificadorModal } from './EspecificadorTabs'
 
 export default function EspecificadorDetalhePage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [arquiteto, setArquiteto] = useState(null)
   const [tab, setTab] = useState('perfil')
   const [showEdit, setShowEdit] = useState(false)
@@ -39,7 +40,9 @@ export default function EspecificadorDetalhePage() {
       />
 
       <div className="mt-5 card p-5">
-        {tab === 'perfil' && <PerfilTab arquiteto={arquiteto} onUpdated={carregar} />}
+        {tab === 'perfil' && (
+          <PerfilTab arquiteto={arquiteto} onUpdated={carregar} onDesativado={() => navigate('/especificadores')} />
+        )}
         {tab === 'score' && <ScoreTab arquiteto={arquiteto} />}
         {tab === 'decisores' && <ContatosTabContent arquitetoId={arquiteto.id} />}
       </div>
