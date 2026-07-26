@@ -260,7 +260,7 @@ export function RemuneracaoTab({ colaborador, onUpdated }) {
     <div className="space-y-5">
       <div className="rounded-xl bg-stone-50 p-4">
         <p className="text-xs text-stone-400">Salário CLT atual</p>
-        <p className="text-xl font-semibold text-stone-800">{formatCurrency(colaborador.salario_clt)}</p>
+        <p className="text-xl font-semibold text-stone-800">{colaborador.salario_clt ? formatCurrency(colaborador.salario_clt) : 'Não informado'}</p>
         {colaborador.remuneracao_complementar > 0 && (
           <p className="text-xs text-stone-500 mt-1">+ {formatCurrency(colaborador.remuneracao_complementar)} complementar</p>
         )}
@@ -304,6 +304,16 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const resetForm = () => {
+    setForm({ salario_clt: '', remuneracao_complementar: '', data_vigencia: '', motivo: '' })
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -315,6 +325,7 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
         data_vigencia: form.data_vigencia,
         motivo: form.motivo,
       })
+      resetForm()
       onSaved()
     } catch (err) {
       setError(extractErrorMessage(err, 'Erro ao lançar salário'))
@@ -324,7 +335,7 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Lançar novo salário" size="sm">
+    <Modal open={open} onClose={handleClose} title="Lançar novo salário" size="sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">Salário CLT *</label>
