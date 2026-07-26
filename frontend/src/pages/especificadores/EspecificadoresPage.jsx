@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { arquitetosApi, usersApi } from '../../lib/api'
 import { Modal, EmptyState, LoadingPage } from '../../components/ui'
-import { TIPO_ARQUITETO_LABELS, TIPO_ARQUITETO_COLORS, STATUS_COLOR_CLASSES } from '../../lib/constants'
+import {
+  TIPO_ARQUITETO_LABELS, TIPO_ARQUITETO_COLORS, STATUS_COLOR_CLASSES, STATUS_CARTEIRA_CONFIG,
+} from '../../lib/constants'
 import { useAuthStore, podeVerTudo } from '../../store'
+import EspecificadoresKpiPanel from '../../components/especificadores/EspecificadoresKpiPanel'
 import EspecificadorDrawer from './EspecificadorDrawer'
 import clsx from 'clsx'
 
@@ -20,34 +23,36 @@ export function TipoBadge({ tipo }) {
 export default function EspecificadoresPage() {
   const { user } = useAuthStore()
   const [especificadores, setEspecificadores] = useState([])
-  const [vendedores, setVendedores] = useState([])
+  const [consultores, setConsultores] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
-  const [filtroVendedor, setFiltroVendedor] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroConsultor, setFiltroConsultor] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selecionadoId, setSelecionadoId] = useState(null)
 
-  const podeGerenciarVendedores = podeVerTudo(user?.perfil)
+  const podeGerenciarConsultores = podeVerTudo(user?.perfil)
 
   const fetchLista = async () => {
     try {
       const params = {}
       if (filtroTipo) params.tipo = filtroTipo
-      if (filtroVendedor) params.vendedor_id = filtroVendedor
+      if (filtroStatus) params.status_carteira = filtroStatus
+      if (filtroConsultor) params.consultor_id = filtroConsultor
       const { data } = await arquitetosApi.list(params)
       setEspecificadores(data)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchLista() }, [filtroTipo, filtroVendedor])
+  useEffect(() => { fetchLista() }, [filtroTipo, filtroStatus, filtroConsultor])
 
   useEffect(() => {
-    if (podeGerenciarVendedores) {
-      usersApi.list().then(r => setVendedores(r.data.filter(u => u.perfil === 'vendedor'))).catch(console.error)
+    if (podeGerenciarConsultores) {
+      usersApi.list().then(r => setConsultores(r.data.filter(u => u.perfil === 'vendedor'))).catch(console.error)
     }
-  }, [podeGerenciarVendedores])
+  }, [podeGerenciarConsultores])
 
   const filtrados = especificadores
     .filter(a => !search || a.nome.toLowerCase().includes(search.toLowerCase()))
@@ -57,6 +62,10 @@ export default function EspecificadoresPage() {
 
   return (
     <div className="p-6">
+      <div className="mb-5">
+        <EspecificadoresKpiPanel />
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2 bg-stone-100 rounded-lg px-3 py-1.5 flex-1 max-w-xs">
@@ -76,10 +85,17 @@ export default function EspecificadoresPage() {
           ))}
         </select>
 
-        {podeGerenciarVendedores && (
-          <select className="input w-48" value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
-            <option value="">Todos os vendedores</option>
-            {vendedores.map(v => (
+        <select className="input w-40" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          {Object.entries(STATUS_CARTEIRA_CONFIG).map(([k, v]) => (
+            <option key={k} value={k}>{v.label}</option>
+          ))}
+        </select>
+
+        {podeGerenciarConsultores && (
+          <select className="input w-48" value={filtroConsultor} onChange={e => setFiltroConsultor(e.target.value)}>
+            <option value="">Todos os consultores</option>
+            {consultores.map(v => (
               <option key={v.id} value={v.id}>{v.nome}</option>
             ))}
           </select>
@@ -100,10 +116,10 @@ export default function EspecificadoresPage() {
               <tr>
                 <th>Nome</th>
                 <th>Tipo</th>
+                <th>Status</th>
                 <th>Escritório</th>
                 <th>Telefone</th>
-                <th>Nível de parceria</th>
-                <th>Vendedor vinculado</th>
+                <th>Dono da carteira</th>
               </tr>
             </thead>
             <tbody>
@@ -118,10 +134,14 @@ export default function EspecificadoresPage() {
                     </button>
                   </td>
                   <td><TipoBadge tipo={a.tipo} /></td>
+                  <td>
+                    <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[STATUS_CARTEIRA_CONFIG[a.status_carteira]?.color || 'stone'])}>
+                      {STATUS_CARTEIRA_CONFIG[a.status_carteira]?.label || a.status_carteira}
+                    </span>
+                  </td>
                   <td>{a.escritorio || '—'}</td>
                   <td>{a.telefone || '—'}</td>
-                  <td className="capitalize">{a.nivel_parceria}</td>
-                  <td>{a.vendedor_nome || '—'}</td>
+                  <td>{a.consultor_nome || 'Sem dono'}</td>
                 </tr>
               ))}
             </tbody>

@@ -125,6 +125,12 @@ export const TIPO_INTERACAO_ARQUITETO_LABELS = {
   envio_brinde:        'Envio de brinde',
 }
 
+export const STATUS_CARTEIRA_CONFIG = {
+  ativo:          { label: 'Ativo',          color: 'green' },
+  em_prospeccao:  { label: 'Em Prospecção',  color: 'amber' },
+  inativo:        { label: 'Inativo',        color: 'stone' },
+}
+
 // Score de Arquitetos (Módulo Arquitetos)
 export const SEGMENTO_CONFIG = {
   campeao:        { label: 'Campeão',        color: 'primary' },
