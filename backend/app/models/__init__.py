@@ -16,6 +16,7 @@ from app.models.colaborador import (
     Departamento, Cargo, Colaborador,
     RegimeContratacao, ModalidadeTrabalho,
     HistoricoSalarialColaborador, HistoricoCargoColaborador,
+    DocumentoColaborador,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "Departamento", "Cargo", "Colaborador",
     "RegimeContratacao", "ModalidadeTrabalho",
     "HistoricoSalarialColaborador", "HistoricoCargoColaborador",
+    "DocumentoColaborador",
 ]

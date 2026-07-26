@@ -7,6 +7,7 @@ from app.core.security import require_roles
 from app.models.user import User, PerfilUsuario
 from app.models.colaborador import (
     Departamento, Cargo, Colaborador, HistoricoSalarialColaborador, HistoricoCargoColaborador,
+    DocumentoColaborador,
 )
 from app.schemas.colaborador import (
     DepartamentoCreate, DepartamentoUpdate, DepartamentoResponse,
@@ -15,6 +16,7 @@ from app.schemas.colaborador import (
     HistoricoSalarialCreate, HistoricoSalarialResponse,
     HistoricoCargoCreate, HistoricoCargoResponse,
     DesligamentoRequest,
+    DocumentoCreate, DocumentoResponse,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -312,3 +314,53 @@ def _get_colaborador_ou_404(colaborador_id: int, db: Session) -> Colaborador:
     if not colaborador:
         raise HTTPException(404, "Colaborador não encontrado")
     return colaborador
+
+
+# === DOCUMENTOS ===
+
+@router.post("/{colaborador_id}/documentos", response_model=DocumentoResponse, status_code=201)
+def adicionar_documento(
+    colaborador_id: int,
+    payload: DocumentoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    documento = DocumentoColaborador(colaborador_id=colaborador_id, **payload.model_dump())
+    db.add(documento)
+    db.commit()
+    db.refresh(documento)
+    return documento
+
+
+@router.get("/{colaborador_id}/documentos", response_model=List[DocumentoResponse])
+def listar_documentos(
+    colaborador_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    return (
+        db.query(DocumentoColaborador)
+        .filter(DocumentoColaborador.colaborador_id == colaborador_id)
+        .order_by(DocumentoColaborador.criado_em.desc())
+        .all()
+    )
+
+
+@router.delete("/{colaborador_id}/documentos/{documento_id}", status_code=204)
+def remover_documento(
+    colaborador_id: int,
+    documento_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    documento = (
+        db.query(DocumentoColaborador)
+        .filter(DocumentoColaborador.id == documento_id, DocumentoColaborador.colaborador_id == colaborador_id)
+        .first()
+    )
+    if not documento:
+        raise HTTPException(404, "Documento não encontrado")
+    db.delete(documento)
+    db.commit()

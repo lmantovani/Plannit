@@ -184,3 +184,15 @@ class HistoricoCargoColaborador(Base):
     @property
     def aprovado_por_nome(self):
         return self.aprovado_por.nome if self.aprovado_por else None
+
+
+class DocumentoColaborador(Base):
+    __tablename__ = "documentos_colaboradores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    colaborador_id = Column(Integer, ForeignKey("colaboradores.id"), nullable=False)
+    tipo = Column(String(50), nullable=False)
+    # ctps | aso_admissional | contrato_assinado | exame_periodico | certidao | pis_pasep | outro
+    url = Column(String(500), nullable=False)
+    data_vencimento = Column(Date, nullable=True)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())

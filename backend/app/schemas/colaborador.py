@@ -302,3 +302,33 @@ class DesligamentoRequest(BaseModel):
     tipo_desligamento: TipoDesligamento
     motivo_desligamento: str
     entrevista_saida: Optional[str] = None
+
+
+# === DOCUMENTOS ===
+
+class TipoDocumentoColaborador(str, enum.Enum):
+    CTPS = "ctps"
+    ASO_ADMISSIONAL = "aso_admissional"
+    CONTRATO_ASSINADO = "contrato_assinado"
+    EXAME_PERIODICO = "exame_periodico"
+    CERTIDAO = "certidao"
+    PIS_PASEP = "pis_pasep"
+    OUTRO = "outro"
+
+
+class DocumentoCreate(BaseModel):
+    tipo: TipoDocumentoColaborador
+    url: str
+    data_vencimento: Optional[date] = None
+
+
+class DocumentoResponse(BaseModel):
+    id: int
+    colaborador_id: int
+    tipo: TipoDocumentoColaborador
+    url: str
+    data_vencimento: Optional[date]
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
