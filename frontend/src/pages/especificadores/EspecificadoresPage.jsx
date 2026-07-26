@@ -179,7 +179,7 @@ export default function EspecificadoresPage() {
 
 // === Modal Novo Especificador ===
 function NovoEspecificadorModal({ open, onClose, onSaved }) {
-  const vazio = { nome: '', tipo: '', escritorio: '', telefone: '', email: '', nivel_parceria: 'parceiro' }
+  const vazio = { nome: '', tipo: '', escritorio: '', endereco_escritorio: '', telefone: '', email: '', nivel_parceria: 'parceiro', especialidade: '' }
   const [form, setForm] = useState(vazio)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -238,6 +238,14 @@ function NovoEspecificadorModal({ open, onClose, onSaved }) {
           <div className="col-span-2">
             <label className="label">E-mail</label>
             <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" />
+          </div>
+          <div className="col-span-2">
+            <label className="label">Endereço do escritório</label>
+            <input className="input" value={form.endereco_escritorio} onChange={e => set('endereco_escritorio', e.target.value)} />
+          </div>
+          <div className="col-span-2">
+            <label className="label">Especialidade</label>
+            <input className="input" value={form.especialidade} onChange={e => set('especialidade', e.target.value)} placeholder="Ex: interiores comerciais" />
           </div>
         </div>
 
