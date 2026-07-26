@@ -12,6 +12,7 @@ from app.schemas.colaborador import (
     DepartamentoCreate, DepartamentoUpdate, DepartamentoResponse,
     CargoCreate, CargoUpdate, CargoResponse,
     ColaboradorCreate, ColaboradorUpdate, ColaboradorResponse,
+    HistoricoSalarialCreate, HistoricoSalarialResponse,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -184,6 +185,61 @@ def obter_colaborador(
     current_user: User = Depends(require_roles(*_ROLES_MODULO)),
 ):
     return _get_colaborador_ou_404(colaborador_id, db)
+
+
+@router.put("/{colaborador_id}", response_model=ColaboradorResponse)
+def atualizar_colaborador(
+    colaborador_id: int,
+    payload: ColaboradorUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    colaborador = _get_colaborador_ou_404(colaborador_id, db)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(colaborador, field, value)
+    db.commit()
+    db.refresh(colaborador)
+    return colaborador
+
+
+@router.post("/{colaborador_id}/historico-salarial", response_model=HistoricoSalarialResponse, status_code=201)
+def lancar_historico_salarial(
+    colaborador_id: int,
+    payload: HistoricoSalarialCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    colaborador = _get_colaborador_ou_404(colaborador_id, db)
+
+    registro = HistoricoSalarialColaborador(
+        colaborador_id=colaborador_id,
+        registrado_por_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(registro)
+
+    colaborador.salario_clt = payload.salario_clt
+    colaborador.remuneracao_complementar = payload.remuneracao_complementar
+    colaborador.data_vigencia_salario = payload.data_vigencia
+
+    db.commit()
+    db.refresh(registro)
+    return registro
+
+
+@router.get("/{colaborador_id}/historico-salarial", response_model=List[HistoricoSalarialResponse])
+def listar_historico_salarial(
+    colaborador_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    return (
+        db.query(HistoricoSalarialColaborador)
+        .filter(HistoricoSalarialColaborador.colaborador_id == colaborador_id)
+        .order_by(HistoricoSalarialColaborador.data_vigencia.desc(), HistoricoSalarialColaborador.id.desc())
+        .all()
+    )
 
 
 def _get_colaborador_ou_404(colaborador_id: int, db: Session) -> Colaborador:

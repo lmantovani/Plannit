@@ -152,6 +152,10 @@ class HistoricoSalarialColaborador(Base):
 
     registrado_por = relationship("User", foreign_keys=[registrado_por_id])
 
+    @property
+    def registrado_por_nome(self):
+        return self.registrado_por.nome if self.registrado_por else None
+
 
 class HistoricoCargoColaborador(Base):
     __tablename__ = "historico_cargo_colaboradores"

@@ -237,3 +237,27 @@ class ColaboradorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# === HISTÓRICO SALARIAL ===
+
+class HistoricoSalarialCreate(BaseModel):
+    salario_clt: float
+    remuneracao_complementar: Optional[float] = None
+    data_vigencia: date
+    motivo: str
+
+
+class HistoricoSalarialResponse(BaseModel):
+    id: int
+    colaborador_id: int
+    salario_clt: float
+    remuneracao_complementar: Optional[float]
+    data_vigencia: date
+    motivo: str
+    registrado_por_id: int
+    registrado_por_nome: Optional[str] = None
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
