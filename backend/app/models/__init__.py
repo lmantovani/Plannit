@@ -12,6 +12,7 @@ from app.models.projeto import (
 )
 from app.models.fechamento import ProjetoComercial, Fechamento, Parcela, Handoff
 from app.models.notificacao import Notificacao, TipoNotificacao
+from app.models.colaborador import Departamento, Cargo
 
 __all__ = [
     "User", "PerfilUsuario",
@@ -23,4 +24,5 @@ __all__ = [
     "FilaProjeto", "ConfigWIPProjetista",
     "ProjetoComercial", "Fechamento", "Parcela", "Handoff",
     "Notificacao", "TipoNotificacao",
+    "Departamento", "Cargo",
 ]
