@@ -149,3 +149,45 @@ export const FLAG_CONFIG = {
   indicacao_alto_valor:    { label: 'Indicação de Alto Valor', color: 'green' },
   especificador_esfriando: { label: 'Esfriando',               color: 'amber' },
 }
+
+// === Módulo Colaboradores (RH) ===
+export const REGIME_CONFIG = {
+  clt: { label: 'CLT', color: 'blue' },
+  pj:  { label: 'PJ',  color: 'purple' },
+}
+
+export const MODALIDADE_LABELS = {
+  presencial: 'Presencial',
+  hibrido:    'Híbrido',
+  remoto:     'Remoto',
+}
+
+export const TIPO_DESLIGAMENTO_LABELS = {
+  pedido_demissao:             'Pedido de Demissão',
+  dispensa_sem_justa_causa:    'Dispensa sem Justa Causa',
+  dispensa_com_justa_causa:    'Dispensa com Justa Causa',
+}
+
+export const TIPO_DOCUMENTO_COLABORADOR_LABELS = {
+  ctps:               'CTPS',
+  aso_admissional:    'ASO Admissional',
+  contrato_assinado:  'Contrato Assinado',
+  exame_periodico:    'Exame Periódico',
+  certidao:           'Certidão',
+  pis_pasep:          'PIS/PASEP',
+  outro:              'Outro',
+}
+
+// Espelha app/schemas/colaborador.py::_cpf_valido — mesmo algoritmo, mesma decisão de
+// validar no client antes do submit para dar feedback imediato (a validação real é no backend).
+export function validarCPF(cpf) {
+  const digits = (cpf || '').replace(/\D/g, '')
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
+  for (const i of [9, 10]) {
+    let soma = 0
+    for (let num = 0; num < i; num++) soma += Number(digits[num]) * ((i + 1) - num)
+    const digito = ((soma * 10) % 11) % 10
+    if (digito !== Number(digits[i])) return false
+  }
+  return true
+}

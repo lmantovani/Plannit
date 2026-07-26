@@ -12,6 +12,7 @@ import {
 import BriefingPage from './pages/briefing/BriefingPage'
 import EspecificadoresPage from './pages/especificadores/EspecificadoresPage'
 import EspecificadorDetalhePage from './pages/especificadores/EspecificadorDetalhePage'
+import ColaboradoresPage from './pages/colaboradores/ColaboradoresPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30000, retry: 1 } },
@@ -27,6 +28,7 @@ const ROUTE_TITLES = {
   '/montagem':      { title: 'Montagem',            subtitle: 'Agendamento e checklist' },
   '/financeiro':    { title: 'Financeiro',          subtitle: 'Parcelas e aprovações' },
   '/pos-venda':     { title: 'Pós-Venda',           subtitle: 'AT e relacionamento' },
+  '/colaboradores': { title: 'Colaboradores',      subtitle: 'Cadastro e departamento pessoal' },
   '/relatorios':    { title: 'Relatórios',          subtitle: 'KPIs e indicadores' },
   '/configuracoes': { title: 'Configurações',       subtitle: 'Equipe e sistema' },
 }
@@ -55,6 +57,7 @@ export default function App() {
             <Route path="/crm"           element={<CRMPage />} />
             <Route path="/especificadores"     element={<EspecificadoresPage />} />
             <Route path="/especificadores/:id" element={<EspecificadorDetalhePage />} />
+            <Route path="/colaboradores" element={<ColaboradoresPage />} />
             <Route path="/projetos"      element={<ProjetosPage />} />
             <Route path="/briefing"      element={<BriefingPage />} />
             <Route path="/conferencia"   element={<ConferenciaPage />} />
