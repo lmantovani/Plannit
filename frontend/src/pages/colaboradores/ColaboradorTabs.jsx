@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS } from '../../lib/constants'
+import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS } from '../../lib/constants'
 import { Modal, Spinner } from '../../components/ui'
 import { colaboradoresApi, cargosApi } from '../../lib/api'
 
@@ -489,6 +489,128 @@ function PromoverModal({ open, onClose, colaborador, onSaved }) {
           <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Registrar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// === Aba Documentos ===
+export function DocumentosTab({ colaborador }) {
+  const [documentos, setDocumentos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showAdicionar, setShowAdicionar] = useState(false)
+
+  const carregar = () => {
+    colaboradoresApi.listarDocumentos(colaborador.id)
+      .then(r => setDocumentos(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  const remover = async (documentoId) => {
+    await colaboradoresApi.removerDocumento(colaborador.id, documentoId)
+    carregar()
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <button className="btn-secondary btn-sm" onClick={() => setShowAdicionar(true)}>Adicionar documento</button>
+      </div>
+
+      {loading ? <Spinner size={18} /> : documentos.length === 0 ? (
+        <p className="text-sm text-stone-400">Nenhum documento cadastrado.</p>
+      ) : (
+        <ul className="space-y-2">
+          {documentos.map(d => (
+            <li key={d.id} className="flex items-center justify-between text-sm border border-stone-100 rounded-lg px-3 py-2">
+              <div>
+                <p className="text-stone-700 font-medium">{TIPO_DOCUMENTO_COLABORADOR_LABELS[d.tipo] || d.tipo}</p>
+                <a href={d.url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Abrir documento</a>
+                {d.data_vencimento && <p className="text-xs text-stone-400">Vence em {formatDate(d.data_vencimento)}</p>}
+              </div>
+              <button className="text-xs text-red-600" onClick={() => remover(d.id)}>Remover</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <AdicionarDocumentoModal
+        open={showAdicionar}
+        onClose={() => setShowAdicionar(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowAdicionar(false); carregar() }}
+      />
+    </div>
+  )
+}
+
+function AdicionarDocumentoModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState({ tipo: '', url: '', data_vencimento: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const resetForm = () => {
+    setForm({ tipo: '', url: '', data_vencimento: '' })
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.adicionarDocumento(colaborador.id, {
+        tipo: form.tipo,
+        url: form.url,
+        data_vencimento: form.data_vencimento || null,
+      })
+      resetForm()
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao adicionar documento'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Adicionar documento" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Tipo *</label>
+          <select className="input" required value={form.tipo} onChange={e => set('tipo', e.target.value)}>
+            <option value="" disabled>Selecione...</option>
+            {Object.entries(TIPO_DOCUMENTO_COLABORADOR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">URL *</label>
+          <input className="input" required type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." />
+        </div>
+        <div>
+          <label className="label">Data de vencimento</label>
+          <input type="date" className="input" value={form.data_vencimento} onChange={e => set('data_vencimento', e.target.value)} />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Adicionar'}
           </button>
         </div>
       </form>
