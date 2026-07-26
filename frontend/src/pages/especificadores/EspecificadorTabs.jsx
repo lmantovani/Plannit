@@ -1,47 +1,98 @@
 import { useEffect, useState } from 'react'
 import { Trash2, Plus, User } from 'lucide-react'
 import clsx from 'clsx'
-import { arquitetosApi, usersApi } from '../../lib/api'
+import { arquitetosApi, usersApi, leadsApi } from '../../lib/api'
 import {
   TIPO_ARQUITETO_LABELS, TIPO_INTERACAO_ARQUITETO_LABELS, timeAgo,
   STATUS_COLOR_CLASSES, SEGMENTO_CONFIG, FLAG_CONFIG,
 } from '../../lib/constants'
-import { EmptyState, Modal, Spinner, ScoreBar } from '../../components/ui'
+import { EmptyState, Modal, Spinner, ScoreBar, AlertBanner, ConfirmDialog } from '../../components/ui'
 import { useAuthStore, podeVerTudo } from '../../store'
 
-function podeGerenciarRelacionamento(user, arquiteto) {
-  if (podeVerTudo(user?.perfil) || user?.perfil === 'recepcao') return true
-  return user?.perfil === 'vendedor' && arquiteto?.vendedor_id === user?.id
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg || String(d)).join('; ')
+  return fallback
 }
 
 // === Aba Perfil ===
 export function PerfilTab({ arquiteto, onUpdated }) {
   const { user } = useAuthStore()
+  const gestor = podeVerTudo(user?.perfil)
+
   const [clientes, setClientes] = useState([])
   const [interacoes, setInteracoes] = useState([])
+  const [leadsDoEspecificador, setLeadsDoEspecificador] = useState([])
   const [tipo, setTipo] = useState('visita_escritorio')
-  const [observacao, setObservacao] = useState('')
+  const [resumo, setResumo] = useState('')
+  const [leadId, setLeadId] = useState('')
   const [loadingRegistro, setLoadingRegistro] = useState(false)
 
-  const podeRegistrar = podeGerenciarRelacionamento(user, arquiteto)
+  const [historico, setHistorico] = useState([])
+  const [historicoLoading, setHistoricoLoading] = useState(true)
+  const [showReatribuir, setShowReatribuir] = useState(false)
+  const [consultores, setConsultores] = useState([])
+  const [novoConsultorId, setNovoConsultorId] = useState('')
+  const [reatribuindo, setReatribuindo] = useState(false)
+  const [reatribuirError, setReatribuirError] = useState('')
 
   const carregar = () => {
     arquitetosApi.listarClientes(arquiteto.id).then(r => setClientes(r.data)).catch(console.error)
     arquitetosApi.listarInteracoes(arquiteto.id).then(r => setInteracoes(r.data)).catch(console.error)
+    leadsApi.list().then(r => setLeadsDoEspecificador(r.data.filter(l => l.arquiteto_id === arquiteto.id))).catch(console.error)
   }
 
-  useEffect(() => { carregar() }, [arquiteto.id])
+  const carregarHistorico = () => {
+    arquitetosApi.historicoDono(arquiteto.id)
+      .then(r => setHistorico(r.data))
+      .catch(console.error)
+      .finally(() => setHistoricoLoading(false))
+  }
+
+  useEffect(() => { carregar(); carregarHistorico() }, [arquiteto.id])
 
   const registrar = async () => {
-    if (!observacao.trim()) return
+    if (!resumo.trim()) return
     setLoadingRegistro(true)
     try {
-      await arquitetosApi.registrarInteracao(arquiteto.id, { tipo, observacao })
-      setObservacao('')
+      await arquitetosApi.registrarInteracao(arquiteto.id, { tipo, resumo, lead_id: leadId ? Number(leadId) : null })
+      setResumo('')
+      setLeadId('')
       carregar()
       onUpdated?.()
     } catch (e) { console.error(e) }
     finally { setLoadingRegistro(false) }
+  }
+
+  const abrirReatribuir = async () => {
+    setReatribuirError('')
+    setShowReatribuir(true)
+    if (consultores.length === 0) {
+      try {
+        const { data } = await usersApi.list()
+        setConsultores(data.filter(u => u.perfil === 'vendedor'))
+      } catch (e) {
+        setReatribuirError('Não foi possível carregar a lista de vendedores.')
+      }
+    }
+  }
+
+  const confirmarReatribuir = async () => {
+    if (!novoConsultorId) return
+    setReatribuindo(true)
+    setReatribuirError('')
+    try {
+      await arquitetosApi.reatribuirDono(arquiteto.id, { consultor_id: Number(novoConsultorId) })
+      setShowReatribuir(false)
+      setNovoConsultorId('')
+      carregarHistorico()
+      onUpdated?.()
+    } catch (err) {
+      setReatribuirError(extractErrorMessage(err, 'Erro ao reatribuir dono'))
+    } finally {
+      setReatribuindo(false)
+    }
   }
 
   return (
@@ -68,9 +119,35 @@ export function PerfilTab({ arquiteto, onUpdated }) {
           <p className="font-medium text-stone-700">{arquiteto.endereco_escritorio || '—'}</p>
         </div>
         <div className="col-span-2">
-          <p className="text-xs text-stone-400">Vendedor vinculado</p>
-          <p className="font-medium text-stone-700">{arquiteto.vendedor_nome || 'Nenhum'}</p>
+          <p className="text-xs text-stone-400">Especialidade</p>
+          <p className="font-medium text-stone-700">{arquiteto.especialidade || '—'}</p>
         </div>
+      </div>
+
+      <div className="border-t border-stone-100 pt-3">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Dono da carteira</p>
+          {gestor && (
+            <button className="btn-secondary btn-sm" onClick={abrirReatribuir}>Reatribuir</button>
+          )}
+        </div>
+        <p className="text-sm text-stone-700 mb-3">{arquiteto.consultor_nome || 'Sem dono definido'}</p>
+
+        <p className="text-2xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Histórico de donos</p>
+        {historicoLoading ? (
+          <Spinner size={16} />
+        ) : historico.length === 0 ? (
+          <p className="text-xs text-stone-300">Nenhuma reatribuição registrada</p>
+        ) : (
+          <ul className="space-y-1">
+            {historico.map(h => (
+              <li key={h.id} className="text-xs text-stone-500">
+                {h.consultor_anterior_nome || 'Sem dono'} → <strong className="text-stone-700">{h.consultor_novo_nome}</strong>
+                <span className="text-stone-300"> · {timeAgo(h.alterado_em)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div>
@@ -89,28 +166,34 @@ export function PerfilTab({ arquiteto, onUpdated }) {
       <div>
         <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Histórico de interações</p>
 
-        {podeRegistrar && (
-          <div className="space-y-2 mb-4">
-            <select value={tipo} onChange={e => setTipo(e.target.value)} className="input text-sm">
+        <div className="space-y-2 mb-4">
+          <div className="flex gap-2">
+            <select value={tipo} onChange={e => setTipo(e.target.value)} className="input text-sm w-40">
               {Object.entries(TIPO_INTERACAO_ARQUITETO_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
-            <textarea
-              value={observacao}
-              onChange={e => setObservacao(e.target.value)}
-              placeholder="Observações sobre o contato..."
-              className="input resize-none h-20 text-sm"
-            />
-            <button
-              onClick={registrar}
-              disabled={loadingRegistro || !observacao.trim()}
-              className="btn-primary w-full justify-center"
-            >
-              {loadingRegistro ? 'Registrando...' : 'Registrar interação'}
-            </button>
+            {leadsDoEspecificador.length > 0 && (
+              <select value={leadId} onChange={e => setLeadId(e.target.value)} className="input text-sm flex-1">
+                <option value="">Lead gerado (opcional)</option>
+                {leadsDoEspecificador.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+              </select>
+            )}
           </div>
-        )}
+          <textarea
+            value={resumo}
+            onChange={e => setResumo(e.target.value)}
+            placeholder="Resumo do contato..."
+            className="input resize-none h-20 text-sm"
+          />
+          <button
+            onClick={registrar}
+            disabled={loadingRegistro || !resumo.trim()}
+            className="btn-primary w-full justify-center"
+          >
+            {loadingRegistro ? 'Registrando...' : 'Registrar interação'}
+          </button>
+        </div>
 
         {interacoes.length === 0 ? (
           <p className="text-sm text-stone-300">Nenhuma interação registrada</p>
@@ -124,16 +207,34 @@ export function PerfilTab({ arquiteto, onUpdated }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-xs font-medium text-stone-600">{TIPO_INTERACAO_ARQUITETO_LABELS[i.tipo] || i.tipo}</span>
-                    <span className="text-2xs text-stone-300">{timeAgo(i.criado_em)}</span>
+                    <span className="text-2xs text-stone-300">{timeAgo(i.data)}</span>
                   </div>
-                  <p className="text-sm text-stone-600 leading-relaxed">{i.observacao}</p>
-                  <p className="text-2xs text-stone-400 mt-0.5">por {i.autor_nome || 'usuário'}</p>
+                  <p className="text-sm text-stone-600 leading-relaxed">{i.resumo}</p>
+                  <p className="text-2xs text-stone-400 mt-0.5">
+                    por {i.responsavel_nome || 'usuário'}
+                    {i.lead_id && <span className="text-primary-600"> · gerou lead #{i.lead_id}</span>}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <Modal open={showReatribuir} onClose={() => setShowReatribuir(false)} title="Reatribuir dono da carteira" size="sm">
+        {reatribuirError && <div className="mb-3"><AlertBanner type="error" message={reatribuirError} onDismiss={() => setReatribuirError('')} /></div>}
+        <label className="label">Novo consultor</label>
+        <select value={novoConsultorId} onChange={e => setNovoConsultorId(e.target.value)} className="input mb-4">
+          <option value="">Selecione um vendedor...</option>
+          {consultores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+        </select>
+        <div className="flex gap-2 justify-end">
+          <button className="btn-secondary btn-sm" onClick={() => setShowReatribuir(false)}>Cancelar</button>
+          <button className="btn-primary btn-sm" disabled={!novoConsultorId || reatribuindo} onClick={confirmarReatribuir}>
+            {reatribuindo ? 'Salvando...' : 'Confirmar'}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
