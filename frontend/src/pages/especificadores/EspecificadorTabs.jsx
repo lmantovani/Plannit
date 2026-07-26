@@ -382,20 +382,11 @@ function NovoFuncionarioModal({ open, onClose, onSaved, arquitetoId }) {
 
 // === Modal de edição dos dados principais ===
 export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) {
-  const { user } = useAuthStore()
-  const podeEditarVendedor = podeVerTudo(user?.perfil)
   const [form, setForm] = useState(arquiteto)
-  const [vendedores, setVendedores] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => { setForm(arquiteto) }, [arquiteto])
-
-  useEffect(() => {
-    if (open && podeEditarVendedor) {
-      usersApi.list().then(r => setVendedores(r.data.filter(u => u.perfil === 'vendedor'))).catch(console.error)
-    }
-  }, [open, podeEditarVendedor])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -405,11 +396,11 @@ export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) 
     setError('')
     try {
       const payload = {
-        nome: form.nome, tipo: form.tipo, escritorio: form.escritorio,
-        endereco_escritorio: form.endereco_escritorio, telefone: form.telefone,
-        email: (form.email || '').trim() || null, nivel_parceria: form.nivel_parceria,
+        nome: form.nome, tipo: form.tipo, especialidade: form.especialidade,
+        escritorio: form.escritorio, endereco_escritorio: form.endereco_escritorio,
+        telefone: form.telefone, email: (form.email || '').trim() || null,
+        nivel_parceria: form.nivel_parceria,
       }
-      if (podeEditarVendedor) payload.vendedor_id = form.vendedor_id || null
       await arquitetosApi.update(arquiteto.id, payload)
       onSaved()
     } catch (err) {
@@ -460,17 +451,8 @@ export function EditarEspecificadorModal({ open, onClose, onSaved, arquiteto }) 
             <input className="input" value={form.endereco_escritorio || ''} onChange={e => set('endereco_escritorio', e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className="label">Vendedor vinculado</label>
-            {podeEditarVendedor ? (
-              <select className="input" value={form.vendedor_id || ''} onChange={e => set('vendedor_id', e.target.value || null)}>
-                <option value="">Nenhum</option>
-                {vendedores.map(v => (
-                  <option key={v.id} value={v.id}>{v.nome}</option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-sm text-stone-500 py-1.5">{arquiteto.vendedor_nome || 'Nenhum'} (só Diretoria/Gerente pode alterar)</p>
-            )}
+            <label className="label">Especialidade</label>
+            <input className="input" value={form.especialidade || ''} onChange={e => set('especialidade', e.target.value)} placeholder="Ex: interiores comerciais" />
           </div>
         </div>
 
