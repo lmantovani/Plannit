@@ -261,8 +261,9 @@ export function DesligarModal({ open, onClose, colaborador, onSaved }) {
 
 // === Aba Remuneração ===
 export function RemuneracaoTab({ colaborador, onUpdated }) {
+  const isPj = colaborador.regime === 'pj'
   const [historico, setHistorico] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isPj)
   const [showLancar, setShowLancar] = useState(false)
 
   const carregar = () => {
@@ -273,7 +274,19 @@ export function RemuneracaoTab({ colaborador, onUpdated }) {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { carregar() }, [colaborador.id])
+  useEffect(() => { if (!isPj) carregar() }, [colaborador.id, isPj])
+
+  if (isPj) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-xl bg-stone-50 p-4">
+          <p className="text-xs text-stone-400">Valor mensal (PJ)</p>
+          <p className="text-xl font-semibold text-stone-800">{colaborador.pj_valor_mensal ? formatCurrency(colaborador.pj_valor_mensal) : 'Não informado'}</p>
+          <p className="text-xs text-stone-400 mt-1">Editável na aba Contratação.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">

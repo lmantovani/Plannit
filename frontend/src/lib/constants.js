@@ -77,8 +77,12 @@ export const ORIGEM_LABELS = {
 export const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
 
-export const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString('pt-BR') : '—'
+export const formatDate = (date) => {
+  if (!date) return '—'
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date))
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`
+  return new Date(date).toLocaleDateString('pt-BR')
+}
 
 export const formatDatetime = (date) =>
   date ? new Date(date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'

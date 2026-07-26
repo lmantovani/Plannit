@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Search, Settings, Lock } from 'lucide-react'
 import { colaboradoresApi, departamentosApi, cargosApi } from '../../lib/api'
 import { Modal, EmptyState, LoadingPage } from '../../components/ui'
-import { REGIME_CONFIG, STATUS_COLOR_CLASSES, validarCPF } from '../../lib/constants'
+import { REGIME_CONFIG, STATUS_COLOR_CLASSES, validarCPF, formatDate } from '../../lib/constants'
 import { useAuthStore, podeGerenciarColaboradores } from '../../store'
 import ColaboradorDrawer from './ColaboradorDrawer'
 import clsx from 'clsx'
@@ -169,7 +169,7 @@ export default function ColaboradoresPage() {
                       {REGIME_CONFIG[c.regime]?.label || c.regime}
                     </span>
                   </td>
-                  <td>{c.data_admissao}</td>
+                  <td>{formatDate(c.data_admissao)}</td>
                   <td>
                     <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[c.is_active ? 'green' : 'stone'])}>
                       {c.is_active ? 'Ativo' : 'Desligado'}
