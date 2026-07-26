@@ -758,6 +758,12 @@ function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const handleClose = () => {
+    setForm(buildContratacaoForm(colaborador))
+    setError('')
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -779,7 +785,7 @@ function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Editar Contratação" size="lg">
+    <Modal open={open} onClose={handleClose} title="Editar Contratação" size="lg">
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</p>
@@ -838,7 +844,7 @@ function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 justify-end pt-2 sticky bottom-0 bg-white">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
