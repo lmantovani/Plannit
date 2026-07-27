@@ -226,10 +226,11 @@ DELETE /colaboradores/{id}/documentos/{doc_id}     remove documento (não é tri
 | RH-RF001 | Ficha completa + histórico imutável de salário/cargo | `Colaborador` + histórico endpoints |
 | RH-RF002 | Histórico de promoções com cargo anterior/novo, data, aprovador, justificativa | `HistoricoCargoColaborador` |
 | RH-RF003 | Upload de documentos com data de vencimento (sem o alerta automático ainda — backlog) | `DocumentoColaborador` |
-| RH-RF004 / RH-RN009 | Nunca excluir colaborador, só inativar com data/motivo | `is_active` + bloco desligamento |
+| RH-RF004 / RH-RN009 | Nunca excluir colaborador, só inativar com data/motivo — **exceção** abaixo (RH-RN011) | `is_active` + bloco desligamento |
 | RH-RF005 | Colaborador PJ com CNPJ, contrato, valor mensal, vigência | Campos `pj_*` |
 | RH-RN001 | Histórico salarial/cargo imutável, sem alteração retroativa | Só `POST` nos endpoints de histórico; `PUT` do colaborador rejeita esses campos |
 | RH-RN010 | Remuneração complementar visível só a RH/Diretoria | Satisfeita por construção (só esses perfis acessam o módulo) |
+| RH-RN011 | Exclusão definitiva (hard delete) de colaborador — decisão do usuário (2026-07-26) de furar deliberadamente a RH-RN009 para dar à Diretoria uma purga administrativa de registros já encerrados (ex.: cadastro de teste, erro de digitação). Restrita ao perfil `DIRETORIA` (RH não pode); só permitida se `is_active=False` (precisa desligar antes — não é atalho pro desligamento); apaga em cascata histórico salarial, histórico de cargo e documentos vinculados, e desatrela `gestor_id` de quem tinha esse colaborador como gestor direto | `DELETE /colaboradores/{id}`, `PerfilTab` (frontend) |
 
 ## 5. Frontend
 

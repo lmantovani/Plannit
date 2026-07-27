@@ -1499,7 +1499,273 @@ EOF
 
 ---
 
-## Task 6: Verificação manual end-to-end
+## Task 6: Aba Contratação
+
+> Adicionada após a revisão final de branch das Tasks 1-5: o spec original (`docs/superpowers/specs/2026-07-26-colaboradores-rh01-design.md:243`) previa uma aba "Contratação" com regime, cargo, departamento, campos PJ, regime de trabalho e dados bancários. O plano inicial não a incluiu, e a revisão de branch confirmou que `pj_cnpj`/`pj_valor_mensal`/`pj_vigencia_*`, dados bancários e `gestor_id` ficaram write-only (só setados no cadastro, nunca visíveis nem editáveis depois). Decisão do humano: adicionar esta task antes do merge.
+
+**Files:**
+- Modify: `frontend/src/pages/colaboradores/ColaboradorDrawer.jsx`
+- Modify: `frontend/src/pages/colaboradores/ColaboradorTabs.jsx`
+
+**Interfaces:**
+- Consumes: `colaboradoresApi.get` (já existe), `colaboradoresApi.update` (já existe — `ColaboradorUpdate` no backend já aceita `tipo_contrato`, `pj_cnpj`, `pj_contrato_url`, `pj_valor_mensal`, `pj_vigencia_inicio`, `pj_vigencia_fim`, `escala`, `jornada_especial`, `banco`, `agencia`, `conta`, `tipo_conta`, `gestor_id` — nenhum endpoint novo é necessário), `colaboradoresApi.list` (para o roster de gestor).
+- Produces: `ContratacaoTab`, `EditarContratacaoModal` (não exportado, uso interno).
+
+**Escopo desta task (o que NÃO faz parte):** `cargo_id`/`departamento_id` não são editáveis aqui — o backend não os aceita em `ColaboradorUpdate` (RH-RN001: mudança de cargo só via `POST /colaboradores/{id}/historico-cargo`, já coberto pela aba Cargo & Progressão). `carga_horaria` e `modalidade` já são editados na aba Perfil (`EditarColaboradorModal`, Task 2) — não duplicar esses dois campos aqui.
+
+**Importante — padrão de modal a seguir:** ao contrário de `LancarSalarioModal`/`PromoverModal`/`AdicionarDocumentoModal` (Tasks 3-5, que começam com form vazio e usam `resetForm`/`handleClose`), o `EditarContratacaoModal` desta task **deriva seus valores iniciais da prop `colaborador`**, exatamente como `EditarColaboradorModal` (Task 2, mesmo arquivo). Use o MESMO padrão de `EditarColaboradorModal`: uma função `buildContratacaoForm(colaborador)` fora do componente, e dentro do componente `const [prevColaborador, setPrevColaborador] = useState(colaborador)` com a checagem `if (colaborador !== prevColaborador) { setPrevColaborador(colaborador); setForm(buildContratacaoForm(colaborador)) }` durante o render — **não** use `resetForm`/`handleClose` aqui, esse padrão é para modais de form vazio, não para modais de edição de dados existentes.
+
+- [ ] **Step 1: Implementar `ContratacaoTab` e `EditarContratacaoModal` em `ColaboradorTabs.jsx`**
+
+No topo do arquivo, a lista de imports de `../../lib/api` já inclui `colaboradoresApi`; adicione `cargosApi` já está lá também (usado por `PromoverModal`) — sem mudança de import necessária além de nenhuma, já que tudo que esta task usa (`colaboradoresApi.update`, `colaboradoresApi.list`) já está disponível.
+
+No final do arquivo, adicionar:
+
+```jsx
+// === Aba Contratação ===
+export function ContratacaoTab({ colaborador, onUpdated }) {
+  const [showEdit, setShowEdit] = useState(false)
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <button className="btn-secondary btn-sm" onClick={() => setShowEdit(true)}>Editar</button>
+      </div>
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Regime" valor={REGIME_CONFIG[colaborador.regime]?.label || colaborador.regime} />
+          <Campo label="Tipo de contrato" valor={colaborador.tipo_contrato} />
+        </dl>
+      </section>
+
+      {colaborador.regime === 'pj' && (
+        <section>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados PJ</h3>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <Campo label="CNPJ" valor={colaborador.pj_cnpj} />
+            <Campo label="Valor mensal" valor={colaborador.pj_valor_mensal ? formatCurrency(colaborador.pj_valor_mensal) : null} />
+            <Campo label="Vigência início" valor={formatDate(colaborador.pj_vigencia_inicio)} />
+            <Campo label="Vigência fim" valor={formatDate(colaborador.pj_vigencia_fim)} />
+          </dl>
+          {colaborador.pj_contrato_url && (
+            <a href={colaborador.pj_contrato_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Abrir contrato</a>
+          )}
+        </section>
+      )}
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Regime de trabalho</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Escala" valor={colaborador.escala} />
+          <Campo label="Jornada especial" valor={colaborador.jornada_especial} />
+        </dl>
+      </section>
+
+      <section>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados bancários</h3>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <Campo label="Banco" valor={colaborador.banco} />
+          <Campo label="Agência" valor={colaborador.agencia} />
+          <Campo label="Conta" valor={colaborador.conta} />
+          <Campo label="Tipo de conta" valor={colaborador.tipo_conta === 'corrente' ? 'Corrente' : colaborador.tipo_conta === 'poupanca' ? 'Poupança' : colaborador.tipo_conta} />
+        </dl>
+      </section>
+
+      <EditarContratacaoModal
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowEdit(false); onUpdated?.() }}
+      />
+    </div>
+  )
+}
+
+function buildContratacaoForm(colaborador) {
+  return {
+    tipo_contrato: colaborador.tipo_contrato || '',
+    pj_cnpj: colaborador.pj_cnpj || '',
+    pj_contrato_url: colaborador.pj_contrato_url || '',
+    pj_valor_mensal: colaborador.pj_valor_mensal ?? '',
+    pj_vigencia_inicio: colaborador.pj_vigencia_inicio || '',
+    pj_vigencia_fim: colaborador.pj_vigencia_fim || '',
+    escala: colaborador.escala || '',
+    jornada_especial: colaborador.jornada_especial || '',
+    banco: colaborador.banco || '',
+    agencia: colaborador.agencia || '',
+    conta: colaborador.conta || '',
+    tipo_conta: colaborador.tipo_conta || '',
+    gestor_id: colaborador.gestor_id || '',
+  }
+}
+
+function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState(() => buildContratacaoForm(colaborador))
+  const [prevColaborador, setPrevColaborador] = useState(colaborador)
+  const [gestores, setGestores] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  if (colaborador !== prevColaborador) {
+    setPrevColaborador(colaborador)
+    setForm(buildContratacaoForm(colaborador))
+  }
+
+  useEffect(() => {
+    if (open) {
+      colaboradoresApi.list({ is_active: 'true' })
+        .then(r => setGestores(r.data.filter(c => c.id !== colaborador.id)))
+        .catch(console.error)
+    }
+  }, [open, colaborador.id])
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.update(colaborador.id, {
+        ...form,
+        pj_valor_mensal: form.pj_valor_mensal === '' ? null : Number(form.pj_valor_mensal),
+        pj_vigencia_inicio: form.pj_vigencia_inicio || null,
+        pj_vigencia_fim: form.pj_vigencia_fim || null,
+        gestor_id: form.gestor_id ? Number(form.gestor_id) : null,
+      })
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao salvar contratação'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Editar Contratação" size="lg">
+      <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</p>
+          <input className="input" placeholder="Tipo de contrato" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)} />
+        </div>
+
+        {colaborador.regime === 'pj' && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados PJ</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input" placeholder="CNPJ" value={form.pj_cnpj} onChange={e => set('pj_cnpj', e.target.value)} />
+              <input className="input" type="number" step="0.01" placeholder="Valor mensal" value={form.pj_valor_mensal} onChange={e => set('pj_valor_mensal', e.target.value)} />
+              <input className="input col-span-2" type="url" placeholder="URL do contrato" value={form.pj_contrato_url} onChange={e => set('pj_contrato_url', e.target.value)} />
+              <div>
+                <label className="label">Vigência início</label>
+                <input type="date" className="input" value={form.pj_vigencia_inicio} onChange={e => set('pj_vigencia_inicio', e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Vigência fim</label>
+                <input type="date" className="input" value={form.pj_vigencia_fim} onChange={e => set('pj_vigencia_fim', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Regime de trabalho</p>
+          <div className="grid grid-cols-2 gap-3">
+            <input className="input" placeholder="Escala" value={form.escala} onChange={e => set('escala', e.target.value)} />
+            <input className="input" placeholder="Jornada especial" value={form.jornada_especial} onChange={e => set('jornada_especial', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Dados bancários</p>
+          <div className="grid grid-cols-4 gap-3">
+            <input className="input" placeholder="Banco" value={form.banco} onChange={e => set('banco', e.target.value)} />
+            <input className="input" placeholder="Agência" value={form.agencia} onChange={e => set('agencia', e.target.value)} />
+            <input className="input" placeholder="Conta" value={form.conta} onChange={e => set('conta', e.target.value)} />
+            <select className="input" value={form.tipo_conta} onChange={e => set('tipo_conta', e.target.value)}>
+              <option value="">Tipo...</option>
+              <option value="corrente">Corrente</option>
+              <option value="poupanca">Poupança</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Organograma</p>
+          <select className="input" value={form.gestor_id} onChange={e => set('gestor_id', e.target.value)}>
+            <option value="">Sem gestor</option>
+            {gestores.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+          </select>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2 sticky bottom-0 bg-white">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+```
+
+- [ ] **Step 2: Ligar a aba real em `ColaboradorDrawer.jsx`**
+
+Atualizar o import:
+
+```javascript
+import { PerfilTab, ContratacaoTab, RemuneracaoTab, CargoProgressaoTab, DocumentosTab } from './ColaboradorTabs'
+```
+
+Adicionar a aba na lista de `tabs` do componente `Tabs` (entre 'perfil' e 'remuneracao', seguindo a ordem do spec — Perfil, Contratação, Remuneração, Cargo & Progressão, Documentos):
+
+```javascript
+          tabs={[
+            { key: 'perfil', label: 'Perfil' },
+            { key: 'contratacao', label: 'Contratação' },
+            { key: 'remuneracao', label: 'Remuneração' },
+            { key: 'cargo', label: 'Cargo & Progressão' },
+            { key: 'documentos', label: 'Documentos' },
+          ]}
+```
+
+E adicionar a renderização condicional, junto das demais:
+
+```javascript
+        {tab === 'contratacao' && <ContratacaoTab colaborador={colaborador} onUpdated={() => { carregar(); onUpdated?.() }} />}
+```
+
+- [ ] **Step 3: Rodar o build**
+
+Run: `cd frontend && npm run build && npm run lint`
+Expected: PASS (ignorar os 13 erros de lint pré-existentes em arquivos não relacionados a este módulo — `Header.jsx`, `BriefingPage.jsx`, `CRMPage.jsx`, `DashboardPage.jsx`, `frontend/src/store/index.js` — confirme só que `ColaboradorDrawer.jsx`/`ColaboradorTabs.jsx` continuam sem novos erros).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/pages/colaboradores/ColaboradorDrawer.jsx frontend/src/pages/colaboradores/ColaboradorTabs.jsx
+git commit --author="Thiago Ribeiro <thiaguim.16@gmail.com>" -m "$(cat <<'EOF'
+feat: add aba Contratacao do modulo Colaboradores
+
+Nova 5a aba do drawer (Contratacao) expondo em modo leitura+edicao os
+campos que ficavam write-only desde o cadastro: tipo de contrato,
+dados PJ (condicional a regime=pj), regime de trabalho (escala,
+jornada especial), dados bancarios e reatribuicao de gestor direto.
+cargo_id/departamento_id continuam fora do escopo de edicao aqui
+(RH-RN001, ja cobertos pela aba Cargo & Progressao); carga_horaria e
+modalidade continuam editados via aba Perfil (Task 2), sem duplicacao.
+EOF
+)"
+```
+
+---
+
+## Task 7: Verificação manual end-to-end
 
 **Files:** nenhum (só verificação).
 
@@ -1512,14 +1778,19 @@ Seguir a seção "Como Rodar Localmente" do `CLAUDE.md` (`uvicorn app.main:app -
 - [ ] Item "Colaboradores" aparece na sidebar (seção Gestão) e a página carrega vazia (sem colaboradores ainda).
 - [ ] Modal "Departamentos & Cargos" cria um departamento e um cargo vinculado a ele; inativar/reativar funciona.
 - [ ] Modal "Novo Colaborador" cadastra um colaborador CLT completo (identificação, contato, contratação, remuneração inicial, regime de trabalho, dados bancários); CPF inválido bloqueia o submit no client antes de chamar a API.
-- [ ] Cadastrar um segundo colaborador CLT com o campo "Regime" = PJ — campos de CNPJ/valor mensal aparecem condicionalmente.
+- [ ] Cadastrar um colaborador CLT **sem preencher o campo "Modalidade"** — deve salvar normalmente, sem erro 422 (achado Critical da revisão final, corrigido antes desta task).
+- [ ] Cadastrar um segundo colaborador CLT com o campo "Regime" = PJ — campos de CNPJ/valor mensal aparecem condicionalmente; depois de salvo, abrir a aba "Contratação" e confirmar que CNPJ/valor mensal/vigência aparecem corretamente.
 - [ ] Cadastrar um terceiro colaborador escolhendo o primeiro como "Gestor direto".
 - [ ] Abrir o drawer do gestor — aba Perfil mostra o subordinado na lista de "Subordinados diretos"; abrir o drawer do subordinado mostra o "Gestor direto" preenchido.
-- [ ] Aba Remuneração: lançar um novo salário atualiza o valor atual mostrado no topo e aparece no histórico.
+- [ ] Aba Contratação: editar tipo de contrato, dados bancários e reatribuir o gestor direto de um colaborador CLT já existente — salvar e confirmar que os valores persistem ao reabrir o drawer.
+- [ ] Editar (aba Perfil, botão "Editar") um colaborador que não tem `modalidade` preenchida (ex.: um cadastrado antes deste módulo existir, se houver, ou o que foi cadastrado sem modalidade acima) — deve salvar sem erro 422.
+- [ ] Cadastrar um colaborador com data de admissão `01/08/2026` — a aba Perfil deve mostrar "01/08/2026", nunca "31/07/2026" (achado Critical da segunda revisão final — `formatDate` com off-by-one de fuso horário, corrigido antes desta task).
+- [ ] Aba Remuneração: lançar um novo salário atualiza o valor atual mostrado no topo e aparece no histórico; abrir "Lançar novo salário", digitar algo e clicar Cancelar, reabrir — campos devem estar vazios (achado Important da revisão final, corrigido antes desta task).
+- [ ] Abrir a aba Remuneração de um colaborador **PJ** (não CLT) — não deve oferecer "Lançar novo salário CLT"; deve mostrar o valor mensal PJ (ou apontar para a aba Contratação) (achado Important da segunda revisão final, corrigido antes desta task).
 - [ ] Aba Cargo & Progressão: registrar uma promoção atualiza o cargo atual e aparece no histórico.
-- [ ] Aba Documentos: adicionar um documento com e sem data de vencimento; remover um documento.
+- [ ] Aba Documentos: adicionar um documento com e sem data de vencimento; remover um documento (deve pedir confirmação antes de remover, achado Important da revisão final).
 - [ ] Botão "Desligar" no Perfil: preencher o formulário, confirmar — colaborador passa a aparecer como "Desligado" na listagem (filtro "Todos" ou "Desligados") e o botão "Desligar" some do drawer.
-- [ ] Logar com um usuário de perfil `vendedor` (`vendedor@lidermoveis.com.br`) — item "Colaboradores" não aparece na sidebar, e acessar `/colaboradores` diretamente pela URL não quebra a tela (idealmente redireciona ou mostra 403 tratado — se a página quebrar sem tratamento, registrar como follow-up, não bloqueia esta entrega).
+- [ ] Logar com um usuário de perfil `vendedor` (`vendedor@lidermoveis.com.br`) — item "Colaboradores" não aparece na sidebar, e acessar `/colaboradores` diretamente pela URL mostra um estado de acesso negado tratado (achado Important da revisão final — gate client-side de `podeGerenciarColaboradores`, corrigido antes desta task), não a listagem vazia com botões clicáveis.
 
 - [ ] **Step 3: Reportar resultado**
 
