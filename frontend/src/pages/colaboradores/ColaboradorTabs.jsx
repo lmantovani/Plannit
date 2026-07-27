@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS } from '../../lib/constants'
+import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS, SEXO_LABELS, ESTADO_CIVIL_LABELS, PERFIL_DISC_LABELS, TIPO_CONTRATO_LABELS, TIPO_CONTRATO_CLT_LABELS, TIPO_CONTRATO_PJ_LABELS } from '../../lib/constants'
 import { Modal, Spinner, ConfirmDialog } from '../../components/ui'
 import { colaboradoresApi, cargosApi } from '../../lib/api'
+import { useAuthStore } from '../../store'
 
 function extractErrorMessage(err, fallback) {
   const detail = err.response?.data?.detail
@@ -11,9 +12,29 @@ function extractErrorMessage(err, fallback) {
 }
 
 // === Aba Perfil ===
-export function PerfilTab({ colaborador, onUpdated }) {
+export function PerfilTab({ colaborador, onUpdated, onExcluido }) {
+  const { user } = useAuthStore()
   const [showEdit, setShowEdit] = useState(false)
   const [showDesligar, setShowDesligar] = useState(false)
+  const [confirmExcluir, setConfirmExcluir] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+  const [erroExclusao, setErroExclusao] = useState('')
+
+  const ehDiretoria = user?.perfil === 'diretoria'
+
+  const handleExcluir = async () => {
+    setExcluindo(true)
+    setErroExclusao('')
+    try {
+      await colaboradoresApi.excluir(colaborador.id)
+      onExcluido?.()
+    } catch (err) {
+      setErroExclusao(extractErrorMessage(err, 'Erro ao excluir colaborador'))
+      setConfirmExcluir(false)
+    } finally {
+      setExcluindo(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -21,8 +42,20 @@ export function PerfilTab({ colaborador, onUpdated }) {
         {colaborador.is_active && (
           <button className="btn-secondary btn-sm text-red-600" onClick={() => setShowDesligar(true)}>Desligar</button>
         )}
+        {ehDiretoria && (
+          <button
+            className="btn-secondary btn-sm text-red-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={colaborador.is_active}
+            title={colaborador.is_active ? 'Desligue o colaborador antes de excluir definitivamente' : undefined}
+            onClick={() => setConfirmExcluir(true)}
+          >
+            Excluir definitivamente
+          </button>
+        )}
         <button className="btn-secondary btn-sm" onClick={() => setShowEdit(true)}>Editar</button>
       </div>
+
+      {erroExclusao && <p className="text-sm text-red-600">{erroExclusao}</p>}
 
       {!colaborador.is_active && (
         <div className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-600">
@@ -36,15 +69,29 @@ export function PerfilTab({ colaborador, onUpdated }) {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <Campo label="CPF" valor={colaborador.cpf} />
           <Campo label="Data de nascimento" valor={formatDate(colaborador.data_nascimento)} />
-          <Campo label="Sexo" valor={colaborador.sexo} />
-          <Campo label="Estado civil" valor={colaborador.estado_civil} />
+          <Campo label="Sexo" valor={SEXO_LABELS[colaborador.sexo] || colaborador.sexo} />
+          <Campo label="Estado civil" valor={ESTADO_CIVIL_LABELS[colaborador.estado_civil] || colaborador.estado_civil} />
+          <Campo
+            label="Perfil DISC"
+            valor={
+              [PERFIL_DISC_LABELS[colaborador.perfil_disc_primario], PERFIL_DISC_LABELS[colaborador.perfil_disc_secundario]]
+                .filter(Boolean).join(' / ') || null
+            }
+          />
         </dl>
+        {colaborador.observacoes_comportamentais && (
+          <div className="mt-2">
+            <p className="text-xs text-stone-400 mb-1">Observações comportamentais</p>
+            <p className="text-sm text-stone-700 whitespace-pre-wrap">{colaborador.observacoes_comportamentais}</p>
+          </div>
+        )}
       </section>
 
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contato</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <Campo label="Telefone" valor={colaborador.telefone} />
+          <Campo label="Telefone pessoal" valor={colaborador.telefone_pessoal} />
+          <Campo label="Telefone corporativo" valor={colaborador.telefone_corporativo} />
           <Campo label="E-mail pessoal" valor={colaborador.email_pessoal} />
           <Campo label="E-mail corporativo" valor={colaborador.email_corporativo} />
           <Campo label="Cidade/UF" valor={colaborador.endereco_cidade ? `${colaborador.endereco_cidade}/${colaborador.endereco_estado || ''}` : null} />
@@ -90,6 +137,15 @@ export function PerfilTab({ colaborador, onUpdated }) {
         colaborador={colaborador}
         onSaved={() => { setShowDesligar(false); onUpdated?.() }}
       />
+      <ConfirmDialog
+        open={confirmExcluir}
+        onClose={() => setConfirmExcluir(false)}
+        onConfirm={handleExcluir}
+        title="Excluir cadastro definitivamente"
+        message={`Isso vai apagar para sempre o cadastro de ${colaborador.nome}, incluindo todo o histórico salarial, de cargo e os documentos vinculados. Essa ação não pode ser desfeita. Deseja continuar?`}
+        confirmLabel={excluindo ? 'Excluindo...' : 'Excluir definitivamente'}
+        danger
+      />
     </div>
   )
 }
@@ -106,7 +162,11 @@ function Campo({ label, valor }) {
 // === Modal Editar (dados cadastrais — nunca salario/cargo atuais) ===
 function buildEditForm(colaborador) {
   return {
-    telefone: colaborador.telefone || '',
+    telefone_pessoal: colaborador.telefone_pessoal || '',
+    telefone_corporativo: colaborador.telefone_corporativo || '',
+    perfil_disc_primario: colaborador.perfil_disc_primario || '',
+    perfil_disc_secundario: colaborador.perfil_disc_secundario || '',
+    observacoes_comportamentais: colaborador.observacoes_comportamentais || '',
     email_pessoal: colaborador.email_pessoal || '',
     email_corporativo: colaborador.email_corporativo || '',
     endereco_logradouro: colaborador.endereco_logradouro || '',
@@ -157,7 +217,16 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
     <Modal open={open} onClose={handleClose} title="Editar Colaborador" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <input className="input" placeholder="Telefone" value={form.telefone} onChange={e => set('telefone', e.target.value)} />
+          <input className="input" placeholder="Telefone pessoal" value={form.telefone_pessoal} onChange={e => set('telefone_pessoal', e.target.value)} />
+          <input className="input" placeholder="Telefone corporativo" value={form.telefone_corporativo} onChange={e => set('telefone_corporativo', e.target.value)} />
+          <select className="input" value={form.perfil_disc_primario} onChange={e => set('perfil_disc_primario', e.target.value)}>
+            <option value="">Perfil DISC (primário)...</option>
+            {Object.entries(PERFIL_DISC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <select className="input" value={form.perfil_disc_secundario} onChange={e => set('perfil_disc_secundario', e.target.value)}>
+            <option value="">Perfil DISC (secundário)...</option>
+            {Object.entries(PERFIL_DISC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
           <input className="input" type="email" placeholder="E-mail pessoal" value={form.email_pessoal} onChange={e => set('email_pessoal', e.target.value)} />
           <input className="input col-span-2" type="email" placeholder="E-mail corporativo" value={form.email_corporativo} onChange={e => set('email_corporativo', e.target.value)} />
           <input className="input col-span-2" placeholder="Logradouro" value={form.endereco_logradouro} onChange={e => set('endereco_logradouro', e.target.value)} />
@@ -173,6 +242,11 @@ export function EditarColaboradorModal({ open, onClose, colaborador, onSaved }) 
             <option value="hibrido">Híbrido</option>
             <option value="remoto">Remoto</option>
           </select>
+        </div>
+
+        <div>
+          <label className="label">Observações comportamentais</label>
+          <textarea className="input" rows={2} value={form.observacoes_comportamentais} onChange={e => set('observacoes_comportamentais', e.target.value)} />
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -684,7 +758,7 @@ export function ContratacaoTab({ colaborador, onUpdated }) {
         <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <Campo label="Regime" valor={REGIME_CONFIG[colaborador.regime]?.label || colaborador.regime} />
-          <Campo label="Tipo de contrato" valor={colaborador.tipo_contrato} />
+          <Campo label="Tipo de contrato" valor={TIPO_CONTRATO_LABELS[colaborador.tipo_contrato] || colaborador.tipo_contrato} />
         </dl>
       </section>
 
@@ -802,7 +876,10 @@ function EditarContratacaoModal({ open, onClose, colaborador, onSaved }) {
       <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contrato</p>
-          <input className="input" placeholder="Tipo de contrato" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)} />
+          <select className="input" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)}>
+            <option value="">Selecione...</option>
+            {Object.entries(colaborador.regime === 'pj' ? TIPO_CONTRATO_PJ_LABELS : TIPO_CONTRATO_CLT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
         </div>
 
         {colaborador.regime === 'pj' && (

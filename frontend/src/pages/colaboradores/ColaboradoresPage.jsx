@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Search, Settings, Lock } from 'lucide-react'
 import { colaboradoresApi, departamentosApi, cargosApi } from '../../lib/api'
 import { Modal, EmptyState, LoadingPage } from '../../components/ui'
-import { REGIME_CONFIG, STATUS_COLOR_CLASSES, validarCPF, formatDate } from '../../lib/constants'
+import { REGIME_CONFIG, STATUS_COLOR_CLASSES, validarCPF, formatDate, SEXO_LABELS, ESTADO_CIVIL_LABELS, PERFIL_DISC_LABELS, TIPO_CONTRATO_CLT_LABELS, TIPO_CONTRATO_PJ_LABELS } from '../../lib/constants'
 import { useAuthStore, podeGerenciarColaboradores } from '../../store'
 import ColaboradorDrawer from './ColaboradorDrawer'
 import clsx from 'clsx'
@@ -156,7 +156,7 @@ export default function ColaboradoresPage() {
                 <tr key={c.id}>
                   <td>
                     <button
-                      className="font-medium text-stone-800 hover:text-primary-600 transition-colors text-left"
+                      className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors text-left"
                       onClick={() => setSelecionadoId(c.id)}
                     >
                       {c.nome}
@@ -305,7 +305,8 @@ function DepartamentosCargosModal({ open, onClose, departamentos, cargos, onChan
 function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaboradoresAtivos, onSaved }) {
   const vazio = {
     nome: '', cpf: '', data_nascimento: '', sexo: '', estado_civil: '',
-    telefone: '', email_pessoal: '', email_corporativo: '',
+    perfil_disc_primario: '', perfil_disc_secundario: '', observacoes_comportamentais: '',
+    telefone_pessoal: '', telefone_corporativo: '', email_pessoal: '', email_corporativo: '',
     endereco_logradouro: '', endereco_numero: '', endereco_bairro: '', endereco_cidade: '', endereco_estado: '', endereco_cep: '',
     data_admissao: '', departamento_id: '', cargo_id: '', regime: 'clt', tipo_contrato: '',
     pj_cnpj: '', pj_valor_mensal: '',
@@ -384,11 +385,35 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
             </div>
             <div>
               <label className="label">Sexo</label>
-              <input className="input" value={form.sexo} onChange={e => set('sexo', e.target.value)} />
+              <select className="input" value={form.sexo} onChange={e => set('sexo', e.target.value)}>
+                <option value="">Selecione...</option>
+                {Object.entries(SEXO_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Estado civil</label>
-              <input className="input" value={form.estado_civil} onChange={e => set('estado_civil', e.target.value)} />
+              <select className="input" value={form.estado_civil} onChange={e => set('estado_civil', e.target.value)}>
+                <option value="">Selecione...</option>
+                {Object.entries(ESTADO_CIVIL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Perfil DISC (primário)</label>
+              <select className="input" value={form.perfil_disc_primario} onChange={e => set('perfil_disc_primario', e.target.value)}>
+                <option value="">Selecione...</option>
+                {Object.entries(PERFIL_DISC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Perfil DISC (secundário)</label>
+              <select className="input" value={form.perfil_disc_secundario} onChange={e => set('perfil_disc_secundario', e.target.value)}>
+                <option value="">Selecione...</option>
+                {Object.entries(PERFIL_DISC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div className="col-span-3">
+              <label className="label">Observações comportamentais</label>
+              <textarea className="input" rows={2} value={form.observacoes_comportamentais} onChange={e => set('observacoes_comportamentais', e.target.value)} />
             </div>
           </div>
         </div>
@@ -396,7 +421,8 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Contato</p>
           <div className="grid grid-cols-3 gap-3">
-            <input className="input" placeholder="Telefone" value={form.telefone} onChange={e => set('telefone', e.target.value)} />
+            <input className="input" placeholder="Telefone pessoal" value={form.telefone_pessoal} onChange={e => set('telefone_pessoal', e.target.value)} />
+            <input className="input" placeholder="Telefone corporativo" value={form.telefone_corporativo} onChange={e => set('telefone_corporativo', e.target.value)} />
             <input className="input" type="email" placeholder="E-mail pessoal" value={form.email_pessoal} onChange={e => set('email_pessoal', e.target.value)} />
             <input className="input" type="email" placeholder="E-mail corporativo" value={form.email_corporativo} onChange={e => set('email_corporativo', e.target.value)} />
             <input className="input col-span-2" placeholder="Logradouro" value={form.endereco_logradouro} onChange={e => set('endereco_logradouro', e.target.value)} />
@@ -431,14 +457,17 @@ function NovoColaboradorModal({ open, onClose, departamentos, cargos, colaborado
             </div>
             <div>
               <label className="label">Regime *</label>
-              <select className="input" required value={form.regime} onChange={e => set('regime', e.target.value)}>
+              <select className="input" required value={form.regime} onChange={e => { set('regime', e.target.value); set('tipo_contrato', '') }}>
                 <option value="clt">CLT</option>
                 <option value="pj">PJ</option>
               </select>
             </div>
             <div>
               <label className="label">Tipo de contrato</label>
-              <input className="input" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)} />
+              <select className="input" value={form.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)}>
+                <option value="">Selecione...</option>
+                {Object.entries(form.regime === 'pj' ? TIPO_CONTRATO_PJ_LABELS : TIPO_CONTRATO_CLT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">Gestor direto</label>

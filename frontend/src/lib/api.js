@@ -106,6 +106,7 @@ export const colaboradoresApi = {
   create: (data) => api.post('/colaboradores/', data),
   update: (id, data) => api.put(`/colaboradores/${id}`, data),
   desligar: (id, data) => api.post(`/colaboradores/${id}/desligar`, data),
+  excluir: (id) => api.delete(`/colaboradores/${id}`),
   historicoSalarial: (id) => api.get(`/colaboradores/${id}/historico-salarial`),
   lancarSalario: (id, data) => api.post(`/colaboradores/${id}/historico-salarial`, data),
   historicoCargo: (id) => api.get(`/colaboradores/${id}/historico-cargo`),

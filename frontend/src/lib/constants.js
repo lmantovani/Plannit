@@ -182,6 +182,44 @@ export const TIPO_DOCUMENTO_COLABORADOR_LABELS = {
   outro:              'Outro',
 }
 
+export const SEXO_LABELS = {
+  masculino: 'Masculino',
+  feminino:  'Feminino',
+}
+
+export const ESTADO_CIVIL_LABELS = {
+  solteiro:       'Solteiro(a)',
+  casado:         'Casado(a)',
+  divorciado:     'Divorciado(a)',
+  viuvo:          'Viúvo(a)',
+  uniao_estavel:  'União Estável',
+  outro:          'Outro',
+}
+
+export const PERFIL_DISC_LABELS = {
+  dominante:  'D — Dominância',
+  influente:  'I — Influência',
+  estavel:    'S — Estabilidade',
+  cauteloso:  'C — Conformidade',
+}
+
+export const TIPO_CONTRATO_CLT_LABELS = {
+  prazo_indeterminado: 'Prazo Indeterminado',
+  prazo_determinado:   'Prazo Determinado',
+  experiencia:         'Contrato de Experiência',
+  aprendiz:            'Aprendiz',
+  intermitente:        'Intermitente',
+}
+
+export const TIPO_CONTRATO_PJ_LABELS = {
+  prestacao_continua: 'Prestação de Serviços Contínua',
+  por_projeto:        'Por Projeto/Escopo Fechado',
+}
+
+// Usado para exibição (Perfil/Contratação), independente do regime — os dois
+// mapas acima (CLT/PJ) alimentam o dropdown, que varia conforme o regime.
+export const TIPO_CONTRATO_LABELS = { ...TIPO_CONTRATO_CLT_LABELS, ...TIPO_CONTRATO_PJ_LABELS }
+
 // Espelha app/schemas/colaborador.py::_cpf_valido — mesmo algoritmo, mesma decisão de
 // validar no client antes do submit para dar feedback imediato (a validação real é no backend).
 export function validarCPF(cpf) {

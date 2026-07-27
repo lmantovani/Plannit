@@ -142,13 +142,13 @@ export function AlertBanner({ type = 'warning', message, onDismiss }) {
 // === Tab Group ===
 export function Tabs({ tabs, active, onChange }) {
   return (
-    <div className="flex gap-1 p-1 bg-stone-100 rounded-xl">
+    <div className="flex gap-1 p-1 bg-stone-100 rounded-xl overflow-x-auto">
       {tabs.map(tab => (
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
           className={clsx(
-            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0',
             active === tab.key
               ? 'bg-white shadow-card text-stone-800'
               : 'text-stone-500 hover:text-stone-700'

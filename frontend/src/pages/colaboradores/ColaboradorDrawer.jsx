@@ -56,6 +56,7 @@ export default function ColaboradorDrawer({ colaboradorId, onClose, onUpdated })
           <PerfilTab
             colaborador={colaborador}
             onUpdated={() => { carregar(); onUpdated?.() }}
+            onExcluido={() => { onClose(); onUpdated?.() }}
           />
         )}
         {tab === 'contratacao' && <ContratacaoTab colaborador={colaborador} onUpdated={() => { carregar(); onUpdated?.() }} />}
