@@ -104,6 +104,7 @@ lider-moveis/                    ← raiz do projeto
 - **Especificadores** (ex-"Arquitetos"): score RFV × Potencial × Lealdade, 7 segmentos, 5 flags, decisores multi-contato, concorrentes, dono da carteira (consultor_id/consultor_nome) com reatribuição + histórico imutável (HistoricoDonoArquiteto), metas mensais de visita por consultor (MetaVisitasConsultor), endpoint de KPIs da carteira, taxonomia unificada de 9 tipos de interação
 - **Dashboard:** KPIs gerenciais, funil leads, projetos ativos, KPIs de carteira de especificadores
 - **Clientes:** CRUD básico (inclui vínculo opcional a um especificador via `arquiteto_id`)
+- **Colaboradores (RH01 — Cadastro do Colaborador):** ficha completa (identificação, contato pessoal/corporativo, endereço, contratação CLT/PJ, perfil comportamental DISC primário/secundário + observações, regime de trabalho, dados bancários, organograma), histórico salarial e de cargo imutáveis, documentos, desligamento (nunca exclusão — RH-RN009) e exclusão definitiva administrativa (RH-RN011, exceção à RH-RN009). Departamentos e Cargos como cadastros próprios. Branch `feature/rh`, ainda não mergeada em `main` (ver seção dedicada abaixo).
 
 ### Frontend
 - **Login:** dark, branding Líder Móveis
@@ -112,6 +113,7 @@ lider-moveis/                    ← raiz do projeto
 - **Briefing:** formulário com score em tempo real
 - **Projetos:** Kanban (5 fases) + Lista + Fila WIP + Drawer (Detalhes/Status/Histórico)
 - **Especificadores:** listagem + filtros (tipo/status/consultor) + painel de KPIs + drawer com abas (Perfil/Score/Decisores e concorrentes) + modal de metas de visita
+- **Colaboradores:** listagem + filtros (departamento/cargo/regime/status) + modal "Novo Colaborador" + modal "Departamentos & Cargos" + drawer com 5 abas (Perfil, Contratação, Remuneração, Cargo & Progressão, Documentos)
 
 ## Módulos Pendentes (MVP Fase 1) ⏳
 1. **Fechamento + Handoff** — checklist 8 itens, contrato, bloqueios RN006 (model já existe em fechamento.py)
@@ -158,6 +160,20 @@ lider-moveis/                    ← raiz do projeto
 - Código gerado automaticamente: PROJ-ANO-NNN (ex: PROJ-2025-001)
 - Projetista/Vendedor veem apenas seus projetos; gestores veem todos
 
+## Módulo Colaboradores (RH01 — Cadastro do Colaborador)
+- Primeiro de 11 submódulos de um SRS de RH/Departamento Pessoal (RH01-RH11) trazido pelo usuário; os demais (RH02 Comissões, RH03 Férias e Afastamentos, RH04 Acordos e Ajustes, RH05 Avaliação de Desempenho + PDI, RH06-RH11) ainda não têm spec — decompostos intencionalmente em specs sequenciais, um de cada vez. Spec do RH01: `docs/superpowers/specs/2026-07-26-colaboradores-rh01-design.md`
+- Novo perfil `RH` no `PerfilUsuario` — só `RH` e `DIRETORIA` acessam o módulo (gate client-side via `podeGerenciarColaboradores(perfil)` em `store/index.js`, além do `require_roles` no backend)
+- `Colaborador` linkado a `User` via `user_id` opcional; `Departamento`/`Cargo` como entidades próprias, sem constraint de unicidade de nome
+- Contato dividido em pessoal/corporativo tanto para telefone (`telefone_pessoal`/`telefone_corporativo`) quanto para e-mail (`email_pessoal`/`email_corporativo`)
+- Perfil comportamental DISC como par `perfil_disc_primario`/`perfil_disc_secundario` (uma avaliação DISC real normalmente resulta em 2 traços, não 1) + `observacoes_comportamentais` (texto livre) — nenhum dos dois é validado por enum no backend, só por dropdown no frontend (`PERFIL_DISC_LABELS` em `lib/constants.js`)
+- Documentos só com campo URL (sem upload real — projeto não tem infra de upload em lugar nenhum); dados bancários sem criptografia ainda (ambiente demo)
+- Histórico salarial e de cargo (promoções) imutáveis — só `POST` nos endpoints de histórico; `PUT /colaboradores/{id}` rejeita `salario_clt`/`remuneracao_complementar`/`data_vigencia_salario`/`cargo_id` diretamente
+- `gestor_id` auto-relacionamento em `Colaborador` (mini organograma: gestor direto + subordinados diretos), validado contra auto-referência e contra gestor inexistente
+- **RH-RN009:** colaborador nunca é excluído, só desligado (`is_active=False` + data/tipo/motivo/entrevista de saída)
+- **RH-RN011 (exceção deliberada à RH-RN009):** exclusão definitiva (hard delete) via `DELETE /colaboradores/{id}`, restrita ao perfil `DIRETORIA` e só permitida se o colaborador já estiver desligado — serve como purga administrativa de um cadastro já encerrado (ex.: erro de cadastro), não como atalho para o desligamento. Apaga em cascata histórico salarial, histórico de cargo e documentos vinculados, e desatrela `gestor_id` de quem tinha esse colaborador como gestor direto. Não desvincula o `User` associado (`user_id`), se houver — a conta de login continua ativa
+- Drawer com 5 abas (`ColaboradorDrawer.jsx` + `ColaboradorTabs.jsx`, mesmo padrão de `EspecificadorDrawer`/`EspecificadorTabs`): Perfil (dados cadastrais + organograma + Editar/Desligar/Excluir definitivamente), Contratação (regime, tipo de contrato, dados PJ se `regime=pj`, regime de trabalho, dados bancários, reatribuição de gestor), Remuneração, Cargo & Progressão, Documentos
+- Branch `feature/rh`, PR aberto contra `main`, ainda não mergeada — ao trabalhar em qualquer RH02-RH11 futuro ou em ajustes deste módulo, confirmar primeiro se já foi mergeada
+
 ## Padrões de Código
 
 ### Backend
@@ -186,7 +202,9 @@ lider-moveis/                    ← raiz do projeto
 - Alterar FIRST_ADMIN_PASSWORD nas Variables NÃO troca a senha de usuário já criado —
   a variável só é usada na primeira execução do seed
 - /docs desabilitado em produção (DEBUG=false) — comportamento esperado, não é bug
-- Após alterar models: rodar migration também no Railway (Console → alembic upgrade head)
+- **Alembic está configurado (`alembic.ini`, `alembic/env.py`) mas `alembic/versions/` está vazio — nunca foi usado de verdade.** O schema real é aplicado por `Base.metadata.create_all()`, chamado só em `seed.py`. Isso cria tabelas que ainda não existem, mas **não altera tabelas já existentes** (não adiciona/renomeia coluna). Duas situações depois de alterar um model:
+  - **Tabela nova** (módulo novo): rodar `python seed.py` de novo (local e no Console do Railway) já resolve — `create_all` cria a tabela com o schema atual.
+  - **Coluna nova/renomeada numa tabela que já existe** (local que já rodou seed antes, ou produção depois do primeiro deploy do módulo): `python seed.py` sozinho NÃO é suficiente — precisa rodar um `ALTER TABLE` manual antes (`ALTER TABLE nome_tabela ADD COLUMN ...` / `RENAME COLUMN ... TO ...`). Sem isso, todo endpoint que toca a tabela quebra com `UndefinedColumn`/`UndefinedTable`. Exemplo real: `Colaborador.telefone` → `telefone_pessoal` (RH01, 2026-07-26) exigiu isso local; no Railway o risco só existe depois do primeiro deploy do módulo Colaboradores — antes disso, `create_all` cria a tabela já correta.
 - Build do frontend: VITE_API_URL é injetada em BUILD TIME (ARG no Dockerfile) — mudar a variável exige redeploy
 
 ## Variáveis de Ambiente

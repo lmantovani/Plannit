@@ -1,3 +1,4 @@
+from app.models.colaborador import HistoricoSalarialColaborador, HistoricoCargoColaborador, DocumentoColaborador
 from tests.test_colaboradores_cadastro import _criar_departamento_e_cargo, _payload_base
 
 
@@ -63,28 +64,38 @@ def test_excluir_colaborador_desatrela_subordinados(auth_client):
     assert resp_subordinado.json()["gestor_nome"] is None
 
 
-def test_excluir_colaborador_remove_historico_e_documentos_vinculados(auth_client):
-    """Sem isso, o DELETE quebraria com violação de FK — histórico/documentos são hard-deletados junto."""
+def test_excluir_colaborador_remove_historico_e_documentos_vinculados(auth_client, db_session):
+    """
+    Verifica as linhas filhas diretamente no banco (não só o 204/404): o
+    SQLite de teste roda sem PRAGMA foreign_keys=ON, então uma violação de FK
+    real (Postgres em produção) não apareceria aqui se os .delete() do
+    endpoint fossem removidos — só a ausência das linhas prova a cascata.
+    """
     dep, cargo = _criar_departamento_e_cargo(auth_client)
     cargo_novo = auth_client.post(
         "/api/v1/colaboradores/cargos", json={"nome": "Vendedor Sênior", "departamento_id": dep["id"]}
     ).json()
     criado = auth_client.post("/api/v1/colaboradores/", json=_payload_base(cargo["id"], dep["id"])).json()
+    colaborador_id = criado["id"]
 
     auth_client.post(
-        f"/api/v1/colaboradores/{criado['id']}/historico-salarial",
+        f"/api/v1/colaboradores/{colaborador_id}/historico-salarial",
         json={"salario_clt": 4000.0, "data_vigencia": "2025-01-01", "motivo": "Reajuste"},
     )
     auth_client.post(
-        f"/api/v1/colaboradores/{criado['id']}/historico-cargo",
+        f"/api/v1/colaboradores/{colaborador_id}/historico-cargo",
         json={"cargo_novo_id": cargo_novo["id"], "data": "2025-01-01", "justificativa": "Promoção"},
     )
     auth_client.post(
-        f"/api/v1/colaboradores/{criado['id']}/documentos",
+        f"/api/v1/colaboradores/{colaborador_id}/documentos",
         json={"tipo": "ctps", "url": "https://exemplo.com/ctps.pdf"},
     )
 
-    _desligar(auth_client, criado["id"])
-    resp = auth_client.delete(f"/api/v1/colaboradores/{criado['id']}")
+    _desligar(auth_client, colaborador_id)
+    resp = auth_client.delete(f"/api/v1/colaboradores/{colaborador_id}")
     assert resp.status_code == 204
-    assert auth_client.get(f"/api/v1/colaboradores/{criado['id']}").status_code == 404
+    assert auth_client.get(f"/api/v1/colaboradores/{colaborador_id}").status_code == 404
+
+    assert db_session.query(HistoricoSalarialColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
+    assert db_session.query(HistoricoCargoColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
+    assert db_session.query(DocumentoColaborador).filter_by(colaborador_id=colaborador_id).count() == 0

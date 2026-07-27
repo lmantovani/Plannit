@@ -144,6 +144,7 @@ export function PerfilTab({ colaborador, onUpdated, onExcluido }) {
         title="Excluir cadastro definitivamente"
         message={`Isso vai apagar para sempre o cadastro de ${colaborador.nome}, incluindo todo o histórico salarial, de cargo e os documentos vinculados. Essa ação não pode ser desfeita. Deseja continuar?`}
         confirmLabel={excluindo ? 'Excluindo...' : 'Excluir definitivamente'}
+        disabled={excluindo}
         danger
       />
     </div>

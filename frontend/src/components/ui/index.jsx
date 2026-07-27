@@ -61,13 +61,17 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
 }
 
 // === Confirm Dialog ===
-export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', danger = false }) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', danger = false, disabled = false }) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
       <p className="text-sm text-stone-600 mb-5">{message}</p>
       <div className="flex gap-2 justify-end">
-        <button className="btn-secondary btn-sm" onClick={onClose}>Cancelar</button>
-        <button className={clsx(danger ? 'btn-danger' : 'btn-primary', 'btn-sm')} onClick={onConfirm}>
+        <button className="btn-secondary btn-sm" onClick={onClose} disabled={disabled}>Cancelar</button>
+        <button
+          className={clsx(danger ? 'btn-danger' : 'btn-primary', 'btn-sm', 'disabled:opacity-40 disabled:cursor-not-allowed')}
+          onClick={onConfirm}
+          disabled={disabled}
+        >
           {confirmLabel}
         </button>
       </div>
