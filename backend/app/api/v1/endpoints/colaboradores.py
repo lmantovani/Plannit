@@ -346,6 +346,31 @@ def desligar_colaborador(
     return colaborador
 
 
+@router.delete("/{colaborador_id}", status_code=204)
+def excluir_colaborador(
+    colaborador_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(PerfilUsuario.DIRETORIA)),
+):
+    """
+    Exclusão definitiva (hard delete) — exceção deliberada à RH-RN009 (que
+    mantém colaboradores desligados, nunca excluídos), restrita à Diretoria e
+    só permitida após o desligamento, para servir como purga administrativa
+    de um registro já encerrado, não como atalho para desligamento.
+    """
+    colaborador = _get_colaborador_ou_404(colaborador_id, db)
+    if colaborador.is_active:
+        raise HTTPException(400, "Desligue o colaborador antes de excluir o cadastro definitivamente")
+
+    db.query(Colaborador).filter(Colaborador.gestor_id == colaborador_id).update({"gestor_id": None})
+    db.query(HistoricoSalarialColaborador).filter(HistoricoSalarialColaborador.colaborador_id == colaborador_id).delete()
+    db.query(HistoricoCargoColaborador).filter(HistoricoCargoColaborador.colaborador_id == colaborador_id).delete()
+    db.query(DocumentoColaborador).filter(DocumentoColaborador.colaborador_id == colaborador_id).delete()
+
+    db.delete(colaborador)
+    db.commit()
+
+
 def _get_colaborador_ou_404(colaborador_id: int, db: Session) -> Colaborador:
     colaborador = db.query(Colaborador).filter(Colaborador.id == colaborador_id).first()
     if not colaborador:
