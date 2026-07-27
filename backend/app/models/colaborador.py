@@ -59,9 +59,14 @@ class Colaborador(Base):
     sexo = Column(String(20), nullable=True)
     estado_civil = Column(String(30), nullable=True)
     foto_url = Column(String(500), nullable=True)
+    # Perfil comportamental — DISC geralmente vem em par (traço primário + secundário)
+    perfil_disc_primario = Column(String(20), nullable=True)  # dominante | influente | estavel | cauteloso
+    perfil_disc_secundario = Column(String(20), nullable=True)
+    observacoes_comportamentais = Column(Text, nullable=True)
 
     # Contato
-    telefone = Column(String(20), nullable=True)
+    telefone_pessoal = Column(String(20), nullable=True)
+    telefone_corporativo = Column(String(20), nullable=True)
     email_pessoal = Column(String(200), nullable=True)
     email_corporativo = Column(String(200), nullable=True)
     endereco_logradouro = Column(String(300), nullable=True)

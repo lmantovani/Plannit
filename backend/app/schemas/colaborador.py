@@ -74,8 +74,12 @@ class ColaboradorCreate(BaseModel):
     sexo: Optional[str] = None
     estado_civil: Optional[str] = None
     foto_url: Optional[str] = None
+    perfil_disc_primario: Optional[str] = None
+    perfil_disc_secundario: Optional[str] = None
+    observacoes_comportamentais: Optional[str] = None
 
-    telefone: Optional[str] = None
+    telefone_pessoal: Optional[str] = None
+    telefone_corporativo: Optional[str] = None
     email_pessoal: Optional[str] = None
     email_corporativo: Optional[str] = None
     endereco_logradouro: Optional[str] = None
@@ -130,8 +134,12 @@ class ColaboradorUpdate(BaseModel):
     sexo: Optional[str] = None
     estado_civil: Optional[str] = None
     foto_url: Optional[str] = None
+    perfil_disc_primario: Optional[str] = None
+    perfil_disc_secundario: Optional[str] = None
+    observacoes_comportamentais: Optional[str] = None
 
-    telefone: Optional[str] = None
+    telefone_pessoal: Optional[str] = None
+    telefone_corporativo: Optional[str] = None
     email_pessoal: Optional[str] = None
     email_corporativo: Optional[str] = None
     endereco_logradouro: Optional[str] = None
@@ -183,8 +191,12 @@ class ColaboradorResponse(BaseModel):
     sexo: Optional[str]
     estado_civil: Optional[str]
     foto_url: Optional[str]
+    perfil_disc_primario: Optional[str]
+    perfil_disc_secundario: Optional[str]
+    observacoes_comportamentais: Optional[str]
 
-    telefone: Optional[str]
+    telefone_pessoal: Optional[str]
+    telefone_corporativo: Optional[str]
     email_pessoal: Optional[str]
     email_corporativo: Optional[str]
     endereco_logradouro: Optional[str]

@@ -5,9 +5,9 @@ def test_editar_colaborador_dados_basicos(auth_client):
     dep, cargo = _criar_departamento_e_cargo(auth_client)
     criado = auth_client.post("/api/v1/colaboradores/", json=_payload_base(cargo["id"], dep["id"])).json()
 
-    resp = auth_client.put(f"/api/v1/colaboradores/{criado['id']}", json={"telefone": "11988887777"})
+    resp = auth_client.put(f"/api/v1/colaboradores/{criado['id']}", json={"telefone_pessoal": "11988887777"})
     assert resp.status_code == 200
-    assert resp.json()["telefone"] == "11988887777"
+    assert resp.json()["telefone_pessoal"] == "11988887777"
 
 
 def test_editar_colaborador_nao_altera_salario_direto(auth_client):

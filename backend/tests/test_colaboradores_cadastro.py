@@ -86,6 +86,25 @@ def test_organograma_gestor_e_subordinados(auth_client):
     assert resp_subordinado.json()["subordinados_diretos"] == []
 
 
+def test_criar_colaborador_com_contato_pessoal_corporativo_e_perfil_disc(auth_client):
+    dep, cargo = _criar_departamento_e_cargo(auth_client)
+    payload = _payload_base(cargo["id"], dep["id"])
+    payload["telefone_pessoal"] = "11955554444"
+    payload["telefone_corporativo"] = "1130001000"
+    payload["perfil_disc_primario"] = "dominante"
+    payload["perfil_disc_secundario"] = "influente"
+    payload["observacoes_comportamentais"] = "Comunicativo, mas impaciente em reuniões longas."
+
+    resp = auth_client.post("/api/v1/colaboradores/", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["telefone_pessoal"] == "11955554444"
+    assert data["telefone_corporativo"] == "1130001000"
+    assert data["perfil_disc_primario"] == "dominante"
+    assert data["perfil_disc_secundario"] == "influente"
+    assert data["observacoes_comportamentais"] == "Comunicativo, mas impaciente em reuniões longas."
+
+
 def test_colaboradores_bloqueado_para_perfil_sem_permissao(create_client_com_user, projetista_user):
     projetista_client = create_client_com_user(projetista_user)
     resp = projetista_client.get("/api/v1/colaboradores/")
@@ -105,10 +124,10 @@ def test_put_gestor_de_si_mesmo_400(auth_client):
     assert "si mesmo" in resp.json()["detail"]
 
     # o registro continua íntegro e gravável depois da recusa
-    depois = auth_client.put(f"/api/v1/colaboradores/{criado['id']}", json={"telefone": "11955554444"})
+    depois = auth_client.put(f"/api/v1/colaboradores/{criado['id']}", json={"telefone_pessoal": "11955554444"})
     assert depois.status_code == 200
     assert depois.json()["gestor_id"] is None
-    assert depois.json()["telefone"] == "11955554444"
+    assert depois.json()["telefone_pessoal"] == "11955554444"
 
 
 def test_put_gestor_inexistente_400(auth_client):
