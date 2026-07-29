@@ -79,6 +79,21 @@ def projetista_user(db_session):
 
 
 @pytest.fixture()
+def rh_user(db_session):
+    user = User(
+        nome="RH Teste",
+        email="rh.teste@plannit.com.br",
+        hashed_password=get_password_hash("Teste@123"),
+        perfil=PerfilUsuario.RH,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture()
 def create_client_com_user(db_session):
     """Factory fixture para criar clientes autenticados com usuários específicos."""
     def _create_client(user):

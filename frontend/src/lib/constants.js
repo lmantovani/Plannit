@@ -70,15 +70,19 @@ export const ORIGEM_LABELS = {
   site_google: 'Site / Google',
   construtora: 'Construtora',
   showroom:    'Showroom',
-  arquiteto:   'Arquiteto',
+  arquiteto:   'Especificador',
   outro:       'Outro',
 }
 
 export const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
 
-export const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString('pt-BR') : '—'
+export const formatDate = (date) => {
+  if (!date) return '—'
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date))
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`
+  return new Date(date).toLocaleDateString('pt-BR')
+}
 
 export const formatDatetime = (date) =>
   date ? new Date(date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'
@@ -94,6 +98,43 @@ export const timeAgo = (date) => {
   return `${days}d atrás`
 }
 
+// Tipos de Especificadores (Módulo Especificadores)
+export const TIPO_ARQUITETO_LABELS = {
+  arquiteto:            'Arquiteto',
+  engenheiro:           'Engenheiro',
+  designer_interiores:  'Designer de Interiores',
+  decorador:            'Decorador',
+  corretor:             'Corretor',
+  outro:                'Outro',
+}
+
+export const TIPO_ARQUITETO_COLORS = {
+  arquiteto:            'blue',
+  engenheiro:           'purple',
+  designer_interiores:  'amber',
+  decorador:            'green',
+  corretor:             'primary',
+  outro:                'stone',
+}
+
+export const TIPO_INTERACAO_ARQUITETO_LABELS = {
+  ligacao:            'Ligação',
+  whatsapp:           'WhatsApp',
+  email:              'E-mail',
+  visita_escritorio:  'Visita ao escritório',
+  visita_loja:        'Visita à loja',
+  reuniao:            'Reunião',
+  evento:              'Evento',
+  viagem:              'Viagem',
+  envio_brinde:        'Envio de brinde',
+}
+
+export const STATUS_CARTEIRA_CONFIG = {
+  ativo:          { label: 'Ativo',          color: 'green' },
+  em_prospeccao:  { label: 'Em Prospecção',  color: 'amber' },
+  inativo:        { label: 'Inativo',        color: 'stone' },
+}
+
 // Score de Arquitetos (Módulo Arquitetos)
 export const SEGMENTO_CONFIG = {
   campeao:        { label: 'Campeão',        color: 'primary' },
@@ -106,8 +147,89 @@ export const SEGMENTO_CONFIG = {
 }
 
 export const FLAG_CONFIG = {
-  top_indicador:        { label: 'Top Indicador',           color: 'primary' },
-  em_risco_de_perda:    { label: 'Em Risco de Perda',       color: 'red' },
-  alto_potencial:       { label: 'Alto Potencial',          color: 'blue' },
-  indicacao_alto_valor: { label: 'Indicação de Alto Valor', color: 'green' },
+  top_indicador:           { label: 'Top Indicador',           color: 'primary' },
+  em_risco_de_perda:       { label: 'Em Risco de Perda',       color: 'red' },
+  alto_potencial:          { label: 'Alto Potencial',          color: 'blue' },
+  indicacao_alto_valor:    { label: 'Indicação de Alto Valor', color: 'green' },
+  especificador_esfriando: { label: 'Esfriando',               color: 'amber' },
+}
+
+// === Módulo Colaboradores (RH) ===
+export const REGIME_CONFIG = {
+  clt: { label: 'CLT', color: 'blue' },
+  pj:  { label: 'PJ',  color: 'purple' },
+}
+
+export const MODALIDADE_LABELS = {
+  presencial: 'Presencial',
+  hibrido:    'Híbrido',
+  remoto:     'Remoto',
+}
+
+export const TIPO_DESLIGAMENTO_LABELS = {
+  pedido_demissao:             'Pedido de Demissão',
+  dispensa_sem_justa_causa:    'Dispensa sem Justa Causa',
+  dispensa_com_justa_causa:    'Dispensa com Justa Causa',
+}
+
+export const TIPO_DOCUMENTO_COLABORADOR_LABELS = {
+  ctps:               'CTPS',
+  aso_admissional:    'ASO Admissional',
+  contrato_assinado:  'Contrato Assinado',
+  exame_periodico:    'Exame Periódico',
+  certidao:           'Certidão',
+  pis_pasep:          'PIS/PASEP',
+  outro:              'Outro',
+}
+
+export const SEXO_LABELS = {
+  masculino: 'Masculino',
+  feminino:  'Feminino',
+}
+
+export const ESTADO_CIVIL_LABELS = {
+  solteiro:       'Solteiro(a)',
+  casado:         'Casado(a)',
+  divorciado:     'Divorciado(a)',
+  viuvo:          'Viúvo(a)',
+  uniao_estavel:  'União Estável',
+  outro:          'Outro',
+}
+
+export const PERFIL_DISC_LABELS = {
+  dominante:  'D — Dominância',
+  influente:  'I — Influência',
+  estavel:    'S — Estabilidade',
+  cauteloso:  'C — Conformidade',
+}
+
+export const TIPO_CONTRATO_CLT_LABELS = {
+  prazo_indeterminado: 'Prazo Indeterminado',
+  prazo_determinado:   'Prazo Determinado',
+  experiencia:         'Contrato de Experiência',
+  aprendiz:            'Aprendiz',
+  intermitente:        'Intermitente',
+}
+
+export const TIPO_CONTRATO_PJ_LABELS = {
+  prestacao_continua: 'Prestação de Serviços Contínua',
+  por_projeto:        'Por Projeto/Escopo Fechado',
+}
+
+// Usado para exibição (Perfil/Contratação), independente do regime — os dois
+// mapas acima (CLT/PJ) alimentam o dropdown, que varia conforme o regime.
+export const TIPO_CONTRATO_LABELS = { ...TIPO_CONTRATO_CLT_LABELS, ...TIPO_CONTRATO_PJ_LABELS }
+
+// Espelha app/schemas/colaborador.py::_cpf_valido — mesmo algoritmo, mesma decisão de
+// validar no client antes do submit para dar feedback imediato (a validação real é no backend).
+export function validarCPF(cpf) {
+  const digits = (cpf || '').replace(/\D/g, '')
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
+  for (const i of [9, 10]) {
+    let soma = 0
+    for (let num = 0; num < i; num++) soma += Number(digits[num]) * ((i + 1) - num)
+    const digito = ((soma * 10) % 11) % 10
+    if (digito !== Number(digits[i])) return false
+  }
+  return true
 }

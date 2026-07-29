@@ -27,6 +27,7 @@ class TipoNotificacao(str, enum.Enum):
     SLA_AT_VENCENDO = "sla_at_vencendo"
     AT_CAUSA_REPETIDA = "at_causa_repetida"
     PROJETO_PARADO = "projeto_parado"
+    ESPECIFICADOR_TRANSFERIDO = "especificador_transferido"
 
 
 class CanalNotificacao(str, enum.Enum):
@@ -46,6 +47,7 @@ class Notificacao(Base):
 
     destinatario_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     projeto_id = Column(Integer, ForeignKey("projetos.id"), nullable=True)
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=True)
 
     canal = Column(SAEnum(CanalNotificacao), default=CanalNotificacao.TELA)
     lida = Column(Boolean, default=False)
@@ -56,3 +58,4 @@ class Notificacao(Base):
 
     destinatario = relationship("User", foreign_keys=[destinatario_id])
     projeto = relationship("Projeto")
+    arquiteto = relationship("Arquiteto")

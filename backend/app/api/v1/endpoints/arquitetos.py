@@ -1,15 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List, Optional
+from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor, Cliente
+from app.models.notificacao import Notificacao, TipoNotificacao
+from app.models.projeto import Projeto
 from app.schemas.crm import (
-    ArquitetoCreate, ArquitetoResponse,
+    ArquitetoCreate, ArquitetoUpdate, ArquitetoResponse,
     DecisorArquitetoCreate, DecisorArquitetoResponse,
     ConcorrenteArquitetoCreate, ConcorrenteArquitetoResponse,
-    ArquitetoScoreResponse,
+    ArquitetoScoreResponse, ArquitetoDonoUpdate, HistoricoDonoResponse,
+    InteracaoArquitetoCreate, InteracaoArquitetoResponse,
+    EspecificadoresKpiResponse,
+    MetaVisitasUpsert, MetaVisitasResponse, MinhaMetaResponse,
+    ClienteResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -19,14 +27,23 @@ router = APIRouter(prefix="/arquitetos", tags=["CRM — Arquitetos"])
 @router.get("/", response_model=List[ArquitetoResponse])
 def listar_arquitetos(
     nivel_parceria: Optional[str] = None,
+    tipo: Optional[TipoEspecificador] = None,
+    status_carteira: Optional[StatusCarteiraEspecificador] = None,
+    consultor_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
+    query = db.query(Arquiteto).options(joinedload(Arquiteto.consultor)).filter(Arquiteto.is_active == True)
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
+    if tipo:
+        query = query.filter(Arquiteto.tipo == tipo)
+    if status_carteira:
+        query = query.filter(Arquiteto.status_carteira == status_carteira)
+    if consultor_id:
+        query = query.filter(Arquiteto.consultor_id == consultor_id)
     return query.order_by(Arquiteto.nome).offset(skip).limit(limit).all()
 
 
@@ -50,6 +67,128 @@ def criar_arquiteto(
     return arquiteto
 
 
+@router.get("/kpis", response_model=EspecificadoresKpiResponse)
+def kpis_especificadores(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    agora = datetime.now(timezone.utc)
+    inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    inicio_ano = agora.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    especificadores_ativos = db.query(Arquiteto).filter(Arquiteto.is_active == True).count()
+
+    def _pct_venda_desde(desde: datetime) -> float:
+        total = db.query(func.sum(Projeto.valor_contrato)).filter(
+            Projeto.criado_em >= desde, Projeto.arquivado == False
+        ).scalar() or 0.0
+        com_especificador = db.query(func.sum(Projeto.valor_contrato)).filter(
+            Projeto.criado_em >= desde, Projeto.arquivado == False, Projeto.arquiteto_id.isnot(None)
+        ).scalar() or 0.0
+        if not total:
+            return 0.0
+        return round((com_especificador / total) * 100, 1)
+
+    atendimentos_mes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita_escritorio")
+        .count()
+    )
+    visitas_escritorio_mes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita_escritorio")
+        .count()
+    )
+
+    return {
+        "especificadores_ativos": especificadores_ativos,
+        "pct_venda_mes": _pct_venda_desde(inicio_mes),
+        "pct_venda_ano": _pct_venda_desde(inicio_ano),
+        "atendimentos_mes": atendimentos_mes,
+        "visitas_escritorio_mes": visitas_escritorio_mes,
+    }
+
+
+@router.get("/metas-visitas", response_model=List[MetaVisitasResponse])
+def listar_metas_visitas(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    metas = db.query(MetaVisitasConsultor).options(joinedload(MetaVisitasConsultor.consultor)).all()
+    return [
+        {
+            "id": m.id,
+            "consultor_id": m.consultor_id,
+            "consultor_nome": m.consultor.nome,
+            "meta_visitas_mes": m.meta_visitas_mes,
+            "configurado_por_id": m.configurado_por_id,
+            "atualizado_em": m.atualizado_em,
+        }
+        for m in metas
+    ]
+
+
+@router.put("/metas-visitas", response_model=MetaVisitasResponse)
+def definir_meta_visitas(
+    payload: MetaVisitasUpsert,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    consultor = db.query(User).filter(User.id == payload.consultor_id).first()
+    if not consultor:
+        raise HTTPException(400, "Consultor inválido")
+
+    meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == payload.consultor_id).first()
+    if meta:
+        meta.meta_visitas_mes = payload.meta_visitas_mes
+        meta.configurado_por_id = current_user.id
+    else:
+        meta = MetaVisitasConsultor(
+            consultor_id=payload.consultor_id,
+            meta_visitas_mes=payload.meta_visitas_mes,
+            configurado_por_id=current_user.id,
+        )
+        db.add(meta)
+    db.commit()
+    db.refresh(meta)
+
+    return {
+        "id": meta.id,
+        "consultor_id": meta.consultor_id,
+        "consultor_nome": consultor.nome,
+        "meta_visitas_mes": meta.meta_visitas_mes,
+        "configurado_por_id": meta.configurado_por_id,
+        "atualizado_em": meta.atualizado_em,
+    }
+
+
+@router.get("/metas-visitas/me", response_model=MinhaMetaResponse)
+def minha_meta_visitas(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == current_user.id).first()
+    meta_valor = meta.meta_visitas_mes if meta else 0
+
+    agora = datetime.now(timezone.utc)
+    inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    visitas_realizadas = (
+        db.query(InteracaoArquiteto)
+        .filter(
+            InteracaoArquiteto.responsavel_id == current_user.id,
+            InteracaoArquiteto.tipo == "visita_escritorio",
+            InteracaoArquiteto.data >= inicio_mes,
+        )
+        .count()
+    )
+
+    return {"meta_visitas_mes": meta_valor, "visitas_realizadas_mes": visitas_realizadas}
+
+
 @router.get("/{arquiteto_id}", response_model=ArquitetoResponse)
 def obter_arquiteto(
     arquiteto_id: int,
@@ -62,10 +201,81 @@ def obter_arquiteto(
     return arquiteto
 
 
+@router.patch("/{arquiteto_id}/dono", response_model=ArquitetoResponse)
+def reatribuir_dono(
+    arquiteto_id: int,
+    payload: ArquitetoDonoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(
+        PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL
+    )),
+):
+    arquiteto = _get_arquiteto_ou_404(arquiteto_id, db)
+
+    novo_consultor = db.query(User).filter(User.id == payload.consultor_id, User.is_active == True).first()
+    if not novo_consultor:
+        raise HTTPException(400, "Consultor inválido")
+
+    consultor_anterior_id = arquiteto.consultor_id
+    arquiteto.consultor_id = payload.consultor_id
+
+    db.add(HistoricoDonoArquiteto(
+        arquiteto_id=arquiteto.id,
+        consultor_anterior_id=consultor_anterior_id,
+        consultor_novo_id=payload.consultor_id,
+        alterado_por_id=current_user.id,
+    ))
+    db.add(Notificacao(
+        tipo=TipoNotificacao.ESPECIFICADOR_TRANSFERIDO,
+        titulo="Novo especificador na sua carteira",
+        mensagem=f"Você recebeu {arquiteto.nome} ({arquiteto.tipo.value}) na sua carteira.",
+        destinatario_id=payload.consultor_id,
+        arquiteto_id=arquiteto.id,
+    ))
+
+    db.commit()
+    db.refresh(arquiteto)
+    return arquiteto
+
+
+@router.get("/{arquiteto_id}/historico-dono", response_model=List[HistoricoDonoResponse])
+def historico_dono(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    registros = (
+        db.query(HistoricoDonoArquiteto)
+        .options(
+            joinedload(HistoricoDonoArquiteto.consultor_anterior),
+            joinedload(HistoricoDonoArquiteto.consultor_novo),
+            joinedload(HistoricoDonoArquiteto.alterado_por),
+        )
+        .filter(HistoricoDonoArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(HistoricoDonoArquiteto.alterado_em.desc(), HistoricoDonoArquiteto.id.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "arquiteto_id": r.arquiteto_id,
+            "consultor_anterior_id": r.consultor_anterior_id,
+            "consultor_anterior_nome": r.consultor_anterior.nome if r.consultor_anterior else None,
+            "consultor_novo_id": r.consultor_novo_id,
+            "consultor_novo_nome": r.consultor_novo.nome,
+            "alterado_por_id": r.alterado_por_id,
+            "alterado_por_nome": r.alterado_por.nome if r.alterado_por else None,
+            "alterado_em": r.alterado_em,
+        }
+        for r in registros
+    ]
+
+
 @router.patch("/{arquiteto_id}", response_model=ArquitetoResponse)
 def atualizar_arquiteto(
     arquiteto_id: int,
-    payload: ArquitetoCreate,
+    payload: ArquitetoUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(
         PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL, PerfilUsuario.RECEPCAO
@@ -290,3 +500,57 @@ def remover_concorrente(
     concorrente = _get_concorrente_ou_404(arquiteto_id, concorrente_id, db)
     db.delete(concorrente)
     db.commit()
+
+
+# === INTERAÇÕES ===
+
+@router.get("/{arquiteto_id}/interacoes", response_model=List[InteracaoArquitetoResponse])
+def listar_interacoes_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(InteracaoArquiteto)
+        .options(joinedload(InteracaoArquiteto.responsavel))
+        .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
+        .order_by(InteracaoArquiteto.data.desc(), InteracaoArquiteto.id.desc())
+        .all()
+    )
+
+
+@router.post("/{arquiteto_id}/interacoes", response_model=InteracaoArquitetoResponse, status_code=201)
+def registrar_interacao_arquiteto(
+    arquiteto_id: int,
+    payload: InteracaoArquitetoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    interacao = InteracaoArquiteto(
+        arquiteto_id=arquiteto_id,
+        responsavel_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(interacao)
+    db.commit()
+    db.refresh(interacao)
+    return interacao
+
+
+# === CLIENTES VINCULADOS ===
+
+@router.get("/{arquiteto_id}/clientes", response_model=List[ClienteResponse])
+def listar_clientes_do_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(Cliente)
+        .filter(Cliente.arquiteto_id == arquiteto_id)
+        .order_by(Cliente.nome)
+        .all()
+    )

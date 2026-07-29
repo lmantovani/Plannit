@@ -4,12 +4,12 @@ Critérios de pontuação são faixas fixas (mesmo padrão de app/services/brief
 não percentil relativo entre arquitetos. Limiares numéricos ficam como constantes
 nomeadas abaixo, ajustáveis sem reescrever a lógica.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.crm import Arquiteto, Lead, StatusFunil, ConcorrenteArquiteto
+from app.models.crm import Arquiteto, Lead, StatusFunil, ConcorrenteArquiteto, InteracaoArquiteto
 from app.models.projeto import Projeto, StatusProjeto
 
 
@@ -99,6 +99,15 @@ def calcular_score_geral(rfv: float, potencial: float, lealdade: float) -> float
     return round((rfv + potencial + lealdade) / 3, 1)
 
 
+def _utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normaliza para timezone-aware UTC. SQLite (usado nos testes) devolve datetimes
+    naive mesmo para colunas `DateTime(timezone=True)`; Postgres devolve aware. Sem isso,
+    subtrair/comparar com `agora` (aware) explode com `TypeError` num dos dois ambientes."""
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
 def meses_entre(inicio: Optional[datetime], fim: datetime) -> int:
     if inicio is None:
         return 0
@@ -144,6 +153,8 @@ def determinar_flags(
     potencial: float,
     valor_pontos: float,
     em_risco: bool,
+    tem_dono: bool = False,
+    dias_desde_ultima_interacao: Optional[int] = None,
 ) -> list[str]:
     flags = []
     if score_geral >= 85:
@@ -154,6 +165,8 @@ def determinar_flags(
         flags.append("alto_potencial")
     if valor_pontos >= 90:
         flags.append("indicacao_alto_valor")
+    if em_risco and tem_dono and (dias_desde_ultima_interacao is None or dias_desde_ultima_interacao > 30):
+        flags.append("especificador_esfriando")
     return flags
 
 
@@ -173,7 +186,7 @@ PROJETO_STATUS_ENCERRADO = {StatusProjeto.CONCLUIDO, StatusProjeto.CANCELADO}
 
 
 def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     limite_12_meses = agora - timedelta(days=365)
 
     projetos = (
@@ -187,14 +200,22 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
         .filter(ConcorrenteArquiteto.arquiteto_id == arquiteto.id)
         .all()
     )
+    interacoes = (
+        db.query(InteracaoArquiteto)
+        .filter(InteracaoArquiteto.arquiteto_id == arquiteto.id)
+        .all()
+    )
+    datas_interacoes = [_utc(i.data) for i in interacoes if i.data]
+    ultima_interacao_em = max(datas_interacoes) if datas_interacoes else None
+    dias_desde_ultima_interacao = (agora - ultima_interacao_em).days if ultima_interacao_em else None
 
-    projetos_12m = [p for p in projetos if p.criado_em and p.criado_em >= limite_12_meses]
+    projetos_12m = [p for p in projetos if p.criado_em and _utc(p.criado_em) >= limite_12_meses]
 
-    datas_projetos = [p.criado_em for p in projetos if p.criado_em]
+    datas_projetos = [_utc(p.criado_em) for p in projetos if p.criado_em]
     ultimo_projeto_em = max(datas_projetos) if datas_projetos else None
     dias_desde_ultimo_projeto = (agora - ultimo_projeto_em).days if ultimo_projeto_em else None
 
-    datas_leads = [l.criado_em for l in leads if l.criado_em]
+    datas_leads = [_utc(l.criado_em) for l in leads if l.criado_em]
     ultimo_lead_em = max(datas_leads) if datas_leads else None
     candidatos_atividade = [d for d in (ultimo_projeto_em, ultimo_lead_em) if d]
     ultima_atividade_em = max(candidatos_atividade) if candidatos_atividade else None
@@ -227,7 +248,7 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
         dias_desde_ultima_atividade is None or dias_desde_ultima_atividade > 180
     )
     tem_historico = bool(projetos) or bool(leads)
-    dias_desde_cadastro = (agora - arquiteto.criado_em).days if arquiteto.criado_em else 0
+    dias_desde_cadastro = (agora - _utc(arquiteto.criado_em)).days if arquiteto.criado_em else 0
 
     segmento = determinar_segmento(
         tem_historico=tem_historico,
@@ -243,6 +264,8 @@ def calcular_score(db: Session, arquiteto: Arquiteto) -> Dict[str, Any]:
         potencial=potencial,
         valor_pontos=valor,
         em_risco=em_risco,
+        tem_dono=arquiteto.consultor_id is not None,
+        dias_desde_ultima_interacao=dias_desde_ultima_interacao,
     )
 
     concorrencia = calcular_risco_concorrencia(

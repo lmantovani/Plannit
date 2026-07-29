@@ -1,0 +1,270 @@
+import { useEffect, useState } from 'react'
+import { Plus, Search } from 'lucide-react'
+import { arquitetosApi, usersApi } from '../../lib/api'
+import { Modal, EmptyState, LoadingPage } from '../../components/ui'
+import {
+  TIPO_ARQUITETO_LABELS, TIPO_ARQUITETO_COLORS, STATUS_COLOR_CLASSES, STATUS_CARTEIRA_CONFIG,
+} from '../../lib/constants'
+import { useAuthStore, podeVerTudo } from '../../store'
+import EspecificadoresKpiPanel from '../../components/especificadores/EspecificadoresKpiPanel'
+import EspecificadorDrawer from './EspecificadorDrawer'
+import clsx from 'clsx'
+
+function extractErrorMessage(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg || String(d)).join('; ')
+  return fallback
+}
+
+export function TipoBadge({ tipo }) {
+  if (!tipo) return <span className="text-stone-300 text-xs">—</span>
+  const color = TIPO_ARQUITETO_COLORS[tipo] || 'stone'
+  return (
+    <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[color])}>
+      {TIPO_ARQUITETO_LABELS[tipo] || tipo}
+    </span>
+  )
+}
+
+export default function EspecificadoresPage() {
+  const { user } = useAuthStore()
+  const [especificadores, setEspecificadores] = useState([])
+  const [consultores, setConsultores] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroConsultor, setFiltroConsultor] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [selecionadoId, setSelecionadoId] = useState(null)
+
+  const podeGerenciarConsultores = podeVerTudo(user?.perfil)
+
+  const fetchLista = async () => {
+    try {
+      const params = {}
+      if (filtroTipo) params.tipo = filtroTipo
+      if (filtroStatus) params.status_carteira = filtroStatus
+      if (filtroConsultor) params.consultor_id = filtroConsultor
+      const { data } = await arquitetosApi.list(params)
+      setEspecificadores(data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => {
+    let ignore = false
+    const params = {}
+    if (filtroTipo) params.tipo = filtroTipo
+    if (filtroStatus) params.status_carteira = filtroStatus
+    if (filtroConsultor) params.consultor_id = filtroConsultor
+    arquitetosApi.list(params)
+      .then(({ data }) => { if (!ignore) setEspecificadores(data) })
+      .catch(e => { if (!ignore) console.error(e) })
+      .finally(() => { if (!ignore) setLoading(false) })
+    return () => { ignore = true }
+  }, [filtroTipo, filtroStatus, filtroConsultor])
+
+  useEffect(() => {
+    if (podeGerenciarConsultores) {
+      usersApi.list().then(r => setConsultores(r.data.filter(u => u.perfil === 'vendedor'))).catch(console.error)
+    }
+  }, [podeGerenciarConsultores])
+
+  const filtrados = especificadores
+    .filter(a => !search || a.nome.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+
+  if (loading) return <LoadingPage />
+
+  return (
+    <div className="p-6">
+      <div className="mb-5">
+        <EspecificadoresKpiPanel />
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="flex items-center gap-2 bg-stone-100 rounded-lg px-3 py-1.5 flex-1 max-w-xs">
+          <Search size={13} className="text-stone-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar especificador..."
+            className="bg-transparent text-sm text-stone-700 outline-none w-full placeholder:text-stone-400"
+          />
+        </div>
+
+        <select className="input w-40" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+          <option value="">Todos os tipos</option>
+          {Object.entries(TIPO_ARQUITETO_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+
+        <select className="input w-40" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          {Object.entries(STATUS_CARTEIRA_CONFIG).map(([k, v]) => (
+            <option key={k} value={k}>{v.label}</option>
+          ))}
+        </select>
+
+        {podeGerenciarConsultores && (
+          <select className="input w-48" value={filtroConsultor} onChange={e => setFiltroConsultor(e.target.value)}>
+            <option value="">Todos os consultores</option>
+            {consultores.map(v => (
+              <option key={v.id} value={v.id}>{v.nome}</option>
+            ))}
+          </select>
+        )}
+
+        <button onClick={() => setShowModal(true)} className="btn-primary btn-sm gap-1.5 ml-auto">
+          <Plus size={13} /> Novo Especificador
+        </button>
+      </div>
+
+      {/* Tabela */}
+      {filtrados.length === 0 ? (
+        <EmptyState title="Nenhum especificador encontrado" description="Tente ajustar os filtros ou cadastre um novo." />
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="table-base">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Escritório</th>
+                <th>Telefone</th>
+                <th>Dono da carteira</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.map(a => (
+                <tr key={a.id}>
+                  <td>
+                    <button
+                      className="font-medium text-stone-800 hover:text-primary-600 transition-colors text-left"
+                      onClick={() => setSelecionadoId(a.id)}
+                    >
+                      {a.nome}
+                    </button>
+                  </td>
+                  <td><TipoBadge tipo={a.tipo} /></td>
+                  <td>
+                    <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', STATUS_COLOR_CLASSES[STATUS_CARTEIRA_CONFIG[a.status_carteira]?.color || 'stone'])}>
+                      {STATUS_CARTEIRA_CONFIG[a.status_carteira]?.label || a.status_carteira}
+                    </span>
+                  </td>
+                  <td>{a.escritorio || '—'}</td>
+                  <td>{a.telefone || '—'}</td>
+                  <td>{a.consultor_nome || 'Sem dono'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <NovoEspecificadorModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSaved={() => { setShowModal(false); fetchLista() }}
+      />
+
+      {selecionadoId && (
+        <EspecificadorDrawer
+          arquitetoId={selecionadoId}
+          onClose={() => setSelecionadoId(null)}
+          onUpdated={fetchLista}
+        />
+      )}
+    </div>
+  )
+}
+
+// === Modal Novo Especificador ===
+function NovoEspecificadorModal({ open, onClose, onSaved }) {
+  const vazio = { nome: '', tipo: '', escritorio: '', endereco_escritorio: '', telefone: '', email: '', nivel_parceria: 'parceiro', especialidade: '' }
+  const [form, setForm] = useState(vazio)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const payload = { ...form, email: form.email.trim() || null }
+      await arquitetosApi.create(payload)
+      onSaved()
+      setForm(vazio)
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao salvar especificador'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Novo Especificador" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="label">Nome *</label>
+            <input className="input" required value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Nome completo" />
+          </div>
+          <div>
+            <label className="label">Tipo *</label>
+            <select className="input" required value={form.tipo} onChange={e => set('tipo', e.target.value)}>
+              <option value="" disabled>Selecione...</option>
+              {Object.entries(TIPO_ARQUITETO_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Nível de parceria</label>
+            <select className="input" value={form.nivel_parceria} onChange={e => set('nivel_parceria', e.target.value)}>
+              <option value="parceiro">Parceiro</option>
+              <option value="premium">Premium</option>
+              <option value="vip">VIP</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Escritório</label>
+            <input className="input" value={form.escritorio} onChange={e => set('escritorio', e.target.value)} placeholder="Nome do escritório" />
+          </div>
+          <div>
+            <label className="label">Telefone</label>
+            <input className="input" value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(11) 99999-0000" />
+          </div>
+          <div className="col-span-2">
+            <label className="label">E-mail</label>
+            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" />
+          </div>
+          <div className="col-span-2">
+            <label className="label">Endereço do escritório</label>
+            <input className="input" value={form.endereco_escritorio} onChange={e => set('endereco_escritorio', e.target.value)} />
+          </div>
+          <div className="col-span-2">
+            <label className="label">Especialidade</label>
+            <input className="input" value={form.especialidade} onChange={e => set('especialidade', e.target.value)} placeholder="Ex: interiores comerciais" />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Cadastrar Especificador'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}

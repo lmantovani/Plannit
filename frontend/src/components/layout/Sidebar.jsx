@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, FileText, Layers, DollarSign,
   Truck, Hammer, HeadphonesIcon, BarChart2, Settings, LogOut,
-  ChevronLeft, Building2, Compass
+  ChevronLeft, Building2, Compass, UserCog
 } from 'lucide-react'
 import { useAuthStore, useUIStore, PERFIL_LABELS } from '../../store'
 import clsx from 'clsx'
@@ -12,7 +12,7 @@ const NAV = [
   { path: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard, perfis: ['*'] },
   { section: 'Comercial' },
   { path: '/crm',        label: 'CRM / Leads',   icon: Users,           perfis: ['*'] },
-  { path: '/arquitetos', label: 'Arquitetos',    icon: Compass,         perfis: ['*'] },
+  { path: '/especificadores', label: 'Especificadores', icon: Compass,  perfis: ['diretoria','gerente_comercial','vendedor','recepcao'] },
   { path: '/briefing',   label: 'Briefings',     icon: FileText,        perfis: ['diretoria','gerente_comercial','vendedor','projetista'] },
   { path: '/projetos',   label: 'Projetos',      icon: Layers,          perfis: ['diretoria','gerente_comercial','projetista','vendedor'] },
   { section: 'Operacional' },
@@ -23,6 +23,7 @@ const NAV = [
   { path: '/financeiro', label: 'Financeiro',    icon: DollarSign,      perfis: ['diretoria','gerente_comercial','financeiro'] },
   { path: '/pos-venda',  label: 'Pós-Venda / AT', icon: HeadphonesIcon, perfis: ['diretoria','gerente_comercial','sac'] },
   { section: 'Gestão' },
+  { path: '/colaboradores', label: 'Colaboradores', icon: UserCog, perfis: ['diretoria','rh'] },
   { path: '/relatorios', label: 'Relatórios',    icon: BarChart2,       perfis: ['diretoria','gerente_comercial'] },
   { path: '/configuracoes',label: 'Configurações', icon: Settings,      perfis: ['diretoria'] },
 ]

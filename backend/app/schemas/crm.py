@@ -1,7 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.models.crm import OrigemLead, StatusFunil, TipoCliente
+from app.models.crm import (
+    OrigemLead, StatusFunil, TipoCliente,
+    TipoEspecificador, StatusCarteiraEspecificador,
+)
 
 
 # === LEAD ===
@@ -83,6 +86,7 @@ class ClienteCreate(BaseModel):
     estado: Optional[str] = None
     endereco: Optional[str] = None
     tipo: TipoCliente = TipoCliente.PESSOA_FISICA
+    arquiteto_id: Optional[int] = None
 
 
 class ClienteResponse(BaseModel):
@@ -94,6 +98,7 @@ class ClienteResponse(BaseModel):
     cidade: Optional[str]
     tipo: TipoCliente
     cadastro_aprovado: bool
+    arquiteto_id: Optional[int]
     criado_em: datetime
 
     class Config:
@@ -108,6 +113,21 @@ class ArquitetoCreate(BaseModel):
     telefone: Optional[str] = None
     email: Optional[EmailStr] = None
     nivel_parceria: str = "parceiro"
+    tipo: TipoEspecificador
+    especialidade: Optional[str] = None
+    endereco_escritorio: Optional[str] = None
+
+
+class ArquitetoUpdate(BaseModel):
+    nome: Optional[str] = None
+    escritorio: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    nivel_parceria: Optional[str] = None
+    tipo: Optional[TipoEspecificador] = None
+    especialidade: Optional[str] = None
+    endereco_escritorio: Optional[str] = None
+    status_carteira: Optional[StatusCarteiraEspecificador] = None
 
 
 class ArquitetoResponse(BaseModel):
@@ -117,10 +137,32 @@ class ArquitetoResponse(BaseModel):
     telefone: Optional[str]
     email: Optional[str]
     nivel_parceria: str
+    tipo: TipoEspecificador
+    especialidade: Optional[str]
+    endereco_escritorio: Optional[str]
+    consultor_id: Optional[int]
+    consultor_nome: Optional[str] = None
+    status_carteira: StatusCarteiraEspecificador
     is_active: bool
 
     class Config:
         from_attributes = True
+
+
+class ArquitetoDonoUpdate(BaseModel):
+    consultor_id: int
+
+
+class HistoricoDonoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    consultor_anterior_id: Optional[int]
+    consultor_anterior_nome: Optional[str]
+    consultor_novo_id: int
+    consultor_novo_nome: str
+    alterado_por_id: Optional[int]
+    alterado_por_nome: Optional[str]
+    alterado_em: datetime
 
 
 # === DECISOR ARQUITETO ===
@@ -170,6 +212,28 @@ class ConcorrenteArquitetoResponse(BaseModel):
         from_attributes = True
 
 
+# === INTERAÇÃO COM ARQUITETO/ESPECIFICADOR ===
+
+class InteracaoArquitetoCreate(BaseModel):
+    tipo: str  # ligacao | whatsapp | email | visita | reuniao
+    resumo: str
+    lead_id: Optional[int] = None
+
+
+class InteracaoArquitetoResponse(BaseModel):
+    id: int
+    arquiteto_id: int
+    responsavel_id: int
+    responsavel_nome: Optional[str]
+    tipo: str
+    resumo: str
+    lead_id: Optional[int]
+    data: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # === SCORE DO ARQUITETO ===
 
 class ArquitetoScoreResponse(BaseModel):
@@ -181,3 +245,34 @@ class ArquitetoScoreResponse(BaseModel):
     flags: List[str]
     detalhes: dict
     concorrencia: dict
+
+
+# === KPIs DA CARTEIRA DE ESPECIFICADORES ===
+
+class EspecificadoresKpiResponse(BaseModel):
+    especificadores_ativos: int
+    pct_venda_mes: float
+    pct_venda_ano: float
+    atendimentos_mes: int
+    visitas_escritorio_mes: int
+
+
+# === META DE VISITAS ===
+
+class MetaVisitasUpsert(BaseModel):
+    consultor_id: int
+    meta_visitas_mes: int = Field(..., ge=0)
+
+
+class MetaVisitasResponse(BaseModel):
+    id: int
+    consultor_id: int
+    consultor_nome: str
+    meta_visitas_mes: int
+    configurado_por_id: Optional[int]
+    atualizado_em: Optional[datetime]
+
+
+class MinhaMetaResponse(BaseModel):
+    meta_visitas_mes: int
+    visitas_realizadas_mes: int
