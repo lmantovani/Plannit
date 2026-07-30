@@ -12,7 +12,7 @@ const NAV = [
   { path: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard, perfis: ['*'] },
   { section: 'Comercial' },
   { path: '/crm',        label: 'CRM / Leads',   icon: Users,           perfis: ['*'] },
-  { path: '/arquitetos', label: 'Arquitetos',    icon: Compass,         perfis: ['*'] },
+  { path: '/especificadores', label: 'Especificadores', icon: Compass,  perfis: ['diretoria','gerente_comercial','vendedor','recepcao'] },
   { path: '/briefing',   label: 'Briefings',     icon: FileText,        perfis: ['diretoria','gerente_comercial','vendedor','projetista'] },
   { path: '/projetos',   label: 'Projetos',      icon: Layers,          perfis: ['diretoria','gerente_comercial','projetista','vendedor'] },
   { section: 'Operacional' },

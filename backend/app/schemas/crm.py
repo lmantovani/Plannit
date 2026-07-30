@@ -86,6 +86,7 @@ class ClienteCreate(BaseModel):
     estado: Optional[str] = None
     endereco: Optional[str] = None
     tipo: TipoCliente = TipoCliente.PESSOA_FISICA
+    arquiteto_id: Optional[int] = None
 
 
 class ClienteResponse(BaseModel):
@@ -97,6 +98,7 @@ class ClienteResponse(BaseModel):
     cidade: Optional[str]
     tipo: TipoCliente
     cadastro_aprovado: bool
+    arquiteto_id: Optional[int]
     criado_em: datetime
 
     class Config:
@@ -113,6 +115,7 @@ class ArquitetoCreate(BaseModel):
     nivel_parceria: str = "parceiro"
     tipo: TipoEspecificador
     especialidade: Optional[str] = None
+    endereco_escritorio: Optional[str] = None
 
 
 class ArquitetoUpdate(BaseModel):
@@ -123,6 +126,7 @@ class ArquitetoUpdate(BaseModel):
     nivel_parceria: Optional[str] = None
     tipo: Optional[TipoEspecificador] = None
     especialidade: Optional[str] = None
+    endereco_escritorio: Optional[str] = None
     status_carteira: Optional[StatusCarteiraEspecificador] = None
 
 
@@ -135,7 +139,9 @@ class ArquitetoResponse(BaseModel):
     nivel_parceria: str
     tipo: TipoEspecificador
     especialidade: Optional[str]
+    endereco_escritorio: Optional[str]
     consultor_id: Optional[int]
+    consultor_nome: Optional[str] = None
     status_carteira: StatusCarteiraEspecificador
     is_active: bool
 
@@ -218,6 +224,7 @@ class InteracaoArquitetoResponse(BaseModel):
     id: int
     arquiteto_id: int
     responsavel_id: int
+    responsavel_nome: Optional[str]
     tipo: str
     resumo: str
     lead_id: Optional[int]

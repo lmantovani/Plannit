@@ -8,6 +8,7 @@ import { dashboardApi } from '../../lib/api'
 import { KpiCard, StatusBadge, LoadingPage, AlertBanner } from '../../components/ui'
 import { formatDate, timeAgo, formatCurrency } from '../../lib/constants'
 import { useAuthStore } from '../../store'
+import EspecificadoresKpiPanel from '../../components/especificadores/EspecificadoresKpiPanel'
 import clsx from 'clsx'
 
 export default function DashboardPage() {
@@ -107,6 +108,9 @@ export default function DashboardPage() {
           onClick={() => {}}
         />
       </div>
+
+      {/* KPIs da carteira de especificadores */}
+      <EspecificadoresKpiPanel />
 
       {/* Funil de leads */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

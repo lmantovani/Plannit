@@ -70,7 +70,7 @@ export const ORIGEM_LABELS = {
   site_google: 'Site / Google',
   construtora: 'Construtora',
   showroom:    'Showroom',
-  arquiteto:   'Arquiteto',
+  arquiteto:   'Especificador',
   outro:       'Outro',
 }
 
@@ -94,6 +94,43 @@ export const timeAgo = (date) => {
   return `${days}d atrás`
 }
 
+// Tipos de Especificadores (Módulo Especificadores)
+export const TIPO_ARQUITETO_LABELS = {
+  arquiteto:            'Arquiteto',
+  engenheiro:           'Engenheiro',
+  designer_interiores:  'Designer de Interiores',
+  decorador:            'Decorador',
+  corretor:             'Corretor',
+  outro:                'Outro',
+}
+
+export const TIPO_ARQUITETO_COLORS = {
+  arquiteto:            'blue',
+  engenheiro:           'purple',
+  designer_interiores:  'amber',
+  decorador:            'green',
+  corretor:             'primary',
+  outro:                'stone',
+}
+
+export const TIPO_INTERACAO_ARQUITETO_LABELS = {
+  ligacao:            'Ligação',
+  whatsapp:           'WhatsApp',
+  email:              'E-mail',
+  visita_escritorio:  'Visita ao escritório',
+  visita_loja:        'Visita à loja',
+  reuniao:            'Reunião',
+  evento:              'Evento',
+  viagem:              'Viagem',
+  envio_brinde:        'Envio de brinde',
+}
+
+export const STATUS_CARTEIRA_CONFIG = {
+  ativo:          { label: 'Ativo',          color: 'green' },
+  em_prospeccao:  { label: 'Em Prospecção',  color: 'amber' },
+  inativo:        { label: 'Inativo',        color: 'stone' },
+}
+
 // Score de Arquitetos (Módulo Arquitetos)
 export const SEGMENTO_CONFIG = {
   campeao:        { label: 'Campeão',        color: 'primary' },
@@ -106,8 +143,9 @@ export const SEGMENTO_CONFIG = {
 }
 
 export const FLAG_CONFIG = {
-  top_indicador:        { label: 'Top Indicador',           color: 'primary' },
-  em_risco_de_perda:    { label: 'Em Risco de Perda',       color: 'red' },
-  alto_potencial:       { label: 'Alto Potencial',          color: 'blue' },
-  indicacao_alto_valor: { label: 'Indicação de Alto Valor', color: 'green' },
+  top_indicador:           { label: 'Top Indicador',           color: 'primary' },
+  em_risco_de_perda:       { label: 'Em Risco de Perda',       color: 'red' },
+  alto_potencial:          { label: 'Alto Potencial',          color: 'blue' },
+  indicacao_alto_valor:    { label: 'Indicação de Alto Valor', color: 'green' },
+  especificador_esfriando: { label: 'Esfriando',               color: 'amber' },
 }

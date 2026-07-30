@@ -89,4 +89,13 @@ export const arquitetosApi = {
   criarConcorrente: (id, data) => api.post(`/arquitetos/${id}/concorrentes`, data),
   atualizarConcorrente: (id, concId, data) => api.patch(`/arquitetos/${id}/concorrentes/${concId}`, data),
   removerConcorrente: (id, concId) => api.delete(`/arquitetos/${id}/concorrentes/${concId}`),
+  listarClientes: (id) => api.get(`/arquitetos/${id}/clientes`),
+  listarInteracoes: (id) => api.get(`/arquitetos/${id}/interacoes`),
+  registrarInteracao: (id, data) => api.post(`/arquitetos/${id}/interacoes`, data),
+  reatribuirDono: (id, data) => api.patch(`/arquitetos/${id}/dono`, data),
+  historicoDono: (id) => api.get(`/arquitetos/${id}/historico-dono`),
+  kpis: () => api.get('/arquitetos/kpis'),
+  listarMetasVisitas: () => api.get('/arquitetos/metas-visitas'),
+  definirMetaVisitas: (data) => api.put('/arquitetos/metas-visitas', data),
+  minhaMetaVisitas: () => api.get('/arquitetos/metas-visitas/me'),
 }

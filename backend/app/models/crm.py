@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SAEnum, Text, ForeignKey, Date, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from typing import Optional
 import enum
 from app.core.database import Base
 
@@ -37,6 +38,8 @@ class TipoEspecificador(str, enum.Enum):
     DESIGNER_INTERIORES = "designer_interiores"
     DECORADOR = "decorador"
     ENGENHEIRO = "engenheiro"
+    CORRETOR = "corretor"
+    OUTRO = "outro"
 
 
 class StatusCarteiraEspecificador(str, enum.Enum):
@@ -120,12 +123,15 @@ class Cliente(Base):
     cadastro_aprovado_por = Column(Integer, ForeignKey("users.id"), nullable=True)
     cadastro_aprovado_em = Column(DateTime(timezone=True), nullable=True)
 
+    arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=True)
+
     is_active = Column(Boolean, default=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     projetos = relationship("Projeto", back_populates="cliente")
+    arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
 
     def __repr__(self):
         return f"<Cliente {self.nome}>"
@@ -137,6 +143,7 @@ class Arquiteto(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(200), nullable=False)
     escritorio = Column(String(200), nullable=True)
+    endereco_escritorio = Column(String(300), nullable=True)
     telefone = Column(String(20), nullable=True)
     email = Column(String(200), nullable=True, unique=True)
     nivel_parceria = Column(String(50), default="parceiro")  # parceiro, premium, vip
@@ -152,6 +159,10 @@ class Arquiteto(Base):
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
 
     consultor = relationship("User", foreign_keys=[consultor_id])
+
+    @property
+    def consultor_nome(self) -> Optional[str]:
+        return self.consultor.nome if self.consultor else None
 
     def __repr__(self):
         return f"<Arquiteto {self.nome}>"
@@ -230,7 +241,8 @@ class InteracaoArquiteto(Base):
     arquiteto_id = Column(Integer, ForeignKey("arquitetos.id"), nullable=False)
     responsavel_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    tipo = Column(String(50), nullable=False)  # ligacao, whatsapp, email, visita, reuniao
+    # ligacao, whatsapp, email, visita_escritorio, visita_loja, reuniao, evento, viagem, envio_brinde
+    tipo = Column(String(50), nullable=False)
     resumo = Column(Text, nullable=False)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)  # rastreabilidade: interação → lead gerado
     data = Column(DateTime(timezone=True), server_default=func.now())
@@ -238,6 +250,10 @@ class InteracaoArquiteto(Base):
     arquiteto = relationship("Arquiteto", foreign_keys=[arquiteto_id])
     responsavel = relationship("User", foreign_keys=[responsavel_id])
     lead = relationship("Lead", foreign_keys=[lead_id])
+
+    @property
+    def responsavel_nome(self) -> Optional[str]:
+        return self.responsavel.nome if self.responsavel else None
 
     def __repr__(self):
         return f"<InteracaoArquiteto {self.tipo} [arquiteto={self.arquiteto_id}]>"

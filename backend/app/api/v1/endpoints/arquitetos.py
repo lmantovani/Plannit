@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
 from app.models.user import User, PerfilUsuario
-from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor
+from app.models.crm import Arquiteto, DecisorArquiteto, ConcorrenteArquiteto, TipoEspecificador, StatusCarteiraEspecificador, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor, Cliente
 from app.models.notificacao import Notificacao, TipoNotificacao
 from app.models.projeto import Projeto
 from app.schemas.crm import (
@@ -17,6 +17,7 @@ from app.schemas.crm import (
     InteracaoArquitetoCreate, InteracaoArquitetoResponse,
     EspecificadoresKpiResponse,
     MetaVisitasUpsert, MetaVisitasResponse, MinhaMetaResponse,
+    ClienteResponse,
 )
 from app.services import arquiteto_score as score_service
 
@@ -34,7 +35,7 @@ def listar_arquitetos(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Arquiteto).filter(Arquiteto.is_active == True)
+    query = db.query(Arquiteto).options(joinedload(Arquiteto.consultor)).filter(Arquiteto.is_active == True)
     if nivel_parceria:
         query = query.filter(Arquiteto.nivel_parceria == nivel_parceria)
     if tipo:
@@ -71,7 +72,7 @@ def kpis_especificadores(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     inicio_ano = agora.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -90,12 +91,12 @@ def kpis_especificadores(
 
     atendimentos_mes = (
         db.query(InteracaoArquiteto)
-        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita")
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo != "visita_escritorio")
         .count()
     )
     visitas_escritorio_mes = (
         db.query(InteracaoArquiteto)
-        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita")
+        .filter(InteracaoArquiteto.data >= inicio_mes, InteracaoArquiteto.tipo == "visita_escritorio")
         .count()
     )
 
@@ -173,13 +174,13 @@ def minha_meta_visitas(
     meta = db.query(MetaVisitasConsultor).filter(MetaVisitasConsultor.consultor_id == current_user.id).first()
     meta_valor = meta.meta_visitas_mes if meta else 0
 
-    agora = datetime.utcnow()
+    agora = datetime.now(timezone.utc)
     inicio_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     visitas_realizadas = (
         db.query(InteracaoArquiteto)
         .filter(
             InteracaoArquiteto.responsavel_id == current_user.id,
-            InteracaoArquiteto.tipo == "visita",
+            InteracaoArquiteto.tipo == "visita_escritorio",
             InteracaoArquiteto.data >= inicio_mes,
         )
         .count()
@@ -512,6 +513,7 @@ def listar_interacoes_arquiteto(
     _get_arquiteto_ou_404(arquiteto_id, db)
     return (
         db.query(InteracaoArquiteto)
+        .options(joinedload(InteracaoArquiteto.responsavel))
         .filter(InteracaoArquiteto.arquiteto_id == arquiteto_id)
         .order_by(InteracaoArquiteto.data.desc(), InteracaoArquiteto.id.desc())
         .all()
@@ -535,3 +537,20 @@ def registrar_interacao_arquiteto(
     db.commit()
     db.refresh(interacao)
     return interacao
+
+
+# === CLIENTES VINCULADOS ===
+
+@router.get("/{arquiteto_id}/clientes", response_model=List[ClienteResponse])
+def listar_clientes_do_arquiteto(
+    arquiteto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_arquiteto_ou_404(arquiteto_id, db)
+    return (
+        db.query(Cliente)
+        .filter(Cliente.arquiteto_id == arquiteto_id)
+        .order_by(Cliente.nome)
+        .all()
+    )

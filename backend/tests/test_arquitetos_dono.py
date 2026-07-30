@@ -87,3 +87,25 @@ def test_reatribuir_dono_bloqueado_403(auth_client, create_client_com_user, proj
         json={"consultor_id": vendedor.id},
     )
     assert resp.status_code == 403
+
+
+def test_reatribuir_dono_expoe_consultor_nome(auth_client, db_session):
+    """consultor_nome deve refletir o dono atual da carteira após reatribuição (bug: nunca era produzido pelo backend)."""
+    arquiteto = _criar_arquiteto(auth_client)
+    vendedor = _criar_vendedor(db_session)
+
+    resp = auth_client.patch(
+        f"/api/v1/arquitetos/{arquiteto['id']}/dono",
+        json={"consultor_id": vendedor.id},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["consultor_nome"] == vendedor.nome
+
+    # também deve aparecer na listagem (endpoint com eager-load, evitando N+1)
+    listagem = auth_client.get("/api/v1/arquitetos/").json()
+    alvo = next(a for a in listagem if a["id"] == arquiteto["id"])
+    assert alvo["consultor_nome"] == vendedor.nome
+
+    # e no GET individual
+    unico = auth_client.get(f"/api/v1/arquitetos/{arquiteto['id']}").json()
+    assert unico["consultor_nome"] == vendedor.nome
