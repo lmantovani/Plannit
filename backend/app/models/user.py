@@ -19,6 +19,7 @@ class PerfilUsuario(str, enum.Enum):
     MONTADOR_PROPRIO = "montador_proprio"
     MONTADOR_TERCEIRO = "montador_terceiro"
     ARQUITETO = "arquiteto"
+    RH = "rh"
     CLIENTE = "cliente"
 
 
@@ -42,6 +43,7 @@ PERFIS_INTERNOS = [
     PerfilUsuario.FINANCEIRO,
     PerfilUsuario.MONTADOR_PROPRIO,
     PerfilUsuario.MONTADOR_TERCEIRO,
+    PerfilUsuario.RH,
 ]
 
 # Perfis externos (portais)

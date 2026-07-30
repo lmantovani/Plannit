@@ -63,6 +63,7 @@ export const PERFIL_LABELS = {
 }
 
 export const podeVerTudo = (perfil) => ['diretoria', 'gerente_comercial'].includes(perfil)
+export const podeGerenciarColaboradores = (perfil) => ['rh', 'diretoria'].includes(perfil)
 export const ehVendedor = (perfil) => perfil === 'vendedor'
 export const ehProjetista = (perfil) => perfil === 'projetista'
 export const ehConferente = (perfil) => perfil === 'conferente'

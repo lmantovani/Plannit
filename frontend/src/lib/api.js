@@ -99,3 +99,31 @@ export const arquitetosApi = {
   definirMetaVisitas: (data) => api.put('/arquitetos/metas-visitas', data),
   minhaMetaVisitas: () => api.get('/arquitetos/metas-visitas/me'),
 }
+
+export const colaboradoresApi = {
+  list: (params) => api.get('/colaboradores/', { params }),
+  get: (id) => api.get(`/colaboradores/${id}`),
+  create: (data) => api.post('/colaboradores/', data),
+  update: (id, data) => api.put(`/colaboradores/${id}`, data),
+  desligar: (id, data) => api.post(`/colaboradores/${id}/desligar`, data),
+  excluir: (id) => api.delete(`/colaboradores/${id}`),
+  historicoSalarial: (id) => api.get(`/colaboradores/${id}/historico-salarial`),
+  lancarSalario: (id, data) => api.post(`/colaboradores/${id}/historico-salarial`, data),
+  historicoCargo: (id) => api.get(`/colaboradores/${id}/historico-cargo`),
+  promover: (id, data) => api.post(`/colaboradores/${id}/historico-cargo`, data),
+  listarDocumentos: (id) => api.get(`/colaboradores/${id}/documentos`),
+  adicionarDocumento: (id, data) => api.post(`/colaboradores/${id}/documentos`, data),
+  removerDocumento: (id, documentoId) => api.delete(`/colaboradores/${id}/documentos/${documentoId}`),
+}
+
+export const departamentosApi = {
+  list: () => api.get('/colaboradores/departamentos'),
+  create: (data) => api.post('/colaboradores/departamentos', data),
+  update: (id, data) => api.put(`/colaboradores/departamentos/${id}`, data),
+}
+
+export const cargosApi = {
+  list: (params) => api.get('/colaboradores/cargos', { params }),
+  create: (data) => api.post('/colaboradores/cargos', data),
+  update: (id, data) => api.put(`/colaboradores/cargos/${id}`, data),
+}

@@ -61,13 +61,17 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
 }
 
 // === Confirm Dialog ===
-export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', danger = false }) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', danger = false, disabled = false }) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
       <p className="text-sm text-stone-600 mb-5">{message}</p>
       <div className="flex gap-2 justify-end">
-        <button className="btn-secondary btn-sm" onClick={onClose}>Cancelar</button>
-        <button className={clsx(danger ? 'btn-danger' : 'btn-primary', 'btn-sm')} onClick={onConfirm}>
+        <button className="btn-secondary btn-sm" onClick={onClose} disabled={disabled}>Cancelar</button>
+        <button
+          className={clsx(danger ? 'btn-danger' : 'btn-primary', 'btn-sm', 'disabled:opacity-40 disabled:cursor-not-allowed')}
+          onClick={onConfirm}
+          disabled={disabled}
+        >
           {confirmLabel}
         </button>
       </div>
@@ -142,13 +146,13 @@ export function AlertBanner({ type = 'warning', message, onDismiss }) {
 // === Tab Group ===
 export function Tabs({ tabs, active, onChange }) {
   return (
-    <div className="flex gap-1 p-1 bg-stone-100 rounded-xl">
+    <div className="flex gap-1 p-1 bg-stone-100 rounded-xl overflow-x-auto">
       {tabs.map(tab => (
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
           className={clsx(
-            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0',
             active === tab.key
               ? 'bg-white shadow-card text-stone-800'
               : 'text-stone-500 hover:text-stone-700'
