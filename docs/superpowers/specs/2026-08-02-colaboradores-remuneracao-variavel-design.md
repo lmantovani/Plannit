@@ -142,6 +142,20 @@ lancarVariavel: (id, data) => api.post(`/colaboradores/${id}/lancamentos-variave
 
 Ambiente local já rodou `seed.py` antes com `Colaborador.remuneracao_complementar` existente — remover/renomear coluna em tabela já existente exige `ALTER TABLE` manual (não é criado automaticamente por `create_all`, conforme já registrado no CLAUDE.md). As tabelas novas (`beneficios_colaboradores`, `historico_beneficios_colaboradores`, `lancamentos_remuneracao_variavel`) são criadas normalmente por `python seed.py`. `seed.py` e `tests/test_colaboradores_historico_salarial.py` referenciam `remuneracao_complementar` hoje — ajustar na implementação.
 
+SQL manual aplicado (e verificado, Task 8) contra o Postgres local que já tinha rodado `seed.py` antes desta entrega:
+
+```sql
+ALTER TABLE colaboradores DROP COLUMN remuneracao_complementar;
+ALTER TABLE historico_salarial_colaboradores DROP COLUMN remuneracao_complementar;
+ALTER TABLE colaboradores ADD COLUMN tipo_comissao VARCHAR(20);
+ALTER TABLE colaboradores ADD COLUMN valor_comissao DOUBLE PRECISION;
+ALTER TABLE colaboradores ADD COLUMN observacoes_comissao TEXT;
+-- As 3 tabelas novas (beneficios_colaboradores, historico_beneficios_colaboradores,
+-- lancamentos_remuneracao_variavel) são criadas normalmente por `python seed.py` (create_all).
+```
+
+Nota: `tipo_comissao` foi adicionado como `VARCHAR(20)`, não como um tipo enum nativo do Postgres — é o que `SAEnum(TipoComissao)` produz quando a coluna é criada via `ALTER TABLE ADD COLUMN` em vez de via `create_all`. Isso não é um problema para a aplicação (o SQLAlchemy grava/lê o `.value` da enum como string de qualquer forma), só um detalhe para não surpreender quem for inspecionar o schema diretamente.
+
 ## Backlog (referência futura, não faz parte deste spec)
 
 1. RH02 Comissões — motor de cálculo por cargo, faixas de meta, aprovação dupla, composição CLT/complementar
