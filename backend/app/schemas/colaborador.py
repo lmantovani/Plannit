@@ -316,7 +316,7 @@ class BeneficioCreate(BaseModel):
 
 
 class BeneficioUpdate(BaseModel):
-    nome: Optional[str] = None
+    nome: Optional[str] = Field(default=None, min_length=1)
     ativo: Optional[bool] = None
 
 
