@@ -693,6 +693,44 @@ function EditarRegraComissaoModal({ open, onClose, colaborador, onSaved }) {
   )
 }
 
+// === Bônus ===
+function BonusSection({ colaborador }) {
+  const [lancamentos, setLancamentos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showLancar, setShowLancar] = useState(false)
+
+  const carregar = () => {
+    setLoading(true)
+    colaboradoresApi.listarLancamentosVariaveis(colaborador.id, 'bonus')
+      .then(r => setLancamentos(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">Bônus</h3>
+        <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar bônus</button>
+      </div>
+
+      <LancamentosVariaveisLista loading={loading} lancamentos={lancamentos} vazio="Nenhum bônus lançado." />
+
+      <LancarVariavelModal
+        open={showLancar}
+        onClose={() => setShowLancar(false)}
+        colaborador={colaborador}
+        tipo="bonus"
+        titulo="Lançar bônus"
+        onSaved={() => { setShowLancar(false); carregar() }}
+      />
+    </div>
+  )
+}
+
 // === Aba Cargo & Progressão ===
 export function CargoProgressaoTab({ colaborador, onUpdated }) {
   const [historico, setHistorico] = useState([])
