@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-// eslint-disable-next-line no-unused-vars -- reused by BonusSection (Task 6)
 import clsx from 'clsx'
 import {
   formatDate, formatCurrency, formatCompetencia, REGIME_CONFIG, MODALIDADE_LABELS,
   TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS, SEXO_LABELS, ESTADO_CIVIL_LABELS,
   PERFIL_DISC_LABELS, TIPO_CONTRATO_LABELS, TIPO_CONTRATO_CLT_LABELS, TIPO_CONTRATO_PJ_LABELS,
   TIPO_COMISSAO_LABELS,
-  // eslint-disable-next-line no-unused-vars -- reused by BonusSection (Task 6)
   STATUS_COLOR_CLASSES,
 } from '../../lib/constants'
 import { Modal, Spinner, ConfirmDialog } from '../../components/ui'
@@ -728,6 +726,227 @@ function BonusSection({ colaborador }) {
         onSaved={() => { setShowLancar(false); carregar() }}
       />
     </div>
+  )
+}
+
+// === Benefícios ===
+function BeneficiosSection({ colaborador }) {
+  const [beneficios, setBeneficios] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showNovo, setShowNovo] = useState(false)
+  const [ajustando, setAjustando] = useState(null)
+
+  const carregar = () => {
+    setLoading(true)
+    colaboradoresApi.listarBeneficios(colaborador.id)
+      .then(r => setBeneficios(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  const toggleAtivo = async (beneficio) => {
+    await colaboradoresApi.editarBeneficio(colaborador.id, beneficio.id, { ativo: !beneficio.ativo })
+    carregar()
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">Benefícios</h3>
+        <button className="btn-secondary btn-sm" onClick={() => setShowNovo(true)}>Novo benefício</button>
+      </div>
+
+      {loading ? <Spinner size={18} /> : beneficios.length === 0 ? (
+        <p className="text-sm text-stone-400">Nenhum benefício cadastrado.</p>
+      ) : (
+        <ul className="space-y-2">
+          {beneficios.map(b => (
+            <li key={b.id} className="flex items-center justify-between text-sm border-l-2 border-stone-200 pl-3 py-1">
+              <div>
+                <p className="text-stone-700 font-medium">{b.nome} — {formatCurrency(b.valor)}</p>
+                <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1', STATUS_COLOR_CLASSES[b.ativo ? 'green' : 'stone'])}>
+                  {b.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button className="btn-secondary btn-sm" onClick={() => setAjustando(b)}>Ajustar valor</button>
+                <button className="btn-secondary btn-sm" onClick={() => toggleAtivo(b)}>{b.ativo ? 'Desativar' : 'Ativar'}</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <NovoBeneficioModal
+        open={showNovo}
+        onClose={() => setShowNovo(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowNovo(false); carregar() }}
+      />
+      <AjustarBeneficioModal
+        beneficio={ajustando}
+        onClose={() => setAjustando(null)}
+        colaborador={colaborador}
+        onSaved={() => { setAjustando(null); carregar() }}
+      />
+    </div>
+  )
+}
+
+function NovoBeneficioModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState({ nome: '', valor: '', data_vigencia: '', motivo: 'Cadastro inicial' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const resetForm = () => {
+    setForm({ nome: '', valor: '', data_vigencia: '', motivo: 'Cadastro inicial' })
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.criarBeneficio(colaborador.id, {
+        nome: form.nome,
+        valor: Number(form.valor),
+        data_vigencia: form.data_vigencia,
+        motivo: form.motivo,
+      })
+      resetForm()
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao criar benefício'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Novo benefício" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Nome *</label>
+          <input className="input" required value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Ex: Vale-Refeição" />
+        </div>
+        <div>
+          <label className="label">Valor *</label>
+          <input type="number" step="0.01" className="input" required value={form.valor} onChange={e => set('valor', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Vigência *</label>
+          <input type="date" className="input" required value={form.data_vigencia} onChange={e => set('data_vigencia', e.target.value)} />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Criar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function AjustarBeneficioModal({ beneficio, onClose, colaborador, onSaved }) {
+  const [historico, setHistorico] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({ valor: '', data_vigencia: '', motivo: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (beneficio) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(true)
+      colaboradoresApi.historicoBeneficio(colaborador.id, beneficio.id)
+        .then(r => setHistorico(r.data))
+        .catch(console.error)
+        .finally(() => setLoading(false))
+      setForm({ valor: '', data_vigencia: '', motivo: '' })
+      setError('')
+    }
+  }, [beneficio, colaborador.id])
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await colaboradoresApi.ajustarBeneficio(colaborador.id, beneficio.id, {
+        valor: Number(form.valor),
+        data_vigencia: form.data_vigencia,
+        motivo: form.motivo,
+      })
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao ajustar valor'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={!!beneficio} onClose={onClose} title={beneficio ? `Ajustar valor — ${beneficio.nome}` : ''} size="sm">
+      {beneficio && (
+        <div className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="label">Novo valor *</label>
+              <input type="number" step="0.01" className="input" required value={form.valor} onChange={e => set('valor', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Vigência *</label>
+              <input type="date" className="input" required value={form.data_vigencia} onChange={e => set('data_vigencia', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Motivo *</label>
+              <input className="input" required value={form.motivo} onChange={e => set('motivo', e.target.value)} placeholder="Ex: Reajuste anual do plano" />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <div className="flex justify-end pt-2">
+              <button type="submit" className="btn-primary" disabled={saving}>
+                {saving ? 'Salvando...' : 'Registrar ajuste'}
+              </button>
+            </div>
+          </form>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Histórico</h3>
+            {loading ? <Spinner size={18} /> : historico.length === 0 ? (
+              <p className="text-sm text-stone-400">Nenhum registro.</p>
+            ) : (
+              <ul className="space-y-2">
+                {historico.map(h => (
+                  <li key={h.id} className="text-sm border-l-2 border-stone-200 pl-3">
+                    <p className="text-stone-700 font-medium">{formatCurrency(h.valor)}</p>
+                    <p className="text-xs text-stone-400">{formatDate(h.data_vigencia)} — {h.motivo} — {h.registrado_por_nome}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }
 
