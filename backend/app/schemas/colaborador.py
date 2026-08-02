@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import date, datetime
 import re
 import enum
-from app.models.colaborador import RegimeContratacao, ModalidadeTrabalho
+from app.models.colaborador import RegimeContratacao, ModalidadeTrabalho, TipoComissao
 
 
 # === DEPARTAMENTO ===
@@ -103,8 +103,10 @@ class ColaboradorCreate(BaseModel):
     pj_vigencia_fim: Optional[date] = None
 
     salario_clt: Optional[float] = Field(default=None, ge=0)
-    remuneracao_complementar: Optional[float] = Field(default=None, ge=0)
     data_vigencia_salario: Optional[date] = None
+    tipo_comissao: Optional[TipoComissao] = None
+    valor_comissao: Optional[float] = Field(default=None, ge=0)
+    observacoes_comissao: Optional[str] = None
 
     carga_horaria: Optional[str] = None
     escala: Optional[str] = None
@@ -157,6 +159,10 @@ class ColaboradorUpdate(BaseModel):
     pj_valor_mensal: Optional[float] = None
     pj_vigencia_inicio: Optional[date] = None
     pj_vigencia_fim: Optional[date] = None
+
+    tipo_comissao: Optional[TipoComissao] = None
+    valor_comissao: Optional[float] = None
+    observacoes_comissao: Optional[str] = None
 
     carga_horaria: Optional[str] = None
     escala: Optional[str] = None
@@ -222,8 +228,10 @@ class ColaboradorResponse(BaseModel):
     pj_vigencia_fim: Optional[date]
 
     salario_clt: Optional[float]
-    remuneracao_complementar: Optional[float]
     data_vigencia_salario: Optional[date]
+    tipo_comissao: Optional[TipoComissao]
+    valor_comissao: Optional[float]
+    observacoes_comissao: Optional[str]
 
     carga_horaria: Optional[str]
     escala: Optional[str]
@@ -255,7 +263,6 @@ class ColaboradorResponse(BaseModel):
 
 class HistoricoSalarialCreate(BaseModel):
     salario_clt: float = Field(ge=0)
-    remuneracao_complementar: Optional[float] = Field(default=None, ge=0)
     data_vigencia: date
     motivo: str
 
@@ -264,7 +271,6 @@ class HistoricoSalarialResponse(BaseModel):
     id: int
     colaborador_id: int
     salario_clt: float
-    remuneracao_complementar: Optional[float]
     data_vigencia: date
     motivo: str
     registrado_por_id: int

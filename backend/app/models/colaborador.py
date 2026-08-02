@@ -16,6 +16,12 @@ class ModalidadeTrabalho(str, enum.Enum):
     REMOTO = "remoto"
 
 
+class TipoComissao(str, enum.Enum):
+    FIXO = "fixo"
+    PERCENTUAL = "percentual"
+    POR_META = "por_meta"
+
+
 class Departamento(Base):
     __tablename__ = "departamentos"
 
@@ -93,8 +99,12 @@ class Colaborador(Base):
 
     # Remuneração atual (denormalizado — trilha em HistoricoSalarialColaborador)
     salario_clt = Column(Float, nullable=True)
-    remuneracao_complementar = Column(Float, nullable=True)
     data_vigencia_salario = Column(Date, nullable=True)
+
+    # Comissão — regra contratual (cláusula); lançamentos mensais ficam em LancamentoRemuneracaoVariavel
+    tipo_comissao = Column(SAEnum(TipoComissao), nullable=True)
+    valor_comissao = Column(Float, nullable=True)
+    observacoes_comissao = Column(Text, nullable=True)
 
     # Regime de trabalho
     carga_horaria = Column(String(50), nullable=True)
@@ -149,7 +159,6 @@ class HistoricoSalarialColaborador(Base):
     id = Column(Integer, primary_key=True, index=True)
     colaborador_id = Column(Integer, ForeignKey("colaboradores.id"), nullable=False)
     salario_clt = Column(Float, nullable=False)
-    remuneracao_complementar = Column(Float, nullable=True)
     data_vigencia = Column(Date, nullable=False)
     motivo = Column(String(300), nullable=False)
     registrado_por_id = Column(Integer, ForeignKey("users.id"), nullable=False)

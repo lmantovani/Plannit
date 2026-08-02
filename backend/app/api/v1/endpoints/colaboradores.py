@@ -166,7 +166,6 @@ def criar_colaborador(
         db.add(HistoricoSalarialColaborador(
             colaborador_id=colaborador.id,
             salario_clt=colaborador.salario_clt,
-            remuneracao_complementar=colaborador.remuneracao_complementar,
             data_vigencia=colaborador.data_vigencia_salario or colaborador.data_admissao,
             motivo="Admissão",
             registrado_por_id=current_user.id,
@@ -246,9 +245,6 @@ def lancar_historico_salarial(
     )
     if e_mais_recente:
         colaborador.salario_clt = payload.salario_clt
-        # Carry-forward: complementar omitida no payload não zera o valor atual.
-        if payload.remuneracao_complementar is not None:
-            colaborador.remuneracao_complementar = payload.remuneracao_complementar
         colaborador.data_vigencia_salario = payload.data_vigencia
 
     db.commit()

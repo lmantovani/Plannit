@@ -105,6 +105,26 @@ def test_criar_colaborador_com_contato_pessoal_corporativo_e_perfil_disc(auth_cl
     assert data["observacoes_comportamentais"] == "Comunicativo, mas impaciente em reuniões longas."
 
 
+def test_editar_regra_comissao(auth_client):
+    dep, cargo = _criar_departamento_e_cargo(auth_client)
+    criado = auth_client.post("/api/v1/colaboradores/", json=_payload_base(cargo["id"], dep["id"])).json()
+    assert criado["tipo_comissao"] is None
+
+    resp = auth_client.put(
+        f"/api/v1/colaboradores/{criado['id']}",
+        json={
+            "tipo_comissao": "por_meta",
+            "valor_comissao": 5.0,
+            "observacoes_comissao": "5% sobre vendas acima da meta mensal",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["tipo_comissao"] == "por_meta"
+    assert data["valor_comissao"] == 5.0
+    assert data["observacoes_comissao"] == "5% sobre vendas acima da meta mensal"
+
+
 def test_colaboradores_bloqueado_para_perfil_sem_permissao(create_client_com_user, projetista_user):
     projetista_client = create_client_com_user(projetista_user)
     resp = projetista_client.get("/api/v1/colaboradores/")
