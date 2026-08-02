@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { formatDate, formatCurrency, REGIME_CONFIG, MODALIDADE_LABELS, TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS, SEXO_LABELS, ESTADO_CIVIL_LABELS, PERFIL_DISC_LABELS, TIPO_CONTRATO_LABELS, TIPO_CONTRATO_CLT_LABELS, TIPO_CONTRATO_PJ_LABELS } from '../../lib/constants'
+// eslint-disable-next-line no-unused-vars -- reused by BonusSection (Task 6)
+import clsx from 'clsx'
+import {
+  formatDate, formatCurrency, formatCompetencia, REGIME_CONFIG, MODALIDADE_LABELS,
+  TIPO_DESLIGAMENTO_LABELS, TIPO_DOCUMENTO_COLABORADOR_LABELS, SEXO_LABELS, ESTADO_CIVIL_LABELS,
+  PERFIL_DISC_LABELS, TIPO_CONTRATO_LABELS, TIPO_CONTRATO_CLT_LABELS, TIPO_CONTRATO_PJ_LABELS,
+  TIPO_COMISSAO_LABELS,
+  // eslint-disable-next-line no-unused-vars -- reused by BonusSection (Task 6)
+  STATUS_COLOR_CLASSES,
+} from '../../lib/constants'
 import { Modal, Spinner, ConfirmDialog } from '../../components/ui'
 import { colaboradoresApi, cargosApi } from '../../lib/api'
 import { useAuthStore } from '../../store'
@@ -351,68 +360,67 @@ export function RemuneracaoTab({ colaborador, onUpdated }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (!isPj) carregar() }, [colaborador.id, isPj])
 
-  if (isPj) {
-    return (
-      <div className="space-y-5">
+  return (
+    <div className="space-y-8">
+      {isPj ? (
         <div className="rounded-xl bg-stone-50 p-4">
           <p className="text-xs text-stone-400">Valor mensal (PJ)</p>
           <p className="text-xl font-semibold text-stone-800">{colaborador.pj_valor_mensal ? formatCurrency(colaborador.pj_valor_mensal) : 'Não informado'}</p>
           <p className="text-xs text-stone-400 mt-1">Editável na aba Contratação.</p>
         </div>
-      </div>
-    )
-  }
+      ) : (
+        <div className="space-y-5">
+          <div className="rounded-xl bg-stone-50 p-4">
+            <p className="text-xs text-stone-400">Salário CLT atual</p>
+            <p className="text-xl font-semibold text-stone-800">{colaborador.salario_clt ? formatCurrency(colaborador.salario_clt) : 'Não informado'}</p>
+            <p className="text-xs text-stone-400 mt-1">Vigente desde {formatDate(colaborador.data_vigencia_salario)}</p>
+          </div>
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-xl bg-stone-50 p-4">
-        <p className="text-xs text-stone-400">Salário CLT atual</p>
-        <p className="text-xl font-semibold text-stone-800">{colaborador.salario_clt ? formatCurrency(colaborador.salario_clt) : 'Não informado'}</p>
-        {colaborador.remuneracao_complementar > 0 && (
-          <p className="text-xs text-stone-500 mt-1">+ {formatCurrency(colaborador.remuneracao_complementar)} complementar</p>
-        )}
-        <p className="text-xs text-stone-400 mt-1">Vigente desde {formatDate(colaborador.data_vigencia_salario)}</p>
-      </div>
+          <div className="flex justify-end">
+            <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar novo salário</button>
+          </div>
 
-      <div className="flex justify-end">
-        <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar novo salário</button>
-      </div>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Histórico</h3>
+            {loading ? <Spinner size={18} /> : historico.length === 0 ? (
+              <p className="text-sm text-stone-400">Nenhum registro.</p>
+            ) : (
+              <ul className="space-y-2">
+                {historico.map(h => (
+                  <li key={h.id} className="text-sm border-l-2 border-stone-200 pl-3">
+                    <p className="text-stone-700 font-medium">{formatCurrency(h.salario_clt)}</p>
+                    <p className="text-xs text-stone-400">{formatDate(h.data_vigencia)} — {h.motivo} — {h.registrado_por_nome}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-2">Histórico</h3>
-        {loading ? <Spinner size={18} /> : historico.length === 0 ? (
-          <p className="text-sm text-stone-400">Nenhum registro.</p>
-        ) : (
-          <ul className="space-y-2">
-            {historico.map(h => (
-              <li key={h.id} className="text-sm border-l-2 border-stone-200 pl-3">
-                <p className="text-stone-700 font-medium">{formatCurrency(h.salario_clt)}</p>
-                <p className="text-xs text-stone-400">{formatDate(h.data_vigencia)} — {h.motivo} — {h.registrado_por_nome}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          <LancarSalarioModal
+            open={showLancar}
+            onClose={() => setShowLancar(false)}
+            colaborador={colaborador}
+            onSaved={() => { setShowLancar(false); carregar(); onUpdated?.() }}
+          />
+        </div>
+      )}
 
-      <LancarSalarioModal
-        open={showLancar}
-        onClose={() => setShowLancar(false)}
-        colaborador={colaborador}
-        onSaved={() => { setShowLancar(false); carregar(); onUpdated?.() }}
-      />
+      <ComissaoSection colaborador={colaborador} onUpdated={onUpdated} />
+      <BonusSection colaborador={colaborador} />
+      <BeneficiosSection colaborador={colaborador} />
     </div>
   )
 }
 
 function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
-  const [form, setForm] = useState({ salario_clt: '', remuneracao_complementar: '', data_vigencia: '', motivo: '' })
+  const [form, setForm] = useState({ salario_clt: '', data_vigencia: '', motivo: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const resetForm = () => {
-    setForm({ salario_clt: '', remuneracao_complementar: '', data_vigencia: '', motivo: '' })
+    setForm({ salario_clt: '', data_vigencia: '', motivo: '' })
     setError('')
   }
 
@@ -428,7 +436,6 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
     try {
       await colaboradoresApi.lancarSalario(colaborador.id, {
         salario_clt: Number(form.salario_clt),
-        remuneracao_complementar: form.remuneracao_complementar ? Number(form.remuneracao_complementar) : null,
         data_vigencia: form.data_vigencia,
         motivo: form.motivo,
       })
@@ -449,10 +456,6 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
           <input type="number" step="0.01" className="input" required value={form.salario_clt} onChange={e => set('salario_clt', e.target.value)} />
         </div>
         <div>
-          <label className="label">Remuneração complementar</label>
-          <input type="number" step="0.01" className="input" value={form.remuneracao_complementar} onChange={e => set('remuneracao_complementar', e.target.value)} />
-        </div>
-        <div>
           <label className="label">Vigência *</label>
           <input type="date" className="input" required value={form.data_vigencia} onChange={e => set('data_vigencia', e.target.value)} />
         </div>
@@ -467,6 +470,222 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
           <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Salvando...' : 'Lançar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// === Lançamentos de remuneração variável (bônus/comissão) — compartilhado entre as seções ===
+function LancamentosVariaveisLista({ loading, lancamentos, vazio }) {
+  if (loading) return <Spinner size={18} />
+  if (lancamentos.length === 0) return <p className="text-sm text-stone-400">{vazio}</p>
+  return (
+    <ul className="space-y-2">
+      {lancamentos.map(l => (
+        <li key={l.id} className="text-sm border-l-2 border-stone-200 pl-3">
+          <p className="text-stone-700 font-medium">{formatCurrency(l.valor)}</p>
+          <p className="text-xs text-stone-400">
+            {formatCompetencia(l.competencia)}{l.descricao ? ` — ${l.descricao}` : ''} — {l.registrado_por_nome}
+          </p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function LancarVariavelModal({ open, onClose, colaborador, tipo, titulo, onSaved }) {
+  const [form, setForm] = useState({ valor: '', competencia: '', descricao: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const resetForm = () => {
+    setForm({ valor: '', competencia: '', descricao: '' })
+    setError('')
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.lancarVariavel(colaborador.id, {
+        tipo,
+        valor: Number(form.valor),
+        competencia: `${form.competencia}-01`,
+        descricao: form.descricao || null,
+      })
+      resetForm()
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao lançar'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title={titulo} size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Valor *</label>
+          <input type="number" step="0.01" className="input" required value={form.valor} onChange={e => set('valor', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Competência (mês) *</label>
+          <input type="month" className="input" required value={form.competencia} onChange={e => set('competencia', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Descrição</label>
+          <input className="input" value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Ex: Meta de 105% atingida" />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Lançar'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// === Comissão ===
+function ComissaoSection({ colaborador, onUpdated }) {
+  const [lancamentos, setLancamentos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showEditarRegra, setShowEditarRegra] = useState(false)
+  const [showLancar, setShowLancar] = useState(false)
+
+  const carregar = () => {
+    setLoading(true)
+    colaboradoresApi.listarLancamentosVariaveis(colaborador.id, 'comissao')
+      .then(r => setLancamentos(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { carregar() }, [colaborador.id])
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">Comissão</h3>
+
+      <div className="rounded-xl bg-stone-50 p-4">
+        {colaborador.tipo_comissao ? (
+          <>
+            <p className="text-sm font-medium text-stone-700">
+              {TIPO_COMISSAO_LABELS[colaborador.tipo_comissao]}
+              {colaborador.valor_comissao != null && ` — ${colaborador.tipo_comissao === 'percentual' ? `${colaborador.valor_comissao}%` : formatCurrency(colaborador.valor_comissao)}`}
+            </p>
+            {colaborador.observacoes_comissao && <p className="text-xs text-stone-500 mt-1">{colaborador.observacoes_comissao}</p>}
+          </>
+        ) : (
+          <p className="text-sm text-stone-400">Regra de comissão não definida.</p>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button className="btn-secondary btn-sm" onClick={() => setShowEditarRegra(true)}>Editar regra</button>
+        <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar comissão do mês</button>
+      </div>
+
+      <LancamentosVariaveisLista loading={loading} lancamentos={lancamentos} vazio="Nenhuma comissão lançada." />
+
+      <EditarRegraComissaoModal
+        open={showEditarRegra}
+        onClose={() => setShowEditarRegra(false)}
+        colaborador={colaborador}
+        onSaved={() => { setShowEditarRegra(false); onUpdated?.() }}
+      />
+      <LancarVariavelModal
+        open={showLancar}
+        onClose={() => setShowLancar(false)}
+        colaborador={colaborador}
+        tipo="comissao"
+        titulo="Lançar comissão do mês"
+        onSaved={() => { setShowLancar(false); carregar() }}
+      />
+    </div>
+  )
+}
+
+function EditarRegraComissaoModal({ open, onClose, colaborador, onSaved }) {
+  const [form, setForm] = useState({ tipo_comissao: '', valor_comissao: '', observacoes_comissao: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setForm({
+        tipo_comissao: colaborador.tipo_comissao || '',
+        valor_comissao: colaborador.valor_comissao ?? '',
+        observacoes_comissao: colaborador.observacoes_comissao || '',
+      })
+      setError('')
+    }
+  }, [open, colaborador])
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await colaboradoresApi.update(colaborador.id, {
+        tipo_comissao: form.tipo_comissao || null,
+        valor_comissao: form.valor_comissao === '' ? null : Number(form.valor_comissao),
+        observacoes_comissao: form.observacoes_comissao || null,
+      })
+      onSaved()
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Erro ao salvar regra de comissão'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Editar regra de comissão" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label">Tipo</label>
+          <select className="input" value={form.tipo_comissao} onChange={e => set('tipo_comissao', e.target.value)}>
+            <option value="">Não definido</option>
+            {Object.entries(TIPO_COMISSAO_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Valor (R$ se fixo, % se percentual)</label>
+          <input type="number" step="0.01" className="input" value={form.valor_comissao} onChange={e => set('valor_comissao', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Observações</label>
+          <textarea className="input" rows={3} value={form.observacoes_comissao} onChange={e => set('observacoes_comissao', e.target.value)} placeholder="Ex: faixas de meta, condições específicas" />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </form>
