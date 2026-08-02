@@ -1,4 +1,7 @@
-from app.models.colaborador import HistoricoSalarialColaborador, HistoricoCargoColaborador, DocumentoColaborador
+from app.models.colaborador import (
+    HistoricoSalarialColaborador, HistoricoCargoColaborador, DocumentoColaborador,
+    BeneficioColaborador, HistoricoBeneficioColaborador, LancamentoRemuneracaoVariavel,
+)
 from tests.test_colaboradores_cadastro import _criar_departamento_e_cargo, _payload_base
 
 
@@ -91,6 +94,19 @@ def test_excluir_colaborador_remove_historico_e_documentos_vinculados(auth_clien
         json={"tipo": "ctps", "url": "https://exemplo.com/ctps.pdf"},
     )
 
+    beneficio = auth_client.post(
+        f"/api/v1/colaboradores/{colaborador_id}/beneficios",
+        json={"nome": "Vale-Refeição", "valor": 500.0, "data_vigencia": "2025-01-01", "motivo": "Cadastro inicial"},
+    ).json()
+    auth_client.post(
+        f"/api/v1/colaboradores/{colaborador_id}/beneficios/{beneficio['id']}/historico",
+        json={"valor": 600.0, "data_vigencia": "2025-06-01", "motivo": "Reajuste"},
+    )
+    auth_client.post(
+        f"/api/v1/colaboradores/{colaborador_id}/lancamentos-variaveis",
+        json={"tipo": "bonus", "valor": 500.0, "competencia": "2025-06-01", "descricao": "Fechamento do mês"},
+    )
+
     _desligar(auth_client, colaborador_id)
     resp = auth_client.delete(f"/api/v1/colaboradores/{colaborador_id}")
     assert resp.status_code == 204
@@ -99,3 +115,6 @@ def test_excluir_colaborador_remove_historico_e_documentos_vinculados(auth_clien
     assert db_session.query(HistoricoSalarialColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
     assert db_session.query(HistoricoCargoColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
     assert db_session.query(DocumentoColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
+    assert db_session.query(BeneficioColaborador).filter_by(colaborador_id=colaborador_id).count() == 0
+    assert db_session.query(HistoricoBeneficioColaborador).filter_by(beneficio_id=beneficio["id"]).count() == 0
+    assert db_session.query(LancamentoRemuneracaoVariavel).filter_by(colaborador_id=colaborador_id).count() == 0

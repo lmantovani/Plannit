@@ -368,6 +368,17 @@ def excluir_colaborador(
     db.query(HistoricoCargoColaborador).filter(HistoricoCargoColaborador.colaborador_id == colaborador_id).delete()
     db.query(DocumentoColaborador).filter(DocumentoColaborador.colaborador_id == colaborador_id).delete()
 
+    beneficio_ids = [
+        row[0]
+        for row in db.query(BeneficioColaborador.id).filter(BeneficioColaborador.colaborador_id == colaborador_id).all()
+    ]
+    if beneficio_ids:
+        db.query(HistoricoBeneficioColaborador).filter(
+            HistoricoBeneficioColaborador.beneficio_id.in_(beneficio_ids)
+        ).delete(synchronize_session=False)
+    db.query(BeneficioColaborador).filter(BeneficioColaborador.colaborador_id == colaborador_id).delete()
+    db.query(LancamentoRemuneracaoVariavel).filter(LancamentoRemuneracaoVariavel.colaborador_id == colaborador_id).delete()
+
     db.delete(colaborador)
     db.commit()
 
@@ -535,6 +546,33 @@ def listar_lancamentos_variaveis(
     return query.order_by(
         LancamentoRemuneracaoVariavel.competencia.desc(), LancamentoRemuneracaoVariavel.id.desc()
     ).all()
+
+
+@router.delete("/{colaborador_id}/lancamentos-variaveis/{lancamento_id}", status_code=204)
+def excluir_lancamento_variavel(
+    colaborador_id: int,
+    lancamento_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(PerfilUsuario.DIRETORIA)),
+):
+    """
+    Exclusão de um lançamento de bônus/comissão — exceção deliberada à
+    imutabilidade padrão deste recurso (só POST/GET), restrita à Diretoria,
+    servindo como correção de erro de digitação (ex.: valor lançado errado),
+    já que não existe estorno por lançamento negativo (valor exige > 0).
+    """
+    lancamento = (
+        db.query(LancamentoRemuneracaoVariavel)
+        .filter(
+            LancamentoRemuneracaoVariavel.id == lancamento_id,
+            LancamentoRemuneracaoVariavel.colaborador_id == colaborador_id,
+        )
+        .first()
+    )
+    if not lancamento:
+        raise HTTPException(404, "Lançamento não encontrado")
+    db.delete(lancamento)
+    db.commit()
 
 
 # === DOCUMENTOS ===
