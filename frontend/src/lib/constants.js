@@ -84,6 +84,13 @@ export const formatDate = (date) => {
   return new Date(date).toLocaleDateString('pt-BR')
 }
 
+export const formatCompetencia = (date) => {
+  if (!date) return '—'
+  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(date))
+  if (match) return `${match[2]}/${match[1]}`
+  return '—'
+}
+
 export const formatDatetime = (date) =>
   date ? new Date(date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'
 
@@ -170,6 +177,12 @@ export const TIPO_DESLIGAMENTO_LABELS = {
   pedido_demissao:             'Pedido de Demissão',
   dispensa_sem_justa_causa:    'Dispensa sem Justa Causa',
   dispensa_com_justa_causa:    'Dispensa com Justa Causa',
+}
+
+export const TIPO_COMISSAO_LABELS = {
+  fixo:       'Fixo',
+  percentual: 'Percentual sobre venda',
+  por_meta:   'Por meta atingida',
 }
 
 export const TIPO_DOCUMENTO_COLABORADOR_LABELS = {

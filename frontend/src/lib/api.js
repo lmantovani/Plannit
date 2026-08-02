@@ -114,6 +114,13 @@ export const colaboradoresApi = {
   listarDocumentos: (id) => api.get(`/colaboradores/${id}/documentos`),
   adicionarDocumento: (id, data) => api.post(`/colaboradores/${id}/documentos`, data),
   removerDocumento: (id, documentoId) => api.delete(`/colaboradores/${id}/documentos/${documentoId}`),
+  listarBeneficios: (id) => api.get(`/colaboradores/${id}/beneficios`),
+  criarBeneficio: (id, data) => api.post(`/colaboradores/${id}/beneficios`, data),
+  editarBeneficio: (id, beneficioId, data) => api.put(`/colaboradores/${id}/beneficios/${beneficioId}`, data),
+  historicoBeneficio: (id, beneficioId) => api.get(`/colaboradores/${id}/beneficios/${beneficioId}/historico`),
+  ajustarBeneficio: (id, beneficioId, data) => api.post(`/colaboradores/${id}/beneficios/${beneficioId}/historico`, data),
+  listarLancamentosVariaveis: (id, tipo) => api.get(`/colaboradores/${id}/lancamentos-variaveis`, { params: tipo ? { tipo } : {} }),
+  lancarVariavel: (id, data) => api.post(`/colaboradores/${id}/lancamentos-variaveis`, data),
 }
 
 export const departamentosApi = {
