@@ -59,3 +59,37 @@ def test_lancamento_variavel_valor_negativo_422(auth_client):
         json={"tipo": "bonus", "valor": -10.0, "competencia": "2025-06-01"},
     )
     assert resp.status_code == 422
+
+
+def test_excluir_lancamento_variavel_diretoria_sucesso(auth_client):
+    colaborador = _criar_colaborador(auth_client)
+    criado = auth_client.post(
+        f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis",
+        json={"tipo": "bonus", "valor": 500.0, "competencia": "2025-06-01", "descricao": "Erro de digitação"},
+    ).json()
+
+    resp = auth_client.delete(
+        f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis/{criado['id']}"
+    )
+    assert resp.status_code == 204
+
+    resp_lista = auth_client.get(f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis")
+    assert resp_lista.json() == []
+
+
+def test_excluir_lancamento_variavel_bloqueado_para_rh_403(create_client_com_user, rh_user, auth_client):
+    colaborador = _criar_colaborador(auth_client)
+    criado = auth_client.post(
+        f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis",
+        json={"tipo": "bonus", "valor": 500.0, "competencia": "2025-06-01"},
+    ).json()
+
+    rh_client = create_client_com_user(rh_user)
+    resp = rh_client.delete(
+        f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis/{criado['id']}"
+    )
+    assert resp.status_code == 403
+
+    # continua íntegro — só a Diretoria pode excluir
+    resp_lista = auth_client.get(f"/api/v1/colaboradores/{colaborador['id']}/lancamentos-variaveis")
+    assert len(resp_lista.json()) == 1

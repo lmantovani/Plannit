@@ -121,6 +121,7 @@ export const colaboradoresApi = {
   ajustarBeneficio: (id, beneficioId, data) => api.post(`/colaboradores/${id}/beneficios/${beneficioId}/historico`, data),
   listarLancamentosVariaveis: (id, tipo) => api.get(`/colaboradores/${id}/lancamentos-variaveis`, { params: tipo ? { tipo } : {} }),
   lancarVariavel: (id, data) => api.post(`/colaboradores/${id}/lancamentos-variaveis`, data),
+  excluirLancamentoVariavel: (id, lancamentoId) => api.delete(`/colaboradores/${id}/lancamentos-variaveis/${lancamentoId}`),
 }
 
 export const departamentosApi = {

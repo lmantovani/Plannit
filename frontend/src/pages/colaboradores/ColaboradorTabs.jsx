@@ -476,20 +476,56 @@ function LancarSalarioModal({ open, onClose, colaborador, onSaved }) {
 }
 
 // === Lançamentos de remuneração variável (bônus/comissão) — compartilhado entre as seções ===
-function LancamentosVariaveisLista({ loading, lancamentos, vazio }) {
+function LancamentosVariaveisLista({ colaborador, loading, lancamentos, vazio, onChanged }) {
+  const { user } = useAuthStore()
+  const ehDiretoria = user?.perfil === 'diretoria'
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [excluindo, setExcluindo] = useState(false)
+
+  const handleExcluir = async () => {
+    setExcluindo(true)
+    try {
+      await colaboradoresApi.excluirLancamentoVariavel(colaborador.id, confirmDeleteId)
+      setConfirmDeleteId(null)
+      onChanged?.()
+    } catch (err) {
+      console.error(err)
+      setConfirmDeleteId(null)
+    } finally {
+      setExcluindo(false)
+    }
+  }
+
   if (loading) return <Spinner size={18} />
   if (lancamentos.length === 0) return <p className="text-sm text-stone-400">{vazio}</p>
   return (
-    <ul className="space-y-2">
-      {lancamentos.map(l => (
-        <li key={l.id} className="text-sm border-l-2 border-stone-200 pl-3">
-          <p className="text-stone-700 font-medium">{formatCurrency(l.valor)}</p>
-          <p className="text-xs text-stone-400">
-            {formatCompetencia(l.competencia)}{l.descricao ? ` — ${l.descricao}` : ''} — {l.registrado_por_nome}
-          </p>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-2">
+        {lancamentos.map(l => (
+          <li key={l.id} className="flex items-center justify-between text-sm border-l-2 border-stone-200 pl-3">
+            <div>
+              <p className="text-stone-700 font-medium">{formatCurrency(l.valor)}</p>
+              <p className="text-xs text-stone-400">
+                {formatCompetencia(l.competencia)}{l.descricao ? ` — ${l.descricao}` : ''} — {l.registrado_por_nome}
+              </p>
+            </div>
+            {ehDiretoria && (
+              <button className="btn-secondary btn-sm text-red-600" onClick={() => setConfirmDeleteId(l.id)}>Excluir</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={handleExcluir}
+        title="Excluir lançamento"
+        message="Isso vai apagar definitivamente este lançamento de bônus/comissão. Essa ação não pode ser desfeita. Deseja continuar?"
+        confirmLabel={excluindo ? 'Excluindo...' : 'Excluir'}
+        disabled={excluindo}
+        danger
+      />
+    </>
   )
 }
 
@@ -600,7 +636,7 @@ function ComissaoSection({ colaborador, onUpdated }) {
         <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar comissão do mês</button>
       </div>
 
-      <LancamentosVariaveisLista loading={loading} lancamentos={lancamentos} vazio="Nenhuma comissão lançada." />
+      <LancamentosVariaveisLista colaborador={colaborador} loading={loading} lancamentos={lancamentos} vazio="Nenhuma comissão lançada." onChanged={carregar} />
 
       <EditarRegraComissaoModal
         open={showEditarRegra}
@@ -715,7 +751,7 @@ function BonusSection({ colaborador }) {
         <button className="btn-secondary btn-sm" onClick={() => setShowLancar(true)}>Lançar bônus</button>
       </div>
 
-      <LancamentosVariaveisLista loading={loading} lancamentos={lancamentos} vazio="Nenhum bônus lançado." />
+      <LancamentosVariaveisLista colaborador={colaborador} loading={loading} lancamentos={lancamentos} vazio="Nenhum bônus lançado." onChanged={carregar} />
 
       <LancarVariavelModal
         open={showLancar}
