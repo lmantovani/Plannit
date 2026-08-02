@@ -14,9 +14,10 @@ from app.models.fechamento import ProjetoComercial, Fechamento, Parcela, Handoff
 from app.models.notificacao import Notificacao, TipoNotificacao
 from app.models.colaborador import (
     Departamento, Cargo, Colaborador,
-    RegimeContratacao, ModalidadeTrabalho,
+    RegimeContratacao, ModalidadeTrabalho, TipoComissao,
     HistoricoSalarialColaborador, HistoricoCargoColaborador,
     DocumentoColaborador,
+    BeneficioColaborador, HistoricoBeneficioColaborador,
 )
 
 __all__ = [
@@ -30,7 +31,8 @@ __all__ = [
     "ProjetoComercial", "Fechamento", "Parcela", "Handoff",
     "Notificacao", "TipoNotificacao",
     "Departamento", "Cargo", "Colaborador",
-    "RegimeContratacao", "ModalidadeTrabalho",
+    "RegimeContratacao", "ModalidadeTrabalho", "TipoComissao",
     "HistoricoSalarialColaborador", "HistoricoCargoColaborador",
     "DocumentoColaborador",
+    "BeneficioColaborador", "HistoricoBeneficioColaborador",
 ]

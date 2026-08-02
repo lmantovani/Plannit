@@ -200,6 +200,37 @@ class HistoricoCargoColaborador(Base):
         return self.aprovado_por.nome if self.aprovado_por else None
 
 
+class BeneficioColaborador(Base):
+    __tablename__ = "beneficios_colaboradores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    colaborador_id = Column(Integer, ForeignKey("colaboradores.id"), nullable=False)
+    nome = Column(String(150), nullable=False)
+    valor = Column(Float, nullable=False)  # valor atual, denormalizado — trilha em HistoricoBeneficioColaborador
+    data_vigencia_atual = Column(Date, nullable=True)
+    ativo = Column(Boolean, default=True)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+    atualizado_em = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class HistoricoBeneficioColaborador(Base):
+    __tablename__ = "historico_beneficios_colaboradores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    beneficio_id = Column(Integer, ForeignKey("beneficios_colaboradores.id"), nullable=False)
+    valor = Column(Float, nullable=False)
+    data_vigencia = Column(Date, nullable=False)
+    motivo = Column(String(300), nullable=False)
+    registrado_por_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+    registrado_por = relationship("User", foreign_keys=[registrado_por_id])
+
+    @property
+    def registrado_por_nome(self):
+        return self.registrado_por.nome if self.registrado_por else None
+
+
 class DocumentoColaborador(Base):
     __tablename__ = "documentos_colaboradores"
 

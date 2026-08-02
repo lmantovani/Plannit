@@ -7,6 +7,7 @@ from app.models.user import User, PerfilUsuario
 from app.models.colaborador import (
     Departamento, Cargo, Colaborador, HistoricoSalarialColaborador, HistoricoCargoColaborador,
     DocumentoColaborador, RegimeContratacao,
+    BeneficioColaborador, HistoricoBeneficioColaborador,
 )
 from app.schemas.colaborador import (
     DepartamentoCreate, DepartamentoUpdate, DepartamentoResponse,
@@ -16,6 +17,8 @@ from app.schemas.colaborador import (
     HistoricoCargoCreate, HistoricoCargoResponse,
     DesligamentoRequest,
     DocumentoCreate, DocumentoResponse,
+    BeneficioCreate, BeneficioUpdate, BeneficioResponse,
+    HistoricoBeneficioCreate, HistoricoBeneficioResponse,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -372,6 +375,125 @@ def _get_colaborador_ou_404(colaborador_id: int, db: Session) -> Colaborador:
     if not colaborador:
         raise HTTPException(404, "Colaborador não encontrado")
     return colaborador
+
+
+# === BENEFÍCIOS ===
+
+@router.post("/{colaborador_id}/beneficios", response_model=BeneficioResponse, status_code=201)
+def criar_beneficio(
+    colaborador_id: int,
+    payload: BeneficioCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    beneficio = BeneficioColaborador(
+        colaborador_id=colaborador_id,
+        nome=payload.nome,
+        valor=payload.valor,
+        data_vigencia_atual=payload.data_vigencia,
+        ativo=True,
+    )
+    db.add(beneficio)
+    db.flush()  # gera o id sem encerrar a transação — histórico entra no mesmo commit
+    db.add(HistoricoBeneficioColaborador(
+        beneficio_id=beneficio.id,
+        valor=payload.valor,
+        data_vigencia=payload.data_vigencia,
+        motivo=payload.motivo,
+        registrado_por_id=current_user.id,
+    ))
+    db.commit()
+    db.refresh(beneficio)
+    return beneficio
+
+
+@router.get("/{colaborador_id}/beneficios", response_model=List[BeneficioResponse])
+def listar_beneficios(
+    colaborador_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    return (
+        db.query(BeneficioColaborador)
+        .filter(BeneficioColaborador.colaborador_id == colaborador_id)
+        .order_by(BeneficioColaborador.nome)
+        .all()
+    )
+
+
+@router.put("/{colaborador_id}/beneficios/{beneficio_id}", response_model=BeneficioResponse)
+def atualizar_beneficio(
+    colaborador_id: int,
+    beneficio_id: int,
+    payload: BeneficioUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    beneficio = _get_beneficio_ou_404(colaborador_id, beneficio_id, db)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(beneficio, field, value)
+    db.commit()
+    db.refresh(beneficio)
+    return beneficio
+
+
+@router.post("/{colaborador_id}/beneficios/{beneficio_id}/historico", response_model=HistoricoBeneficioResponse, status_code=201)
+def lancar_historico_beneficio(
+    colaborador_id: int,
+    beneficio_id: int,
+    payload: HistoricoBeneficioCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    beneficio = _get_beneficio_ou_404(colaborador_id, beneficio_id, db)
+
+    registro = HistoricoBeneficioColaborador(
+        beneficio_id=beneficio_id,
+        registrado_por_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(registro)
+
+    e_mais_recente = (
+        beneficio.data_vigencia_atual is None
+        or payload.data_vigencia >= beneficio.data_vigencia_atual
+    )
+    if e_mais_recente:
+        beneficio.valor = payload.valor
+        beneficio.data_vigencia_atual = payload.data_vigencia
+
+    db.commit()
+    db.refresh(registro)
+    return registro
+
+
+@router.get("/{colaborador_id}/beneficios/{beneficio_id}/historico", response_model=List[HistoricoBeneficioResponse])
+def listar_historico_beneficio(
+    colaborador_id: int,
+    beneficio_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_beneficio_ou_404(colaborador_id, beneficio_id, db)
+    return (
+        db.query(HistoricoBeneficioColaborador)
+        .filter(HistoricoBeneficioColaborador.beneficio_id == beneficio_id)
+        .order_by(HistoricoBeneficioColaborador.data_vigencia.desc(), HistoricoBeneficioColaborador.id.desc())
+        .all()
+    )
+
+
+def _get_beneficio_ou_404(colaborador_id: int, beneficio_id: int, db: Session) -> BeneficioColaborador:
+    beneficio = (
+        db.query(BeneficioColaborador)
+        .filter(BeneficioColaborador.id == beneficio_id, BeneficioColaborador.colaborador_id == colaborador_id)
+        .first()
+    )
+    if not beneficio:
+        raise HTTPException(404, "Benefício não encontrado")
+    return beneficio
 
 
 # === DOCUMENTOS ===

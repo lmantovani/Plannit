@@ -306,6 +306,53 @@ class HistoricoCargoResponse(BaseModel):
         from_attributes = True
 
 
+# === BENEFÍCIOS ===
+
+class BeneficioCreate(BaseModel):
+    nome: str
+    valor: float = Field(gt=0)
+    data_vigencia: date
+    motivo: str = "Cadastro inicial"
+
+
+class BeneficioUpdate(BaseModel):
+    nome: Optional[str] = None
+    ativo: Optional[bool] = None
+
+
+class BeneficioResponse(BaseModel):
+    id: int
+    colaborador_id: int
+    nome: str
+    valor: float
+    data_vigencia_atual: Optional[date]
+    ativo: bool
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class HistoricoBeneficioCreate(BaseModel):
+    valor: float = Field(gt=0)
+    data_vigencia: date
+    motivo: str
+
+
+class HistoricoBeneficioResponse(BaseModel):
+    id: int
+    beneficio_id: int
+    valor: float
+    data_vigencia: date
+    motivo: str
+    registrado_por_id: int
+    registrado_por_nome: Optional[str] = None
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
 # === DESLIGAMENTO ===
 
 class TipoDesligamento(str, enum.Enum):
