@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import date, datetime
 import re
 import enum
-from app.models.colaborador import RegimeContratacao, ModalidadeTrabalho, TipoComissao
+from app.models.colaborador import RegimeContratacao, ModalidadeTrabalho, TipoComissao, TipoLancamentoVariavel
 
 
 # === DEPARTAMENTO ===
@@ -345,6 +345,35 @@ class HistoricoBeneficioResponse(BaseModel):
     valor: float
     data_vigencia: date
     motivo: str
+    registrado_por_id: int
+    registrado_por_nome: Optional[str] = None
+    criado_em: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# === LANÇAMENTOS DE REMUNERAÇÃO VARIÁVEL (BÔNUS / COMISSÃO MENSAL) ===
+
+class LancamentoVariavelCreate(BaseModel):
+    tipo: TipoLancamentoVariavel
+    valor: float = Field(gt=0)
+    competencia: date
+    descricao: Optional[str] = None
+
+    @field_validator("competencia")
+    @classmethod
+    def normalizar_competencia(cls, v):
+        return v.replace(day=1)
+
+
+class LancamentoVariavelResponse(BaseModel):
+    id: int
+    colaborador_id: int
+    tipo: TipoLancamentoVariavel
+    valor: float
+    competencia: date
+    descricao: Optional[str]
     registrado_por_id: int
     registrado_por_nome: Optional[str] = None
     criado_em: Optional[datetime]

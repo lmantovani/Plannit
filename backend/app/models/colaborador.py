@@ -22,6 +22,11 @@ class TipoComissao(str, enum.Enum):
     POR_META = "por_meta"
 
 
+class TipoLancamentoVariavel(str, enum.Enum):
+    BONUS = "bonus"
+    COMISSAO = "comissao"
+
+
 class Departamento(Base):
     __tablename__ = "departamentos"
 
@@ -221,6 +226,25 @@ class HistoricoBeneficioColaborador(Base):
     valor = Column(Float, nullable=False)
     data_vigencia = Column(Date, nullable=False)
     motivo = Column(String(300), nullable=False)
+    registrado_por_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+    registrado_por = relationship("User", foreign_keys=[registrado_por_id])
+
+    @property
+    def registrado_por_nome(self):
+        return self.registrado_por.nome if self.registrado_por else None
+
+
+class LancamentoRemuneracaoVariavel(Base):
+    __tablename__ = "lancamentos_remuneracao_variavel"
+
+    id = Column(Integer, primary_key=True, index=True)
+    colaborador_id = Column(Integer, ForeignKey("colaboradores.id"), nullable=False)
+    tipo = Column(SAEnum(TipoLancamentoVariavel), nullable=False)
+    valor = Column(Float, nullable=False)
+    competencia = Column(Date, nullable=False)  # mês/ano de referência — sempre normalizado para o dia 1
+    descricao = Column(String(300), nullable=True)
     registrado_por_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -8,6 +8,7 @@ from app.models.colaborador import (
     Departamento, Cargo, Colaborador, HistoricoSalarialColaborador, HistoricoCargoColaborador,
     DocumentoColaborador, RegimeContratacao,
     BeneficioColaborador, HistoricoBeneficioColaborador,
+    LancamentoRemuneracaoVariavel, TipoLancamentoVariavel,
 )
 from app.schemas.colaborador import (
     DepartamentoCreate, DepartamentoUpdate, DepartamentoResponse,
@@ -19,6 +20,7 @@ from app.schemas.colaborador import (
     DocumentoCreate, DocumentoResponse,
     BeneficioCreate, BeneficioUpdate, BeneficioResponse,
     HistoricoBeneficioCreate, HistoricoBeneficioResponse,
+    LancamentoVariavelCreate, LancamentoVariavelResponse,
 )
 
 router = APIRouter(prefix="/colaboradores", tags=["Colaboradores"])
@@ -494,6 +496,45 @@ def _get_beneficio_ou_404(colaborador_id: int, beneficio_id: int, db: Session) -
     if not beneficio:
         raise HTTPException(404, "Benefício não encontrado")
     return beneficio
+
+
+# === LANÇAMENTOS DE REMUNERAÇÃO VARIÁVEL (BÔNUS / COMISSÃO MENSAL) ===
+
+@router.post("/{colaborador_id}/lancamentos-variaveis", response_model=LancamentoVariavelResponse, status_code=201)
+def criar_lancamento_variavel(
+    colaborador_id: int,
+    payload: LancamentoVariavelCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    lancamento = LancamentoRemuneracaoVariavel(
+        colaborador_id=colaborador_id,
+        registrado_por_id=current_user.id,
+        **payload.model_dump(),
+    )
+    db.add(lancamento)
+    db.commit()
+    db.refresh(lancamento)
+    return lancamento
+
+
+@router.get("/{colaborador_id}/lancamentos-variaveis", response_model=List[LancamentoVariavelResponse])
+def listar_lancamentos_variaveis(
+    colaborador_id: int,
+    tipo: Optional[TipoLancamentoVariavel] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*_ROLES_MODULO)),
+):
+    _get_colaborador_ou_404(colaborador_id, db)
+    query = db.query(LancamentoRemuneracaoVariavel).filter(
+        LancamentoRemuneracaoVariavel.colaborador_id == colaborador_id
+    )
+    if tipo:
+        query = query.filter(LancamentoRemuneracaoVariavel.tipo == tipo)
+    return query.order_by(
+        LancamentoRemuneracaoVariavel.competencia.desc(), LancamentoRemuneracaoVariavel.id.desc()
+    ).all()
 
 
 # === DOCUMENTOS ===

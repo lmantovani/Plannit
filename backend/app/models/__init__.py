@@ -18,6 +18,7 @@ from app.models.colaborador import (
     HistoricoSalarialColaborador, HistoricoCargoColaborador,
     DocumentoColaborador,
     BeneficioColaborador, HistoricoBeneficioColaborador,
+    LancamentoRemuneracaoVariavel, TipoLancamentoVariavel,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "HistoricoSalarialColaborador", "HistoricoCargoColaborador",
     "DocumentoColaborador",
     "BeneficioColaborador", "HistoricoBeneficioColaborador",
+    "LancamentoRemuneracaoVariavel", "TipoLancamentoVariavel",
 ]
