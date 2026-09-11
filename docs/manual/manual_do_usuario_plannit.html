@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual do Usuário & Governança Operacional | Plannit • Líder Móveis</title>
+  
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#fbf8f2',
+              100: '#f5efe1',
+              200: '#ebdcc2',
+              300: '#dec29d',
+              400: '#cfa374',
+              500: '#c48954',
+              600: '#b47343',
+              700: '#965a38',
+              800: '#7a4933',
+              900: '#643d2c',
+              950: '#361e16',
+            },
+            stone: {
+              850: '#211d1a',
+              900: '#1c1917',
+              950: '#0c0a09',
+            }
+          },
+          fontFamily: {
+            sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+            display: ['"Playfair Display"', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; font-size: 11pt; }
+      .page-break { page-break-before: always; }
+      .screenshot-frame { border: 1px solid #ccc !important; box-shadow: none !important; }
+    }
+    .badge-diretoria { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-gerente { background-color: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-vendedor { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-projetista { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+    .badge-conferente { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+
+    /* Filtro ativo de perfil */
+    .profile-highlight {
+      box-shadow: 0 0 0 3px #c48954, 0 10px 25px -5px rgba(196, 137, 84, 0.3) !important;
+      transform: scale(1.005);
+      transition: all 0.2s ease-in-out;
+    }
+    .profile-dimmed {
+      opacity: 0.35;
+      filter: grayscale(80%);
+      transition: all 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-stone-100 text-stone-800 font-sans antialiased selection:bg-primary-500 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- TOPO / CABEÇALHO HERO EXECUTIVO -->
+  <!-- ========================================================================= -->
+  <header class="bg-stone-900 text-white border-b border-stone-800 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <!-- Logo e Título -->
+        <div class="flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center text-stone-950 font-bold font-display text-xl shadow-inner">
+            P
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-display text-xl font-bold tracking-tight text-white">Plannit</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary-500/20 text-primary-300 border border-primary-500/30">
+                Líder Móveis Planejados
+              </span>
+            </div>
+            <p class="text-xs text-stone-400">Manual Oficial de Utilização, Governança & Decisão de Implantação</p>
+          </div>
+        </div>
+
+        <!-- Ações do Topo -->
+        <div class="flex items-center gap-3 no-print">
+          <button onclick="window.print()" class="inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition shadow-sm">
+            <svg class="w-4 h-4 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Imprimir / Salvar PDF
+          </button>
+          <a href="#sumario" class="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition shadow-sm">
+            Explorar Módulos ↓
+          </a>
+        </div>
+      </div>
+
+      <!-- Barra de Filtro Interativo por Perfil de Acesso -->
+      <div class="py-3 border-t border-stone-800/80 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
+        <div class="flex items-center gap-2 text-stone-400">
+          <svg class="w-4 h-4 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+          <span class="font-semibold text-stone-300">Simular Visão por Perfil:</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5" id="perfil-buttons">
+          <button onclick="filtrarPerfil('todos')" class="filter-btn active px-3 py-1 rounded-md font-bold text-xs bg-primary-600 text-white transition shadow-xs" data-perfil="todos">
+            Todos os Perfis
+          </button>
+          <button onclick="filtrarPerfil('diretoria')" class="filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition" data-perfil="diretoria">
+            👑 Diretoria
+          </button>
+          <button onclick="filtrarPerfil('gerente')" class="filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition" data-perfil="gerente">
+            💼 Gerente Comercial
+          </button>
+          <button onclick="filtrarPerfil('vendedor')" class="filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition" data-perfil="vendedor">
+            🤝 Vendedor
+          </button>
+          <button onclick="filtrarPerfil('projetista')" class="filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition" data-perfil="projetista">
+            🎨 Projetista 3D
+          </button>
+          <button onclick="filtrarPerfil('conferente')" class="filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition" data-perfil="conferente">
+            📐 Conferente de Obra
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER PRINCIPAL -->
+  <!-- ========================================================================= -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- ===================================================================== -->
+      <!-- MENU LATERAL / SUMÁRIO RÁPIDO (STICKY) -->
+      <!-- ===================================================================== -->
+      <aside class="lg:col-span-3 sticky top-36 space-y-4 no-print hidden lg:block">
+        <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-stone-400" id="sumario">
+            Índice de Módulos
+          </h3>
+          <nav class="space-y-1 text-xs font-medium">
+            <a href="#intro" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-700 transition">1. Visão Geral & Proposta</a>
+            <a href="#matriz-perfis" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-700 transition">2. Matriz de Perfis (RBAC)</a>
+            <a href="#jornada-projeto" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-700 transition">3. Fluxo Operacional (32 Etapas)</a>
+            <div class="pt-2 border-t border-stone-100">
+              <span class="text-[10px] uppercase font-bold text-stone-400 block px-2 mb-1">Telas & Funcionalidades</span>
+              <a href="#mod-01" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.1. Autenticação & Segurança</a>
+              <a href="#mod-02" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.2. Dashboard & Alerta RN016</a>
+              <a href="#mod-03" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.3. CRM & Qualificação RN001</a>
+              <a href="#mod-04" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.4. Briefings & Score RN002</a>
+              <a href="#mod-05" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.5. Fila & Limite WIP RN003</a>
+              <a href="#mod-06" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.6. Especificadores & Score RFV</a>
+              <a href="#mod-07" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.7. Clientes & Aprovação Crédito</a>
+              <a href="#mod-08" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.8. Sala de Controle & Render RN004/RN005</a>
+              <a href="#mod-09" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.9. Fechamento Comercial & Parcelas</a>
+              <a href="#mod-10" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.10. Handoff Técnico RN006</a>
+              <a href="#mod-11" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.11. RH, Cargos & Auditoria</a>
+            </div>
+            <div class="pt-2 border-t border-stone-100">
+              <a href="#tabela-travas" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-primary-700 font-bold transition">5. Guia Rápido de Regras (RNs)</a>
+              <a href="#faq-decisao" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-700 transition">6. Por que Adotar o Plannit?</a>
+            </div>
+          </nav>
+        </div>
+
+        <!-- Card de Ajuda Rápida -->
+        <div class="bg-gradient-to-br from-stone-900 to-stone-950 text-white rounded-2xl p-5 shadow-sm space-y-2 border border-stone-800">
+          <div class="flex items-center gap-2 text-primary-400 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Auditoria Ativa
+          </div>
+          <p class="text-[11px] text-stone-300 leading-relaxed">
+            Todas as transições, exclusões lógicas e aprovações no Plannit são imutáveis e auditadas com autor e data.
+          </p>
+        </div>
+      </aside>
+
+      <!-- ===================================================================== -->
+      <!-- CONTEÚDO PRINCIPAL (9 COLUNAS) -->
+      <!-- ===================================================================== -->
+      <main class="lg:col-span-9 space-y-12">
+
+        <!-- =================================================================== -->
+        <!-- SEÇÃO 1: INTRODUÇÃO & PROPOSTA DE VALOR -->
+        <!-- =================================================================== -->
+        <section id="intro" class="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-bold border border-primary-200 uppercase tracking-wider">
+            Visão Geral da Plataforma
+          </div>
+          <h1 class="text-3xl sm:text-4xl font-display font-bold text-stone-900 leading-tight">
+            Gestão Operacional de Alta Performance para Fábricas e Lojas de Móveis Planejados
+          </h1>
+          <p class="text-stone-600 text-base leading-relaxed">
+            O <strong>Plannit</strong> é uma plataforma integrada desenvolvida especificamente para as complexidades operacionais do mercado de móveis sob medida de alto padrão (Líder Móveis Planejados). Diferente de CRMs genéricos e ERPs engessados, o Plannit implementa <strong>guardrails inegociáveis de processo</strong> que impedem retrabalho, perda de matéria-prima, devoluções de montagem e desgaste no relacionamento com clientes e arquitetos parceiros.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1">
+              <span class="text-xs font-bold text-stone-900 block">Zero Medições Erradas</span>
+              <p class="text-xs text-stone-500">Bloqueio estrito de passagem técnica (RN006) com validação prévia de todos os 8 requisitos de obra.</p>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1">
+              <span class="text-xs font-bold text-stone-900 block">Capacidade 3D Equilibrada</span>
+              <p class="text-xs text-stone-500">Controle rigoroso de limite WIP por projetista (RN003) eliminando gargalos e atrasos de apresentação.</p>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1">
+              <span class="text-xs font-bold text-stone-900 block">Blindagem Jurídica & Financeira</span>
+              <p class="text-xs text-stone-500">Contratos digitais com parcelamento automático, controle de entrada e disparo de onboarding pós-venda.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SEÇÃO 2: MATRIZ DE PERFIS DE ACESSO (RBAC) -->
+        <!-- =================================================================== -->
+        <section id="matriz-perfis" class="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-bold text-primary-700 uppercase tracking-wider">Governança & Segurança</span>
+              <h2 class="text-2xl font-display font-bold text-stone-900 mt-1">Matriz de Perfis de Acesso (RBAC)</h2>
+            </div>
+            <span class="text-xs font-mono font-bold bg-stone-100 px-3 py-1 rounded text-stone-600">5 Perfis Operacionais</span>
+          </div>
+
+          <p class="text-xs text-stone-600 leading-relaxed">
+            O sistema aplica restrições em nível de rota e banco de dados. Cada colaborador enxerga e executa exclusivamente o que sua função autoriza:
+          </p>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-stone-200 rounded-xl overflow-hidden">
+              <thead class="bg-stone-900 text-white uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="p-3">Perfil</th>
+                  <th class="p-3">Foco de Atuação</th>
+                  <th class="p-3">Módulos Acessíveis</th>
+                  <th class="p-3">Poderes Exclusivos</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200">
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-bold"><span class="badge-diretoria px-2.5 py-1 rounded text-[11px] font-bold">👑 Diretoria</span></td>
+                  <td class="p-3 text-stone-700 font-medium">Gestão Executiva & Estratégica</td>
+                  <td class="p-3 text-stone-600">Todos os 23 módulos irrestritos</td>
+                  <td class="p-3 text-stone-800 font-semibold">Configuração de WIP, purga administrativa de cadastros e visão financeira global.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-bold"><span class="badge-gerente px-2.5 py-1 rounded text-[11px] font-bold">💼 Gerente Comercial</span></td>
+                  <td class="p-3 text-stone-700 font-medium">Coordenação de Vendas & Parcerias</td>
+                  <td class="p-3 text-stone-600">Dashboard, CRM, Briefings, Clientes, Especificadores, Fila</td>
+                  <td class="p-3 text-stone-800 font-semibold">Definição de metas de visitas a arquitetos, reatribuição de donos de parceiros e aprovação de descontos.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-bold"><span class="badge-vendedor px-2.5 py-1 rounded text-[11px] font-bold">🤝 Vendedor</span></td>
+                  <td class="p-3 text-stone-700 font-medium">Atendimento ao Cliente & Fechamento</td>
+                  <td class="p-3 text-stone-600">CRM, Briefings, Sala de Controle, Fechamento, Clientes</td>
+                  <td class="p-3 text-stone-800 font-semibold">Aprovação/Devolução de maquetes 3D (RN004), assinatura de contratos e liberação de Handoff (RN006).</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-bold"><span class="badge-projetista px-2.5 py-1 rounded text-[11px] font-bold">🎨 Projetista 3D</span></td>
+                  <td class="p-3 text-stone-700 font-medium">Desenho Técnico & Modelagem 3D</td>
+                  <td class="p-3 text-stone-600">Fila de Projetos, Sala de Controle de Projetos Próprios</td>
+                  <td class="p-3 text-stone-800 font-semibold">Submissão de maquetes e arquivos 3D, conclusão de renders fotorrealistas de alta resolução.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-bold"><span class="badge-conferente px-2.5 py-1 rounded text-[11px] font-bold">📐 Conferente de Obra</span></td>
+                  <td class="p-3 text-stone-700 font-medium">Medição Fina & Validação Física</td>
+                  <td class="p-3 text-stone-600">Projetos liberados pelo Handoff (contato_conf), Ficha Técnica</td>
+                  <td class="p-3 text-stone-800 font-semibold">Emissão de laudo físico de obra, checklist de prumo/alvenaria e adequação executiva.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SEÇÃO 3: FLUXO OPERACIONAL EM 32 ETAPAS -->
+        <!-- =================================================================== -->
+        <section id="jornada-projeto" class="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
+          <div class="border-b border-stone-100 pb-4">
+            <span class="text-xs font-bold text-primary-700 uppercase tracking-wider">Ciclo de Vida</span>
+            <h2 class="text-2xl font-display font-bold text-stone-900 mt-1">A Jornada de um Projeto na Líder Móveis</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
+              <div class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center text-xs">1</div>
+              <h4 class="font-bold text-stone-900 text-sm">Captação & CRM</h4>
+              <p class="text-stone-500">Lead entra no funil. Passa por qualificação obrigatória (<span class="font-bold text-stone-800">RN001</span>), registro de contatos e agendamento de briefing.</p>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
+              <div class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center text-xs">2</div>
+              <h4 class="font-bold text-stone-900 text-sm">Briefing & Fila</h4>
+              <p class="text-stone-500">Levantamento de necessidades. Cálculo automático de score (<span class="font-bold text-stone-800">RN002 &ge; 70</span>) para envio à fila com limite WIP (<span class="font-bold text-stone-800">RN003</span>).</p>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
+              <div class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center text-xs">3</div>
+              <h4 class="font-bold text-stone-900 text-sm">Modelagem & Render</h4>
+              <p class="text-stone-500">Projetista desenha em 3D. Vendedor avalia com motivo (<span class="font-bold text-stone-800">RN004</span>). Apresentação travada até aprovação do render (<span class="font-bold text-stone-800">RN005</span>).</p>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
+              <div class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center text-xs">4</div>
+              <h4 class="font-bold text-stone-900 text-sm">Fechamento & Handoff</h4>
+              <p class="text-stone-500">Contrato assinado, plano de parcelas e conferência formal dos 8 itens obrigatórios (<span class="font-bold text-stone-800">RN006</span>) para liberação técnica.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.1: AUTENTICAÇÃO & SEGURANÇA -->
+        <!-- =================================================================== -->
+        <article id="mod-01" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6" data-perfis="diretoria gerente vendedor projetista conferente">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 01</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Autenticação, Sessões & Segurança RBAC</h3>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+              <span class="badge-projetista px-2 py-0.5 rounded text-[10px] font-bold">Projetista</span>
+              <span class="badge-conferente px-2 py-0.5 rounded text-[10px] font-bold">Conferente</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/login</span>
+            </div>
+            <img src="images/01_login.png" alt="Tela de Login Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <div class="space-y-4 text-xs text-stone-700 leading-relaxed">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide">Como Utilizar & Operar</h4>
+            <ol class="list-decimal list-inside space-y-2 pl-2 text-stone-600">
+              <li>Insira o <strong>E-mail Corporativo</strong> cadastrado no RH da Líder Móveis e a <strong>Senha Pessoal</strong>.</li>
+              <li>Opcionalmente, marque <strong>"Lembrar de mim"</strong> para manter o acesso salvo no dispositivo seguro por até 30 dias.</li>
+              <li>Ao clicar em <strong>"Acessar Plataforma"</strong>, o sistema valida as credenciais criptografadas via bcrypt e redireciona o usuário para o seu painel de trabalho de acordo com seu perfil.</li>
+            </ol>
+
+            <div class="bg-primary-50 border border-primary-200 rounded-2xl p-4 space-y-1">
+              <span class="font-bold text-primary-900 block text-xs">Proteção de Sessão Ativa:</span>
+              <p class="text-primary-800 text-[11px]">
+                Tentativas de login com força bruta bloqueiam temporariamente o IP. Todas as sessões são isoladas por cookies HTTP-only seguros e tokens anti-CSRF.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.2: DASHBOARD GERENCIAL & ALERTA RN016 -->
+        <!-- =================================================================== -->
+        <article id="mod-02" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6" data-perfis="diretoria gerente">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 02 • RN016</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Dashboard Gerencial Consolidado & Alerta de Estagnação</h3>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente Comercial</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/dashboard</span>
+            </div>
+            <img src="images/02_dashboard.png" alt="Dashboard Gerencial Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <div class="space-y-4 text-xs text-stone-700 leading-relaxed">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide">Como Interpretar os Indicadores</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200">
+                <span class="font-bold text-stone-900 block text-xs">Carteira em Negociação</span>
+                <span class="text-[11px] text-stone-500">Soma de todos os projetos ativos que ainda não foram cancelados ou arquivados.</span>
+              </div>
+              <div class="p-3 bg-red-50 rounded-xl border border-red-200 text-red-900">
+                <span class="font-bold block text-xs">Alerta de Estagnação (RN016)</span>
+                <span class="text-[11px] text-red-700">Contador de projetos parados na mesma fase por mais de 5 dias corridos sem qualquer movimentação.</span>
+              </div>
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200">
+                <span class="font-bold text-stone-900 block text-xs">Capacidade Operacional 3D</span>
+                <span class="text-[11px] text-stone-500">Gráfico em tempo real da lotação da equipe de projetistas (WIP).</span>
+              </div>
+            </div>
+
+            <!-- Caixa de Regra de Negócio RN016 -->
+            <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl space-y-1">
+              <span class="font-bold text-amber-900 block text-xs">🛡️ Regra Inegociável RN016 — Alerta de Estagnação</span>
+              <p class="text-amber-800 text-[11px]">
+                Qualquer projeto que permaneça <strong>mais de 5 dias úteis</strong> na mesma etapa (seja aguardando validação de maquete, em render ou em fechamento) é automaticamente sinalizado em vermelho com um aviso de alerta na tela da gestão. Essa regra evita que propostas esfriem e garante SLA de resposta comercial.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.3: CRM & FUNIL DE LEADS (RN001 / RF003 / RF004) -->
+        <!-- =================================================================== -->
+        <article id="mod-03" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 03 • CRM, PIPELINE & DRAWER LATERAL</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">CRM Comercial, Gestão de Leads & Ficha Lateral de Atendimento</h3>
+              <p class="text-xs text-stone-500 mt-1">Gestão completa do pipeline de vendas, qualificação obrigatória, linha do tempo auditável e monitoramento de estagnação.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente Comercial</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+            </div>
+          </div>
+
+          <!-- Grade Visual: Kanban e Drawer Lateral Lado a Lado -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Screenshot 1: Kanban Geral -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-stone-800">1. Pipeline Geral no Funil Kanban</span>
+                <span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-mono">Visão Macro</span>
+              </div>
+              <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
+                <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
+                  <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
+                  <span class="text-[10px] font-mono text-stone-400">/crm — Pipeline e Alertas de Estagnação</span>
+                </div>
+                <img src="images/03_crm.png" alt="CRM e Funil Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+              </div>
+              <p class="text-[11px] text-stone-500 leading-normal">
+                Permite alternar entre visualização <strong>Kanban</strong> ou <strong>Lista</strong>, filtrar por origem, vendedor e período, e arrastar cards de forma intuitiva.
+              </p>
+            </div>
+
+            <!-- Screenshot 2: Drawer Lateral do Lead -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-stone-800">2. Gaveta Lateral de Atendimento (Lead Drawer)</span>
+                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono font-semibold">Ficha 360º</span>
+              </div>
+              <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
+                <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
+                  <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
+                  <span class="text-[10px] font-mono text-stone-400">/crm — Ficha do Lead & Histórico</span>
+                </div>
+                <img src="images/03b_crm_drawer.png" alt="Gaveta Lateral do Lead no Plannit" class="w-full h-auto object-cover" loading="lazy" />
+              </div>
+              <p class="text-[11px] text-stone-500 leading-normal">
+                Abre instantaneamente ao clicar em qualquer card do funil sem trocar de página, centralizando o controle do lead em uma única barra operacional.
+              </p>
+            </div>
+          </div>
+
+          <!-- DETALHAMENTO DA GAVETA LATERAL (LEAD DRAWER) -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-5">
+            <div class="flex items-center gap-2 border-b border-stone-200 pb-3">
+              <span class="text-lg">🔍</span>
+              <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide">
+                Anatomia & O que Pode Ser Feito na Barra Lateral (Lead Drawer)
+              </h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <!-- Item 1: Identificação & Qualificação -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">1. Identificação & Selo de Qualificação</span>
+                  <span class="badge badge-neutro text-[9px]">Status RN001</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Exibe o nome do lead, telefone de contato direto com link rápido para WhatsApp e o indicador visual:
+                  <strong>Badge Verde ("Qualificado")</strong> ou <strong>Badge Cinza ("Não Qualificado")</strong>. Leads não qualificados ficam impedidos de entrar na esteira de projetos.
+                </p>
+              </div>
+
+              <!-- Item 2: Botão Dourado de Qualificação -->
+              <div class="p-4 bg-white rounded-xl border border-amber-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    2. Botão "Qualificar Lead (RN001)"
+                  </span>
+                  <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Ação Chave</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Ao clicar neste botão, o vendedor confirma que já alinhou perfil de imóvel, faixa orçamentária e prazo com o cliente. O backend registra a qualificação, habilita o ponto verde no card e <strong>destrava a permissão para avançar o lead para Briefing e Projeto</strong>.
+                </p>
+              </div>
+
+              <!-- Item 3: Botão Marcar como Perdido -->
+              <div class="p-4 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-rose-900 text-xs flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    3. Botão "Marcar como Perdido (RF004)"
+                  </span>
+                  <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">Descarte</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Abre uma janela modal exigindo o registro formal do <strong>Motivo da Perda</strong> (ex: optou por marcenaria rápida, verba insuficiente, desistência da compra do imóvel) e opcionalmente o <strong>Concorrente Escolhido</strong> (ex: Florense, Dell Anno, Ornare). Nada é apagado do sistema, gerando inteligência de mercado.
+                </p>
+              </div>
+
+              <!-- Item 4: Dados de Origem & Marketing -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">4. Informações de Origem & Campanha</span>
+                  <span class="badge badge-neutro text-[9px]">Atribuição</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Registra o canal de captação (<em>Instagram, Google Ads, Indicação de Amigo, Especificador / Arquiteto, Walk-in no Showroom, Construtora</em>), cidade/UF do cliente e a campanha publicitária específica que gerou o contato (ex: <em>"Campanha Cozinhas Gourmet Outono"</em>).
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 5 & 6: Linha do Tempo e Registro de Interações -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <span class="font-bold text-stone-900 text-xs block">5. Linha do Tempo Auditável (Timeline RF003)</span>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Exibe o histórico cronológico de todos os pontos de contato. Cada evento mostra:
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-stone-600 text-[11px] pl-1">
+                  <li><strong>Canal com Ícone Colorido:</strong> WhatsApp (verde), Ligação telefônica (azul), E-mail (roxo), Visita presencial (âmbar) ou Reunião (índigo).</li>
+                  <li><strong>Resumo da Conversa:</strong> o que foi acertado, dúvidas do cliente e prazos combinados.</li>
+                  <li><strong>Autor & Carimbo Temporal:</strong> nome do consultor comercial que registrou e data/hora exata (ex: <em>"Por: Vendedor Líder • 06/09/2026, 16:22"</em>).</li>
+                </ul>
+              </div>
+
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <span class="font-bold text-stone-900 text-xs block">6. Registro Imediato de Nova Interação</span>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  No rodapé da gaveta, o vendedor seleciona o canal de atendimento, digita o resumo do contato em poucos segundos e clica em <strong>"Registrar Interação"</strong>.
+                </p>
+                <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900 leading-relaxed">
+                  <strong>Efeito Imediato no Sistema:</strong> ao salvar uma interação, o sistema atualiza o campo <em>"última interação"</em> para <em>"agora mesmo"</em> e <strong>reseta o contador de dias sem contato para zero</strong>, apagando o aviso amarelo de estagnação do card.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CICLO DE VIDA COMPLETO DO LEAD -->
+          <div class="space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>🔄</span> Ciclo de Vida do Lead no Plannit (Do Primeiro Contato ao Pós-Venda)
+            </h4>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse border border-stone-200 rounded-xl overflow-hidden shadow-2xs">
+                <thead>
+                  <tr class="bg-stone-100 text-stone-700 font-bold border-b border-stone-200">
+                    <th class="p-3 w-12 text-center">Fase</th>
+                    <th class="p-3 w-32">Etapa do Funil</th>
+                    <th class="p-3 w-44">Objetivo Principal</th>
+                    <th class="p-3">Ações do Usuário & Gatilhos do Sistema</th>
+                    <th class="p-3 w-40">Regra / Guardrail</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-600">
+                  <tr class="hover:bg-stone-50">
+                    <td class="p-3 text-center font-bold text-stone-400">01</td>
+                    <td class="p-3 font-semibold text-stone-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Novo Lead</span>
+                    </td>
+                    <td class="p-3">Captação & Recepção</td>
+                    <td class="p-3 leading-relaxed">
+                      Lead chega via marketing ou balcão de loja. O vendedor é atribuído e deve realizar o primeiro contato de acolhimento em até 2 horas.
+                    </td>
+                    <td class="p-3"><span class="badge badge-neutro text-[10px]">SLA de Entrada</span></td>
+                  </tr>
+
+                  <tr class="hover:bg-stone-50">
+                    <td class="p-3 text-center font-bold text-stone-400">02</td>
+                    <td class="p-3 font-semibold text-stone-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span> Qualificando</span>
+                    </td>
+                    <td class="p-3">Sondagem de Potencial</td>
+                    <td class="p-3 leading-relaxed">
+                      Consultor conversa com o cliente para entender: tipo de imóvel (casa/apto/reforma), valor pretendido, data de entrega das chaves e decisores.
+                    </td>
+                    <td class="p-3"><span class="badge badge-alerta text-[10px]">Sondagem Obrigatória</span></td>
+                  </tr>
+
+                  <tr class="hover:bg-stone-50">
+                    <td class="p-3 text-center font-bold text-stone-400">03</td>
+                    <td class="p-3 font-semibold text-stone-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Em Visita</span>
+                    </td>
+                    <td class="p-3">Experiência Showroom</td>
+                    <td class="p-3 leading-relaxed">
+                      Cliente visita o showroom da Líder para conhecer acabamentos, ferragens e mostruários, ou o consultor realiza visita técnica prévia ao imóvel.
+                    </td>
+                    <td class="p-3"><span class="badge badge-neutro text-[10px]">Registro de Visita</span></td>
+                  </tr>
+
+                  <tr class="hover:bg-amber-50/50 bg-amber-50/20">
+                    <td class="p-3 text-center font-bold text-amber-600">04</td>
+                    <td class="p-3 font-semibold text-stone-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-600"></span> Em Briefing</span>
+                    </td>
+                    <td class="p-3 font-medium text-amber-900">Mapeamento Técnico</td>
+                    <td class="p-3 leading-relaxed">
+                      Abertura do formulário de Briefing Inteligente (Módulo 04). Registro de preferências visuais e rotina de cada cômodo.
+                    </td>
+                    <td class="p-3">
+                      <span class="badge badge-perigo text-[10px] font-bold">Trava RN001</span>
+                      <p class="text-[10px] text-red-700 mt-0.5">Exige qualificação prévia</p>
+                    </td>
+                  </tr>
+
+                  <tr class="hover:bg-blue-50/50 bg-blue-50/20">
+                    <td class="p-3 text-center font-bold text-blue-600">05</td>
+                    <td class="p-3 font-semibold text-stone-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-600"></span> Em Projeto</span>
+                    </td>
+                    <td class="p-3 font-medium text-blue-900">Modelagem 3D & Render</td>
+                    <td class="p-3 leading-relaxed">
+                      Briefing aprovado com score &ge; 70 é encaminhado para a Fila de Projetos (Módulo 05). Projetista modela os ambientes e gera os renders.
+                    </td>
+                    <td class="p-3">
+                      <span class="badge badge-perigo text-[10px] font-bold">Trava RN002 & RN003</span>
+                      <p class="text-[10px] text-stone-500 mt-0.5">Score &ge; 70 + Limite WIP</p>
+                    </td>
+                  </tr>
+
+                  <tr class="hover:bg-emerald-50/50 bg-emerald-50/20">
+                    <td class="p-3 text-center font-bold text-emerald-600">06</td>
+                    <td class="p-3 font-semibold text-emerald-950 font-bold">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-600"></span> Fechado</span>
+                    </td>
+                    <td class="p-3 font-medium text-emerald-900">Assinatura & Contrato</td>
+                    <td class="p-3 leading-relaxed">
+                      Proposta aceita pelo cliente! Gera o Fechamento Comercial (Módulo 10), validação matemática das parcelas e handoff de fábrica.
+                    </td>
+                    <td class="p-3">
+                      <span class="badge badge-sucesso text-[10px] font-bold">Sucesso Comercial</span>
+                    </td>
+                  </tr>
+
+                  <tr class="hover:bg-rose-50/50 bg-rose-50/20">
+                    <td class="p-3 text-center font-bold text-rose-500">❌</td>
+                    <td class="p-3 font-semibold text-rose-900">
+                      <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Perdido</span>
+                    </td>
+                    <td class="p-3 text-rose-800">Descarte Justificado</td>
+                    <td class="p-3 leading-relaxed">
+                      Cliente desiste ou opta por outro fornecedor. O vendedor deve preencher obrigatoriamente o modal de motivo e concorrente.
+                    </td>
+                    <td class="p-3">
+                      <span class="badge badge-perigo text-[10px] font-bold">Regra RF004</span>
+                      <p class="text-[10px] text-rose-700 mt-0.5">Motivo obrigatório</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- REGRAS DE NEGÓCIO DO MÓDULO 03 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Caixa RN001 -->
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-red-900 text-xs">🛡️ Regra Inegociável RN001 — Qualificação Obrigatória</span>
+                <span class="text-[9px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded font-bold uppercase">Bloqueio Ativo</span>
+              </div>
+              <p class="text-red-800 text-[11px] leading-relaxed">
+                O Plannit <strong>PROÍBE</strong> arrastar um card ou avançar o lead para <em>"Em Briefing"</em> ou <em>"Em Projeto"</em> sem que a qualificação esteja salva. Se o vendedor tentar arrastar um card não qualificado, o sistema cancela o movimento, exibe um toast de erro na tela e abre a gaveta lateral para que ele clique no botão dourado de qualificação.
+              </p>
+            </div>
+
+            <!-- Caixa Alerta de Estagnação no CRM -->
+            <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-950 text-xs">⚠️ Alerta de Estagnação Comercial (&gt; 3 Dias Sem Interação)</span>
+                <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase">Radar de Vendas</span>
+              </div>
+              <p class="text-amber-900 text-[11px] leading-relaxed">
+                Cards que ficarem mais de 3 dias úteis sem nenhum WhatsApp, ligação ou visita registrada ganham uma borda âmbar e um selo superior: <em>"⚠️ X dias sem interação!"</em>. Isso permite ao Gerente filtrar os leads frios e orientar a equipe a reativar contatos antes que o cliente esfrie ou feche com a concorrência.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.4: BRIEFING INTELIGENTE & MOTOR DE ASSERTIVIDADE (RN002) -->
+        <!-- =================================================================== -->
+        <article id="mod-04" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 04 • BRIEFING INTELIGENTE & SCORE IA</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Briefing Técnico de Alto Padrão & Motor de Assertividade</h3>
+              <p class="text-xs text-stone-500 mt-1">Eliminação de maquetes genéricas através de checklist inteligente de 5 etapas e pontuação algorítmica preditiva.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/briefings</span>
+            </div>
+            <img src="images/04_briefing.png" alt="Briefing Inteligente Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- As 5 Etapas do Preenchimento Inteligente -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>📋</span> As 5 Abas do Formulário Técnico de Briefing
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 1: Perfil & Rotina Familiar</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Composição dos moradores, faixa etária, presença de animais de estimação, frequência de recepção de visitas e hábitos de cozinha (pesada vs gourmet).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 2: Ambientes & Metragens</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Seleção de cômodos (Cozinha Gourmet, Living, Suíte Master, Closet, Home Theater), dimensões estimadas e plantas de arquitetura anexadas.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 3: Estilo Visual & Materiais</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Padrões de acabamento pretendidos (madeirados nobres, lacas foscas/brilho, vidros reflecta, ripados, perfis metálicos champagne e iluminação LED 3000K).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 4: Ferragens & Eletros</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Especificações de sistemas de abertura (Blum, Hafele), corrediças invisíveis com amortecimento e marcas dos eletrodomésticos de embutir.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 5: Orçamento & Prazos da Obra</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Faixa de investimento alinhada com o cliente, data limite de entrega das chaves da construtora e restrições de horários do condomínio.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 space-y-1">
+                <span class="font-bold text-amber-950 block text-xs">Motor de IA: Score Preditivo</span>
+                <p class="text-amber-900 text-[11px] leading-relaxed">
+                  O algoritmo recalcula a pontuação a cada campo preenchido, validando se o projetista terá 100% das informações necessárias para desenhar sem dúvidas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Régua de Interpretação do Score -->
+          <div class="p-5 bg-white rounded-2xl border border-stone-200 space-y-3">
+            <h4 class="font-bold text-xs text-stone-800 uppercase tracking-wide">Como Interpretar a Régua de Score de Assertividade</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 bg-red-50 border border-red-200 rounded-xl space-y-1">
+                <span class="font-bold text-red-900 text-xs flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> 0 a 69 Pontos: Reprovado
+                </span>
+                <p class="text-red-800 text-[11px]">
+                  <strong>Envio Bloqueado (RN002).</strong> O formulário aponta quais dados faltam (ex: falta padrão de puxador ou medidas de eletros).
+                </p>
+              </div>
+
+              <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                <span class="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 70 a 84 Pontos: Apto
+                </span>
+                <p class="text-amber-800 text-[11px]">
+                  <strong>Liberado para a Fila.</strong> Contém o núcleo crítico de informações para o projetista iniciar a modelagem 3D com segurança.
+                </p>
+              </div>
+
+              <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                <span class="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 85 a 100 Pontos: Ouro
+                </span>
+                <p class="text-emerald-900 text-[11px]">
+                  <strong>Briefing Completo.</strong> Planta, fotos do local, memorial descritivo de acabamentos e lista de eletros 100% anexados.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caixa RN002 -->
+          <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1">
+            <span class="font-bold text-red-900 block text-xs">🛡️ Regra Inegociável RN002 — Bloqueio de Briefing &lt; 70 Pontos</span>
+            <p class="text-red-800 text-[11px] leading-relaxed">
+              O botão <em>"Enviar para Fila de Projetos"</em> permanece <strong>desabilitado</strong> enquanto a pontuação automática for menor que 70 pontos. O Plannit impede fisicamente que vendedores transfiram briefings incompletos para a equipe técnica, reduzindo retrabalhos e revisões desnecessárias de maquetes em mais de 60%.
+            </p>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.5: FILA DE PROJETOS & LIMITE WIP (RN003) -->
+        <!-- =================================================================== -->
+        <article id="mod-05" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente projetista">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 05 • FILA DE DESENHO & CONTROLE WIP</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Fila de Projetos & Controle de Capacidade WIP</h3>
+              <p class="text-xs text-stone-500 mt-1">Balanceamento de carga operacional da equipe de projetistas com teto de até 3 projetos simultâneos.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-projetista px-2 py-0.5 rounded text-[10px] font-bold">Projetista</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/fila</span>
+            </div>
+            <img src="images/05_fila_wip.png" alt="Fila de Projetos Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Monitor de Carga dos Projetistas -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>⚡</span> Monitor de Capacidade dos Projetistas (WIP - Work In Progress)
+            </h4>
+            <p class="text-stone-600 text-xs leading-relaxed">
+              No topo da fila, a gerência visualiza o card individual de cada projetista com indicador visual de carga:
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div class="p-3 bg-white rounded-xl border border-stone-200 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">0 / 3 Projetos</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full w-0"></div>
+                </div>
+                <p class="text-[10px] text-stone-500">Totalmente Livre. Prioridade máxima para novas alocações.</p>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-stone-200 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">1 / 3 Projetos</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full w-1/3"></div>
+                </div>
+                <p class="text-[10px] text-stone-500">Carga Leve. Capacidade para receber mais 2 demandas.</p>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-stone-200 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">2 / 3 Projetos</span>
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                </div>
+                <div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-amber-500 h-full w-2/3"></div>
+                </div>
+                <p class="text-[10px] text-stone-500">Atenção Gerencial. Próximo do teto operacional.</p>
+              </div>
+
+              <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-rose-900 text-xs">3 / 3 Projetos</span>
+                  <span class="badge badge-perigo text-[9px]">LOTADO</span>
+                </div>
+                <div class="w-full bg-rose-200 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-rose-600 h-full w-full"></div>
+                </div>
+                <p class="text-[10px] text-rose-700 font-medium">Bloqueado para novas alocações pelo sistema (RN003).</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ciclo de Vida da Demanda na Fila -->
+          <div class="p-6 bg-white border border-stone-200 rounded-2xl space-y-3">
+            <h4 class="font-bold text-xs text-stone-900 uppercase tracking-wide">
+              Ciclo Operacional: Do Briefing ao Render
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 text-xs block">1. Aguardando Alocação</span>
+                <p class="text-stone-500 text-[11px]">Briefing com score &ge; 70 entra na coluna da esquerda. O gerente analisa prazos e escolhe o projetista livre.</p>
+              </div>
+
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 text-xs block">2. Alocado ao Projetista</span>
+                <p class="text-stone-500 text-[11px]">O card é transferido para a coluna do projetista. O saldo WIP do desenhista é incrementado em +1.</p>
+              </div>
+
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 text-xs block">3. Modelagem 3D & Promob</span>
+                <p class="text-stone-500 text-[11px]">O projetista analisa as medidas civis, cria os módulos no Promob e sobe os arquivos na Sala de Controle.</p>
+              </div>
+
+              <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-1">
+                <span class="font-bold text-amber-950 text-xs block">4. Render & Validação</span>
+                <p class="text-amber-900 text-[11px]">Renders são anexados e enviados para aprovação do vendedor (iniciando as travas RN004 e RN005).</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caixa RN003 -->
+          <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-red-900 text-xs">🛡️ Regra Inegociável RN003 — Limite WIP por Projetista</span>
+              <span class="text-[9px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded font-bold uppercase">Anti-Sobrecarga</span>
+            </div>
+            <p class="text-red-800 text-[11px] leading-relaxed">
+              O padrão do Plannit é de no máximo <strong>3 projetos simultâneos</strong> por projetista. Ao tentar atribuir um 4º projeto a um profissional que já possua 3 em andamento, o sistema <strong>rejeita a operação imediatamente</strong> com erro impeditivo. Essa trava protege a saúde da equipe, garante o cumprimento dos prazos prometidos aos clientes e elimina atrasos na entrega dos renders.
+            </p>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.6: ESPECIFICADORES & ARQUITETOS (SCORE RFV & DRAWER) -->
+        <!-- =================================================================== -->
+        <article id="mod-06" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 06 • ESPECIFICADORES & INTELIGÊNCIA RFV</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Especificadores, Metas & Inteligência de Parcerias RFV</h3>
+              <p class="text-xs text-stone-500 mt-1">Gestão da carteira de arquitetos e designers com cálculo matemático do score RFV e gaveta lateral de relacionamento.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente Comercial</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/especificadores</span>
+            </div>
+            <img src="images/06_especificadores.png" alt="Módulo de Especificadores Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Anatomia da Gaveta do Arquiteto -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>📐</span> Anatomia da Gaveta do Arquiteto (Drawer Lateral de Parcerias)
+            </h4>
+            <p class="text-stone-600 text-xs leading-relaxed">
+              Ao clicar no nome de qualquer especificador, o sistema abre a gaveta com 4 abas estratégicas de gestão:
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 1: Perfil & Contatos</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Registro de CAU/CREA, endereço do escritório, aniversário do arquiteto para ações de relacionamento e contato de sua secretária/equipe.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-amber-200 bg-amber-50/20 space-y-1">
+                <span class="font-bold text-amber-950 block text-xs">Aba 2: Score RFV & Lealdade</span>
+                <p class="text-amber-900 text-[11px] leading-relaxed">
+                  Cálculo rigoroso de <strong>Recência</strong> (dias desde a última indicação), <strong>Frequência</strong> (projetos no ano) e <strong>Volume</strong> (R$ faturado).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 3: Decisores & Concorrentes</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Mapeia quem bate o martelo no escritório e quais concorrentes ele costuma convidar para cotação (ex: Ornare, Florense, Dell Anno).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">Aba 4: Metas & Visitas</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Controle de visitas presenciais realizadas pelo consultor comercial, status de cumprimento da meta mensal e agendamento de café técnico.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reatribuição com Auditoria RN017 -->
+          <div class="p-4 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <span class="font-bold text-stone-900 text-xs">Reatribuição de Carteira com Auditoria Imutável (RN017)</span>
+              <p class="text-stone-600 text-[11px]">
+                Caso a gerência precise transferir o arquiteto para outro consultor, o sistema exige justificativa obrigatória e grava o histórico imutável de quem atendeu e quando atendeu. Especificadores <strong>nunca são deletados</strong>, apenas inativados.
+              </p>
+            </div>
+            <span class="badge badge-neutro text-[10px] uppercase font-bold flex-shrink-0">Histórico Preservado</span>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.7: CARTEIRA DE CLIENTES -->
+        <!-- =================================================================== -->
+        <article id="mod-07" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6" data-perfis="diretoria gerente vendedor">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 07</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Carteira de Clientes, Aprovação & Múltiplos Endereços</h3>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/clientes</span>
+            </div>
+            <img src="images/07_clientes.png" alt="Carteira de Clientes Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <div class="space-y-4 text-xs text-stone-700 leading-relaxed">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide">Ficha Completa 360º do Cliente</h4>
+            <p class="text-stone-600">
+              Permite cadastrar Pessoa Física ou Jurídica, gerenciar endereços múltiplos (Endereço de Cobrança vs Endereço da Obra/Montagem) e analisar todo o histórico de compras e contratos passados.
+            </p>
+
+            <div class="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-1">
+              <span class="font-bold text-stone-900 block text-xs">Aprovação de Crédito Cadastral:</span>
+              <p class="text-stone-600 text-[11px]">
+                Apenas o <strong>Financeiro, Gerente ou Diretoria</strong> possuem autorização para aprovar o crédito do cliente, requisito que compõe um dos 8 itens obrigatórios do Handoff Técnico.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.8: SALA DE CONTROLE DE PROJETOS & RENDER (RN004/RN005/RN017) -->
+        <!-- =================================================================== -->
+        <article id="mod-08" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor projetista">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 08 • SALA DE CONTROLE 3D & APROVAÇÃO</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Sala de Controle de Projetos, Maquetes 3D & Renders</h3>
+              <p class="text-xs text-stone-500 mt-1">Ambiente integrado de colaboração entre Projetista e Vendedor para validação técnica e visual antes da reunião com o cliente.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+              <span class="badge-projetista px-2 py-0.5 rounded text-[10px] font-bold">Projetista</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/projetos/show</span>
+            </div>
+            <img src="images/09_projetos_show.png" alt="Sala de Controle Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Anatomia Operacional da Sala de Controle -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>🖥️</span> Funcionalidades & O que Pode Ser Feito na Sala de Controle
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">1. Visualizador 3D Integrado</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Permite girar, dar zoom e inspecionar a maquete volumétrica renderizada em tempo real direto na tela sem necessitar de softwares pesados instalados.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">2. Galeria de Imagens HD</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Exibe todas as perspectivas fotorrealistas geradas (iluminação diurna, noturna, detalhes de gavetas e vistas internas de armários).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">3. Download de Arquivos</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Centraliza plantas baixas em PDF, paginação de piso/parede, arquivos executivos do Promob (.promob) e imagens em alta definição.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-amber-200 bg-amber-50/20 space-y-1">
+                <span class="font-bold text-amber-950 block text-xs">4. Ciclo de Aprovação Vendedor</span>
+                <p class="text-amber-900 text-[11px] leading-relaxed">
+                  O vendedor confere se o projeto respeita o briefing do cliente e decide: <strong>Aprovar Render</strong> ou <strong>Solicitar Ajustes (RN004)</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ciclo de Vida: Da Modelagem à Apresentação Comercial -->
+          <div class="space-y-3">
+            <h4 class="font-bold text-xs text-stone-800 uppercase tracking-wide">Ciclo de Vida da Validação 3D</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 text-xs block">Passo 1: Upload pelo Projetista</span>
+                <p class="text-stone-500 text-[11px]">Projetista conclui o modelo 3D e anexa as imagens finais. O status muda para <code>em_aprovacao_render</code>.</p>
+              </div>
+
+              <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-1">
+                <span class="font-bold text-amber-950 text-xs block">Passo 2: Auditoria do Vendedor</span>
+                <p class="text-amber-900 text-[11px]">Vendedor revisa medidas e acabamentos. Se reprovar, deve descrever detalhadamente o apontamento (RN004).</p>
+              </div>
+
+              <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-1">
+                <span class="font-bold text-emerald-950 text-xs block">Passo 3: Liberação de Apresentação</span>
+                <p class="text-emerald-900 text-[11px]">Render aprovado destrava o botão "Avançar para Apresentação" (RN005), autorizando agendar reunião com o cliente.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guardrails RN004 e RN005 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- RN004 -->
+            <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-950 text-xs">🛡️ Regra RN004 — Devolução com Motivo Obrigatório</span>
+                <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase">Auditoria</span>
+              </div>
+              <p class="text-amber-900 text-[11px] leading-relaxed">
+                Se o vendedor recusar uma maquete 3D enviada pelo projetista, o preenchimento do <strong>motivo detalhado da devolução é estritamente obrigatório</strong>. O sistema proíbe reprovações genéricas, eliminando retrabalho cego e protegendo o tempo produtivo da equipe de desenho.
+              </p>
+            </div>
+
+            <!-- RN005 -->
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-red-900 text-xs">🛡️ Regra RN005 — Trava de Apresentação ao Cliente</span>
+                <span class="text-[9px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded font-bold uppercase">Bloqueio Ativo</span>
+              </div>
+              <p class="text-red-800 text-[11px] leading-relaxed">
+                O avanço do projeto para a etapa de <em>"Apresentação ao Cliente"</em> é <strong>estritamente bloqueado</strong> caso o projeto não possua render fotorrealista concluído e aprovado formalmente. Nenhum vendedor pode apresentar maquetes cruas ou rascunhos para clientes de alto padrão.
+              </p>
+            </div>
+          </div>
+
+          <!-- RN017 -->
+          <div class="p-4 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <span class="font-bold text-stone-900 text-xs">🛡️ Regra RN017 — Preservação de Histórico & Soft Delete Permanente</span>
+              <p class="text-stone-600 text-[11px]">
+                Projetos nunca são deletados fisicamente. Cancelamentos exigem justificativa de arquivamento obrigatória com histórico gravado em <code>HistoricoStatusProjeto</code>.
+              </p>
+            </div>
+            <span class="badge badge-neutro text-[10px] uppercase font-bold flex-shrink-0">Imutabilidade Total</span>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.9: FECHAMENTO COMERCIAL & PARCELAS FINANCEIRAS -->
+        <!-- =================================================================== -->
+        <article id="mod-09" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 09 • FECHAMENTO COMERCIAL & PARCELAS</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Fechamento Comercial, Contrato & Plano Financeiro</h3>
+              <p class="text-xs text-stone-500 mt-1">Elaboração de propostas, validação matemática das parcelas, alçadas de desconto e assinatura de contrato digital.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/projetos/fechamento</span>
+            </div>
+            <img src="images/10_fechamento_financeiro.png" alt="Fechamento Comercial Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Operações da Tela de Fechamento -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>💰</span> O que Pode Ser Feito na Tela de Fechamento Financeiro
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">1. Simulação Automática de Parcelas</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Geração em 1 clique de planos de pagamento em 1x, 2x, 3x até 12x com cálculo automático de juros ou desconto à vista.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">2. Formas de Pagamento Múltiplas</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Permite compor entrada em PIX/TED, saldo em cartão de crédito e parcela de retenção na vistoria final da montagem.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">3. Anexos de Contrato & Caderno</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Upload ou link direto do Contrato Jurídico em PDF e do Caderno Comercial com detalhamento de todos os ambientes contratados.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alçadas de Desconto e Trava Matemática -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- Trava Matemática -->
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1.5">
+              <span class="font-bold text-red-900 text-xs block">🛡️ Validação Matemática Inflexível das Parcelas</span>
+              <p class="text-red-800 text-[11px] leading-relaxed">
+                A soma das parcelas cadastradas deve bater <strong>ao centavo</strong> com o valor líquido do contrato. Caso haja divergência de qualquer centavo, o sistema impede a geração da minuta contratual e exibe alerta de inconsistência de conciliação.
+              </p>
+            </div>
+
+            <!-- Alçadas de Desconto -->
+            <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl space-y-1.5">
+              <span class="font-bold text-amber-950 text-xs block">🛡️ Alçadas de Governança de Descontos</span>
+              <ul class="list-disc list-inside space-y-1 text-amber-900 text-[11px]">
+                <li><strong>Até 5% de desconto:</strong> alçada direta do Vendedor.</li>
+                <li><strong>De 5.1% a 10% de desconto:</strong> exige validação do Gerente Comercial.</li>
+                <li><strong>Acima de 10% de desconto:</strong> exige liberação exclusiva da Diretoria Geral.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.10: HANDOFF TÉCNICO FORMAL (RN006) -->
+        <!-- =================================================================== -->
+        <article id="mod-10" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6" data-perfis="diretoria gerente vendedor conferente">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 10 • RN006</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Handoff Técnico Formal & Passagem para Obras</h3>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+              <span class="badge-conferente px-2 py-0.5 rounded text-[10px] font-bold">Conferente</span>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs text-stone-700 leading-relaxed">
+            <!-- Destaque Máximo para a RN006 -->
+            <div class="p-5 bg-gradient-to-r from-red-50 via-amber-50 to-emerald-50 border-2 border-amber-400 rounded-2xl space-y-2">
+              <div class="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Regra Inegociável RN006: Checklist dos 8 Itens Obrigatórios
+              </div>
+              <p class="text-stone-700 text-xs leading-relaxed">
+                Nenhum projeto é transferido do Comercial para a Engenharia/Conferência de Obras sem que os <strong>8 requisitos canônicos</strong> abaixo estejam conferidos e aprovados. Tentativas de avanço sem os 8 itens retornam <strong>HTTP 400 Bad Request</strong> (`RN006_HANDOFF_INCOMPLETO`):
+              </p>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">1</span>
+                  <span><strong>Contrato Assinado</strong> pelo Cliente (Jurídico)</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">2</span>
+                  <span><strong>Caderno Comercial</strong> de Ambientes Aprovado</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">3</span>
+                  <span><strong>Plantas Arquitetônicas</strong> & Paginação</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">4</span>
+                  <span><strong>Fotos do Local / Ambiente</strong> da Obra</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">5</span>
+                  <span><strong>Briefing Completo</strong> & Qualificado (&ge; 70)</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">6</span>
+                  <span><strong>Aprovação Financeira</strong> & Crédito Concluído</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">7</span>
+                  <span><strong>Pedido de Venda</strong> Gerado & Codificado</span>
+                </div>
+                <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">8</span>
+                  <span><strong>Dados de Obra Confirmados</strong> (Acesso, Restrições)</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-stone-600 text-xs">
+              Assim que o 8º item é validado, o sistema registra o carimbo de auditoria de quem liberou e avança automaticamente o projeto para a fase técnica de <code>contato_conf</code> (Contato do Conferente).
+            </p>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.11: RECURSOS HUMANOS & AUDITORIA (RH-RN009/RH-RN011) -->
+        <!-- =================================================================== -->
+        <article id="mod-11" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 11 • RECURSOS HUMANOS & AUDITORIA</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Gestão de Colaboradores, Histórico Funcional & Desligamento</h3>
+              <p class="text-xs text-stone-500 mt-1">Blindagem jurídica trabalhista com imutabilidade de histórico de remuneração e purga administrativa restrita à Diretoria.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Exclusivo Diretoria</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/colaboradores</span>
+            </div>
+            <img src="images/11_colaboradores.png" alt="Módulo de RH Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Anatomia da Ficha Funcional -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>👥</span> Anatomia da Ficha Funcional & Gestão de Carreira
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">1. Dados Contratuais & Perfil</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  CPF, RG, CTPS, departamento de atuação (Comercial, Projetos, Obras, Administrativo), data de admissão e perfil de acesso atribuído.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">2. Histórico Salarial Imutável</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Proibida a edição direta de salários. Reajustes exigem criação de novo registro com data de vigência, motivo (mérito/dissídio) e autorização.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">3. Histórico de Cargos & Promoções</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Linha do tempo permanente da evolução de cargo do colaborador dentro da Líder Móveis (ex: Projetista Júnior &rarr; Pleno &rarr; Sênior).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guardrails Trabalhistas RH-RN009 e RH-RN011 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- RH-RN009 -->
+            <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-950 text-xs">🛡️ Regra RH-RN009 — Desligamento com Entrevista Formal</span>
+                <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase">Auditoria</span>
+              </div>
+              <p class="text-amber-900 text-[11px] leading-relaxed">
+                Na rotina padrão, colaboradores nunca são excluídos, apenas desligados (<code>is_active = false</code>). O modal de desligamento exige obrigatoriamente: data do término, motivo da rescisão e transcrição da <strong>entrevista de saída</strong>. O acesso do usuário ao sistema é revogado instantaneamente.
+              </p>
+            </div>
+
+            <!-- RH-RN011 -->
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-red-900 text-xs">🛡️ Regra RH-RN011 — Exceção Administrativa de Purga</span>
+                <span class="text-[9px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded font-bold uppercase">Exclusivo Diretoria</span>
+              </div>
+              <p class="text-red-800 text-[11px] leading-relaxed">
+                O botão de exclusão física permanente (purga de banco de dados) só é visível para o perfil <strong>DIRETORIA</strong> e <strong>apenas para colaboradores que já estejam desligados</strong>. Destinado exclusivamente ao expurgo de cadastros de teste ou duplicidades com erro de CPF.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- SEÇÃO 5: GUIA RÁPIDO DE REGRAS E TRAVAS DO SISTEMA -->
+        <!-- =================================================================== -->
+        <section id="tabela-travas" class="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
+          <div class="border-b border-stone-100 pb-4">
+            <span class="text-xs font-bold text-primary-700 uppercase tracking-wider">Referência Rápida</span>
+            <h2 class="text-2xl font-display font-bold text-stone-900 mt-1">Guia Rápido de Guardrails e Bloqueios Operacionais</h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-stone-200 rounded-xl overflow-hidden">
+              <thead class="bg-stone-900 text-white uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="p-3">Código</th>
+                  <th class="p-3">Nome da Regra</th>
+                  <th class="p-3">O que Bloqueia?</th>
+                  <th class="p-3">Como Resolver / Desbloquear?</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200">
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN001</td>
+                  <td class="p-3 font-semibold">Qualificação de Leads</td>
+                  <td class="p-3 text-stone-600">Avanço no funil de vendas sem perfil preenchido.</td>
+                  <td class="p-3 text-stone-700">Preencher o formulário de qualificação do lead no CRM.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN002</td>
+                  <td class="p-3 font-semibold">Score Mínimo de Briefing</td>
+                  <td class="p-3 text-stone-600">Envio para a fila de modelagem 3D se score &lt; 70.</td>
+                  <td class="p-3 text-stone-700">Completar ambientes e informações estéticas pendentes.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN003</td>
+                  <td class="p-3 font-semibold">Limite WIP por Projetista</td>
+                  <td class="p-3 text-stone-600">Alocação de novo projeto quando o profissional atingiu 3 projetos.</td>
+                  <td class="p-3 text-stone-700">Aguardar a conclusão de um projeto em andamento ou alocar para outro projetista livre.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN004</td>
+                  <td class="p-3 font-semibold">Devolução com Justificativa</td>
+                  <td class="p-3 text-stone-600">Recusa de maquete 3D sem preenchimento de motivo.</td>
+                  <td class="p-3 text-stone-700">Escrever no modal os apontamentos técnicos ou comerciais da devolução.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN005</td>
+                  <td class="p-3 font-semibold">Trava de Apresentação</td>
+                  <td class="p-3 text-stone-600">Agendamento de apresentação sem render aprovado.</td>
+                  <td class="p-3 text-stone-700">Concluir a renderização fotorrealista e obter o aceite do vendedor.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN006</td>
+                  <td class="p-3 font-semibold">Passagem Técnica de Handoff</td>
+                  <td class="p-3 text-stone-600">Avanço para medição/produção com qualquer um dos 8 itens pendente.</td>
+                  <td class="p-3 text-stone-700">Conferir os 8 itens (contrato, caderno, plantas, fotos, briefing, crédito, pedido, obra).</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN016</td>
+                  <td class="p-3 font-semibold">Alerta de Estagnação</td>
+                  <td class="p-3 text-stone-600">Dispara alerta visual em projetos parados há &gt; 5 dias.</td>
+                  <td class="p-3 text-stone-700">Dar andamento no projeto ou registar justificativa na linha do tempo.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN017</td>
+                  <td class="p-3 font-semibold">Preservação de Histórico</td>
+                  <td class="p-3 text-stone-600">Exclusão física de projetos e maquetes.</td>
+                  <td class="p-3 text-stone-700">Utilizar arquivamento com motivo obrigatório de soft-delete.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- SEÇÃO 6: POR QUE ADOTAR O PLANNIT (APRESENTAÇÃO AO CLIENTE) -->
+        <!-- =================================================================== -->
+        <section id="faq-decisao" class="bg-gradient-to-br from-stone-900 to-stone-950 text-white rounded-3xl p-8 sm:p-10 shadow-xl border border-stone-800 space-y-6">
+          <div>
+            <span class="text-xs font-bold text-primary-400 uppercase tracking-wider">Tomada de Decisão</span>
+            <h2 class="text-3xl font-display font-bold mt-1">Por que a Líder Móveis Escolheu o Plannit?</h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs leading-relaxed">
+            <div class="space-y-2 bg-stone-800/60 p-5 rounded-2xl border border-stone-700">
+              <h4 class="text-sm font-bold text-primary-300">Sem o Plannit (Cenário Tradicional)</h4>
+              <ul class="space-y-1.5 text-stone-400 list-disc list-inside">
+                <li>Vendedor envia rascunho incompleto no WhatsApp do projetista.</li>
+                <li>Projetistas sobrecarregados sem saber a prioridade real dos clientes.</li>
+                <li>Cliente vai à loja e vê projeto sem renderização profissional.</li>
+                <li>Contrato assinado vai para a fábrica com medidas em aberto, gerando corte de peças errado e custo de refação de até 35% do valor do pedido.</li>
+                <li>Nenhum histórico formal de quem autorizou descontos ou mudanças.</li>
+              </ul>
+            </div>
+
+            <div class="space-y-2 bg-primary-950/40 p-5 rounded-2xl border border-primary-500/30">
+              <h4 class="text-sm font-bold text-primary-400">Com o Plannit (Operação Blindada)</h4>
+              <ul class="space-y-1.5 text-stone-300 list-disc list-inside">
+                <li>Briefing inteligente pontuado bloqueia projetos incompletos (RN002).</li>
+                <li>Limite de 3 projetos simultâneos garante foco e entrega rápida (RN003).</li>
+                <li>Apresentação travada até render aprovado (RN005), elevando a conversão.</li>
+                <li>Handoff técnico rigoroso em 8 pontos (RN006) zera erro de fabricação e retrabalho na montagem da residência.</li>
+                <li>Auditoria e rastreabilidade total de todas as decisões tomadas (RN017).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-stone-800 text-center space-y-2">
+            <p class="text-xs text-stone-400">
+              Plannit • Desenvolvido sob medida para marcenarias e indústrias de móveis planejados de alto padrão.
+            </p>
+            <span class="inline-block text-[11px] text-primary-400 font-bold uppercase tracking-wider">
+              Versão Homologada 1.0 — AdonisJS v7 + Inertia.js + React 19 + PostgreSQL
+            </span>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPT INTERATIVO DE FILTRO POR PERFIL -->
+  <!-- ========================================================================= -->
+  <script>
+    function filtrarPerfil(perfil) {
+      const cards = document.querySelectorAll('.modulo-card');
+      const buttons = document.querySelectorAll('.filter-btn');
+
+      // Atualiza estilo dos botões
+      buttons.forEach(btn => {
+        if (btn.getAttribute('data-perfil') === perfil) {
+          btn.className = 'filter-btn active px-3 py-1 rounded-md font-bold text-xs bg-primary-600 text-white transition shadow-xs';
+        } else {
+          btn.className = 'filter-btn px-3 py-1 rounded-md font-medium text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 transition';
+        }
+      });
+
+      // Aplica destaque ou esmaecimento nos módulos
+      cards.forEach(card => {
+        const perfisPermitidos = card.getAttribute('data-perfis') || '';
+        
+        if (perfil === 'todos') {
+          card.classList.remove('profile-highlight', 'profile-dimmed');
+        } else if (perfisPermitidos.includes(perfil)) {
+          card.classList.add('profile-highlight');
+          card.classList.remove('profile-dimmed');
+        } else {
+          card.classList.remove('profile-highlight');
+          card.classList.add('profile-dimmed');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
