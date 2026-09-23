@@ -1,9 +1,11 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import Cliente from '#models/cliente'
 import EnderecoCliente from '#models/endereco_cliente'
 import Arquiteto from '#models/arquiteto'
 import Lead from '#models/lead'
+import Projeto from '#models/projeto'
 import { PerfilUsuario } from '#models/user'
 import {
   createClienteValidator,
@@ -295,33 +297,66 @@ export default class ClientesController {
     const lead = await Lead.find(params.leadId)
     if (!lead) {
       session.flash('error', 'Lead não encontrado')
+      if (request.header('accept')?.includes('application/json')) {
+        return response.notFound({ message: 'Lead não encontrado' })
+      }
       return response.redirect().back()
+    }
+
+    // RN001 / R5: Rejeitar lead não qualificado com HTTP 400
+    if (!lead.qualificado) {
+      session.flash('error', 'RN001: Lead não pode ser convertido sem qualificação registrada')
+      return response.badRequest({
+        message: 'RN001: Lead não pode ser convertido sem qualificação registrada',
+        code: 'RN001_LEAD_NAO_QUALIFICADO',
+      })
     }
 
     const payload = await request.validateUsing(createClienteValidator)
 
     const { endereco, ...dadosCliente } = payload
 
-    const cliente = await Cliente.create({
-      ...dadosCliente,
-      arquitetoId: lead.arquitetoId || dadosCliente.arquitetoId,
+    let cliente: Cliente
+    await db.transaction(async (trx) => {
+      cliente = await Cliente.create(
+        {
+          ...dadosCliente,
+          arquitetoId: lead.arquitetoId || dadosCliente.arquitetoId,
+        },
+        { client: trx }
+      )
+
+      if (endereco && endereco.logradouro) {
+        await EnderecoCliente.create(
+          {
+            clienteId: cliente.id,
+            ...endereco,
+            isPrincipal: true,
+          },
+          { client: trx }
+        )
+      }
+
+      // R2: Atualiza todos os projetos associados àquele lead vinculando o novo clienteId
+      await Projeto.query({ client: trx })
+        .where('lead_id', lead.id)
+        .update({ cliente_id: cliente.id })
+
+      // Atualiza o Lead no funil
+      lead.useTransaction(trx)
+      lead.convertidoEmCliente = true
+      lead.clienteId = cliente.id
+      lead.statusFunil = 'fechado'
+      await lead.save()
     })
 
-    if (endereco && endereco.logradouro) {
-      await EnderecoCliente.create({
-        clienteId: cliente.id,
-        ...endereco,
-        isPrincipal: true,
+    session.flash('success', `Lead ${lead.nome} convertido com sucesso em Cliente!`)
+    if (request.header('accept')?.includes('application/json')) {
+      return response.status(201).json({
+        message: `Lead ${lead.nome} convertido com sucesso em Cliente!`,
+        cliente: cliente!,
       })
     }
-
-    // Atualiza o Lead no funil
-    lead.convertidoEmCliente = true
-    lead.clienteId = cliente.id
-    lead.statusFunil = 'fechado'
-    await lead.save()
-
-    session.flash('success', `Lead ${lead.nome} convertido com sucesso em Cliente!`)
-    return response.redirect().toRoute('clientes.show', { id: cliente.id })
+    return response.redirect().toRoute('clientes.show', { id: cliente!.id })
   }
 }

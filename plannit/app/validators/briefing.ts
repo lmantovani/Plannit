@@ -18,9 +18,10 @@ export const saveBriefingValidator = vine.create({
   estiloPreferido: vine.string().trim().maxLength(100).nullable().optional(),
   observacoes: vine.string().trim().nullable().optional(),
   referenciasUrl: vine.array(vine.string().trim()).optional(),
+  arquitetoId: vine.number().positive().nullable().optional(),
   arquitetoNome: vine.string().trim().maxLength(200).nullable().optional(),
   arquitetoEmail: vine.string().trim().email().nullable().optional(),
-  arquitetoTelefone: vine.string().trim().maxLength(20).nullable().optional(),
+  arquitetoTelefone: vine.string().trim().maxLength(30).nullable().optional(),
   ambientesDetalhados: vine.array(ambienteInputSchema).optional(),
 })
 
@@ -35,9 +36,10 @@ export const calcularScoreValidator = vine.create({
   estiloPreferido: vine.string().trim().maxLength(100).nullable().optional(),
   observacoes: vine.string().trim().nullable().optional(),
   referenciasUrl: vine.array(vine.string().trim()).optional(),
+  arquitetoId: vine.number().positive().nullable().optional(),
   arquitetoNome: vine.string().trim().maxLength(200).nullable().optional(),
   arquitetoEmail: vine.string().trim().email().nullable().optional(),
-  arquitetoTelefone: vine.string().trim().maxLength(20).nullable().optional(),
+  arquitetoTelefone: vine.string().trim().maxLength(30).nullable().optional(),
   ambientesDetalhados: vine.array(ambienteInputSchema).optional(),
   scoreMinimo: vine.number().positive().optional(),
 })

@@ -57,3 +57,41 @@ O backend deve disponibilizar um serviço determinístico que calcula sob demand
 - [ ] O script de teste de integração HTTP `scripts/test_http_arquitetos.js` valida autenticação, rotas de listagem, reatribuição, interações e soft delete.
 - [ ] O comando `npm run typecheck` conclui com 0 erros de tipagem TypeScript.
 - [ ] O comando `npm run build` conclui o empacotamento do Vite com sucesso.
+
+## 2026-09-11T18:07:30Z
+
+Saneamento arquitetural e implementação das correções para as 5 inconsistências identificadas no ecossistema Plannit (AdonisJS v7 + Lucid ORM + Inertia React 19): integridade relacional de clientes e arquitetos, auditoria imutável RN017, blindagem contra concorrência em versões 3D e respeito rigoroso à qualificação de leads RN001.
+
+Working directory: /home/porto/codespace/Plannit/plannit
+Integrity mode: development
+
+## Requirements
+
+### R1. Integração Relacional de Especificadores/Parceiros no Briefing e Projetos
+Na Seção 6 de `inertia/pages/briefings/edit.tsx`, permitir selecionar parceiros da tabela `arquitetos` com auto-preenchimento de dados de contato (Nome, Escritório, E-mail, Telefone), mantendo opção de cadastro rápido via modal sem recarregar a tela (sem perda de rascunho). Em `app/controllers/briefings_controller.ts` (`edit` e `update`) e `app/validators/briefing.ts`, aceitar `arquitetoId` e sincronizar em `projetos.arquiteto_id`.
+
+### R2. Integridade Relacional de Clientes em Projetos e Conversão de Leads
+Garantir que a criação de projetos em `briefings_controller.ts` e modais associe ou crie a entidade relacional na tabela `clientes` populando `projetos.cliente_id`. Em `app/controllers/clientes_controller.ts:converterLead`, ao converter um lead em cliente, atualizar todos os projetos associados àquele lead (`where('lead_id', lead.id)`) definindo `cliente_id = cliente.id`.
+
+### R3. Auditoria Imutável no Envio de Briefing à Fila (RN017)
+Em `app/controllers/briefings_controller.ts:enviarParaFila`, registrar obrigatoriamente a transição de status em `HistoricoStatusProjeto` (`statusDe: EM_BRIEFING`, `statusPara: NA_FILA`, autor e justificativa descritiva), garantindo a rastreabilidade e métricas de SLA da esteira.
+
+### R4. Blindagem Contra Concorrência em Versões 3D
+Em `app/controllers/projetos_controller.ts:submeterVersao3D`, garantir transação atômica segura com bloqueio (`forUpdate`) ou query de `MAX(versao) + 1` no banco para evitar conflitos de versão sob concorrência.
+
+### R5. Validação Estrita do Funil de Qualificação (RN001)
+Em `app/controllers/briefings_controller.ts:store` e `app/controllers/clientes_controller.ts:converterLead`, rejeitar a criação de briefing/projeto ou conversão a partir de leads que possuam `qualificado === false`, retornando erro HTTP 400 com mensagem informativa da RN001.
+
+## Acceptance Criteria
+
+### Integridade e Tipagem
+- [ ] `npm run typecheck` executado com sucesso e zero erros de tipagem TypeScript.
+- [ ] `npm run build` executado com sucesso gerando bundles sem falhas.
+
+### Verificação Funcional e de Banco de Dados
+- [ ] Briefing editado com arquiteto parceiro selecionado persiste `projetos.arquiteto_id` e exibe os dados de contato no formulário.
+- [ ] Conversão de lead com projeto associado atualiza `projetos.cliente_id` e a ficha do cliente em `/clientes/:id` exibe seus projetos históricos.
+- [ ] Envio de briefing para a fila gera registro correspondente na tabela `historico_status_projeto`.
+- [ ] Tentativa de criar projeto a partir de lead não qualificado é bloqueada com erro explicativo da RN001.
+- [ ] Submissão de versão 3D gera incrementos sequenciais íntegros.
+

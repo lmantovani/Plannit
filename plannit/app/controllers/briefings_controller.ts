@@ -4,8 +4,12 @@ import { DateTime } from 'luxon'
 import Briefing, { StatusBriefing } from '#models/briefing'
 import AmbienteBriefing from '#models/ambiente_briefing'
 import Projeto, { StatusProjeto } from '#models/projeto'
+import Cliente from '#models/cliente'
+import Lead from '#models/lead'
 import FilaProjeto, { StatusFila } from '#models/fila_projeto'
-import { PerfilUsuario } from '#models/user'
+import HistoricoStatusProjeto from '#models/historico_status_projeto'
+import Arquiteto from '#models/arquiteto'
+import User, { PerfilUsuario } from '#models/user'
 import {
   calcularScoreBriefing,
   BriefingScoreInput,
@@ -142,6 +146,7 @@ export default class BriefingsController {
         pQuery
           .preload('vendedor', (vQuery) => vQuery.select('id', 'nome', 'email'))
           .preload('lead', (lQuery) => lQuery.select('id', 'nome', 'telefone', 'email'))
+          .preload('arquiteto')
       })
       .preload('ambientesDetalhados')
       .first()
@@ -154,6 +159,18 @@ export default class BriefingsController {
     if (user.perfil === PerfilUsuario.VENDEDOR && briefing.projeto?.vendedorId !== user.id) {
       return response.status(403).send('Acesso negado a este briefing')
     }
+
+    // Lista de especificadores/parceiros ativos para seleção na Seção 6
+    const especificadores = await Arquiteto.query()
+      .where('is_active', true)
+      .select('id', 'nome', 'escritorio', 'telefone', 'email', 'tipo', 'nivelParceria')
+      .orderBy('nome', 'asc')
+
+    // Lista de consultores para eventual cadastro rápido
+    const consultores = await User.query()
+      .where('is_active', true)
+      .select('id', 'nome', 'email')
+      .orderBy('nome', 'asc')
 
     // Calcula breakdown atualizado
     const scoreInput: BriefingScoreInput = {
@@ -191,9 +208,10 @@ export default class BriefingsController {
         estiloPreferido: briefing.estiloPreferido || '',
         observacoes: briefing.observacoes || '',
         referenciasUrl: briefing.referenciasUrl || [],
-        arquitetoNome: briefing.arquitetoNome || '',
-        arquitetoEmail: briefing.arquitetoEmail || '',
-        arquitetoTelefone: briefing.arquitetoTelefone || '',
+        arquitetoId: briefing.projeto?.arquitetoId || null,
+        arquitetoNome: briefing.arquitetoNome || briefing.projeto?.arquiteto?.nome || '',
+        arquitetoEmail: briefing.arquitetoEmail || briefing.projeto?.arquiteto?.email || '',
+        arquitetoTelefone: briefing.arquitetoTelefone || briefing.projeto?.arquiteto?.telefone || '',
         score: Number(briefing.score || 0),
         scoreMinimo: Number(briefing.scoreMinimo || 70),
         status: briefing.status,
@@ -205,6 +223,16 @@ export default class BriefingsController {
               codigo: briefing.projeto.codigo,
               clienteNome: briefing.projeto.clienteNome,
               status: briefing.projeto.status,
+              arquitetoId: briefing.projeto.arquitetoId || null,
+              arquiteto: briefing.projeto.arquiteto
+                ? {
+                    id: briefing.projeto.arquiteto.id,
+                    nome: briefing.projeto.arquiteto.nome,
+                    escritorio: briefing.projeto.arquiteto.escritorio,
+                    telefone: briefing.projeto.arquiteto.telefone,
+                    email: briefing.projeto.arquiteto.email,
+                  }
+                : null,
               vendedor: briefing.projeto.vendedor
                 ? { id: briefing.projeto.vendedor.id, nome: briefing.projeto.vendedor.nome }
                 : null,
@@ -227,6 +255,20 @@ export default class BriefingsController {
         })),
       },
       scoreBreakdown: scoreResult,
+      especificadores: especificadores.map((esp) => ({
+        id: esp.id,
+        nome: esp.nome,
+        escritorio: esp.escritorio || null,
+        telefone: esp.telefone || null,
+        email: esp.email || null,
+        tipo: esp.tipo,
+        nivelParceria: esp.nivelParceria,
+      })),
+      consultores: consultores.map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        email: c.email,
+      })),
     })
   }
 
@@ -237,6 +279,23 @@ export default class BriefingsController {
     const user = auth.user!
     const { projetoId, clienteNome, leadId } = request.only(['projetoId', 'clienteNome', 'leadId'])
 
+    // R5: Validação da qualificação do lead (RN001)
+    let lead: Lead | null = null
+    if (leadId) {
+      lead = await Lead.find(leadId)
+      if (!lead) {
+        session.flash('erro', 'Lead não encontrado')
+        return response.badRequest({ message: 'Lead não encontrado', code: 'LEAD_NOT_FOUND' })
+      }
+      if (!lead.qualificado) {
+        session.flash('erro', 'RN001: Lead não pode avançar no funil sem qualificação registrada')
+        return response.badRequest({
+          message: 'RN001: Lead não pode avançar no funil sem qualificação registrada',
+          code: 'RN001_LEAD_NAO_QUALIFICADO',
+        })
+      }
+    }
+
     let projeto: Projeto | null = null
 
     if (projetoId) {
@@ -245,22 +304,75 @@ export default class BriefingsController {
         session.flash('erro', 'Projeto não encontrado')
         return response.redirect().back()
       }
-    } else if (clienteNome) {
-      // Cria novo projeto automaticamente
-      const count = await Projeto.query().count('* as total')
-      const totalNum = Number(count[0]?.$extras?.total || 0) + 1
+    } else if ((clienteNome && clienteNome.trim()) || lead) {
+      const nomeFinal = (clienteNome && clienteNome.trim()) || lead!.nome
+
+      // R2: Resolução relacional de clienteId
+      let clienteIdParaProjeto: number | null = null
+      if (lead?.clienteId) {
+        clienteIdParaProjeto = lead.clienteId
+      } else if (nomeFinal) {
+        const cliente = await Cliente.firstOrCreate(
+          { nome: nomeFinal },
+          {
+            nome: nomeFinal,
+            telefone: lead?.telefone || '(00) 00000-0000',
+            email: lead?.email || null,
+            arquitetoId: lead?.arquitetoId || null,
+            tipo: 'pessoa_fisica',
+            isActive: true,
+            cadastroAprovado: false,
+          }
+        )
+        clienteIdParaProjeto = cliente.id
+        if (lead && !lead.clienteId) {
+          lead.clienteId = cliente.id
+          await lead.save()
+        }
+      }
+
+      // Gera próximo código sequencial livre (evita colisões com gaps ou seeds existentes)
       const year = new Date().getFullYear()
-      const codigo = `PRJ-${year}-${String(totalNum).padStart(3, '0')}`
+      const prefix = `PRJ-${year}-`
+      const projetosAno = await Projeto.query().whereILike('codigo', `${prefix}%`).select('codigo')
+
+      let maxSeq = 0
+      for (const p of projetosAno) {
+        const match = p.codigo.match(/(\d+)$/)
+        if (match) {
+          const num = parseInt(match[1], 10)
+          if (num > maxSeq) maxSeq = num
+        }
+      }
+
+      let nextSeq = Math.max(maxSeq + 1, 1)
+      let codigo = `${prefix}${String(nextSeq).padStart(3, '0')}`
+
+      while (await Projeto.query().where('codigo', codigo).first()) {
+        nextSeq++
+        codigo = `${prefix}${String(nextSeq).padStart(3, '0')}`
+      }
 
       projeto = await Projeto.create({
         codigo,
-        clienteNome,
-        leadId: leadId ? Number(leadId) : null,
+        clienteNome: nomeFinal,
+        clienteId: clienteIdParaProjeto,
+        leadId: lead ? lead.id : null,
+        arquitetoId: lead?.arquitetoId || null,
         vendedorId: user.id,
         status: StatusProjeto.EM_BRIEFING,
         arquivado: false,
         alertaParado: false,
         statusAlteradoEm: DateTime.now(),
+      })
+
+      // Registro imutável de histórico inicial (RN017)
+      await HistoricoStatusProjeto.create({
+        projetoId: projeto.id,
+        statusDe: null,
+        statusPara: StatusProjeto.EM_BRIEFING,
+        alteradoPorId: user.id,
+        observacao: 'Criação do projeto e abertura de briefing',
       })
     } else {
       session.flash('erro', 'Informe o projeto ou o nome do cliente.')
@@ -281,6 +393,13 @@ export default class BriefingsController {
     }
 
     session.flash('sucesso', 'Briefing iniciado com sucesso!')
+    if (request.header('accept')?.includes('application/json')) {
+      return response.status(201).json({
+        message: 'Briefing iniciado com sucesso!',
+        projeto,
+        briefing,
+      })
+    }
     return response.redirect().toRoute('briefings.edit', { id: briefing.id })
   }
 
@@ -326,6 +445,18 @@ export default class BriefingsController {
       briefing.arquitetoNome = payload.arquitetoNome ?? null
       briefing.arquitetoEmail = payload.arquitetoEmail ?? null
       briefing.arquitetoTelefone = payload.arquitetoTelefone ?? null
+
+      // Sincroniza o arquiteto no projeto associado (R1)
+      const projeto = await Projeto.query({ client: trx }).where('id', briefing.projetoId).first()
+      if (projeto) {
+        if (payload.arquitetoId !== undefined) {
+          projeto.arquitetoId = payload.arquitetoId ?? null
+        }
+        if (payload.arquitetoNome !== undefined) {
+          projeto.arquitetoNome = payload.arquitetoNome ?? null
+        }
+        await projeto.save()
+      }
 
       // Recria ambientes detalhados
       await AmbienteBriefing.query({ client: trx }).where('briefing_id', briefing.id).delete()
@@ -373,7 +504,8 @@ export default class BriefingsController {
   /**
    * RF008, RF009, RN002 — Valida score e trava se score < mínimo antes de enviar para a fila
    */
-  async enviarParaFila({ params, response, session }: HttpContext) {
+  async enviarParaFila({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
     const briefing = await Briefing.query()
       .where('id', params.id)
       .preload('ambientesDetalhados')
@@ -382,11 +514,17 @@ export default class BriefingsController {
 
     if (!briefing) {
       session.flash('erro', 'Briefing não encontrado')
+      if (request.header('accept')?.includes('application/json')) {
+        return response.notFound({ message: 'Briefing não encontrado' })
+      }
       return response.redirect().back()
     }
 
     if (briefing.status !== StatusBriefing.RASCUNHO && briefing.status !== StatusBriefing.DEVOLVIDO) {
       session.flash('erro', `Briefing já se encontra no status "${briefing.status}".`)
+      if (request.header('accept')?.includes('application/json')) {
+        return response.badRequest({ message: `Briefing já se encontra no status "${briefing.status}".` })
+      }
       return response.redirect().back()
     }
 
@@ -414,6 +552,9 @@ export default class BriefingsController {
     if (!scoreResult.aprovado) {
       const msg = `Score insuficiente (${scoreResult.score}/${scoreResult.scoreMinimo} pts). Critérios faltantes: ${scoreResult.pontosFaltantes.join(', ')}`
       session.flash('erro', msg)
+      if (request.header('accept')?.includes('application/json')) {
+        return response.badRequest({ message: msg, scoreResult })
+      }
       return response.redirect().back()
     }
 
@@ -446,12 +587,26 @@ export default class BriefingsController {
         await filaExistente.save()
       }
 
-      // Atualiza status do projeto para NA_FILA
-      if (briefing.projeto) {
-        briefing.projeto.useTransaction(trx)
-        briefing.projeto.status = StatusProjeto.NA_FILA
-        briefing.projeto.statusAlteradoEm = DateTime.now()
-        await briefing.projeto.save()
+      // Atualiza status do projeto para NA_FILA e registra auditoria imutável (RN017 / R3)
+      const projeto = briefing.projeto || (await Projeto.query({ client: trx }).where('id', briefing.projetoId).first())
+      if (projeto) {
+        const statusAnterior = projeto.status
+        projeto.useTransaction(trx)
+        projeto.status = StatusProjeto.NA_FILA
+        projeto.statusAlteradoEm = DateTime.now()
+        await projeto.save()
+
+        // R3: Auditoria Imutável no Envio de Briefing à Fila (RN017)
+        await HistoricoStatusProjeto.create(
+          {
+            projetoId: projeto.id,
+            statusDe: statusAnterior,
+            statusPara: StatusProjeto.NA_FILA,
+            alteradoPorId: user.id,
+            observacao: 'Briefing aprovado com score de qualificação e enviado para a fila de projetos (RN017)',
+          },
+          { client: trx }
+        )
       }
     })
 
@@ -459,6 +614,12 @@ export default class BriefingsController {
       'sucesso',
       `Briefing aprovado com Score ${scoreResult.score} pts! O projeto avançou para a Fila de Projetos.`
     )
+    if (request.header('accept')?.includes('application/json')) {
+      return response.json({
+        message: `Briefing aprovado com Score ${scoreResult.score} pts! O projeto avançou para a Fila de Projetos.`,
+        score: scoreResult.score,
+      })
+    }
     return response.redirect().toRoute('briefings.index')
   }
 }

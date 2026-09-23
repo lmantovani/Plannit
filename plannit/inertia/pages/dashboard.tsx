@@ -173,22 +173,26 @@ export default function Dashboard({
               </div>
 
               <Link
-                href="/fila"
-                className="text-xs font-bold text-rose-900 hover:underline flex items-center gap-1 flex-shrink-0"
+                href="/projetos?estagnados=true"
+                className="text-xs font-bold text-rose-900 hover:text-rose-950 flex items-center gap-1.5 flex-shrink-0 bg-white/80 hover:bg-white border border-rose-200 px-3 py-1.5 rounded-lg shadow-2xs transition-all"
               >
-                Ver na Fila <ArrowRight className="w-3.5 h-3.5" />
+                Ver todos os projetos ({alertasRn016.length}) <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 pt-3 border-t border-rose-200/60">
               {alertasRn016.map((alerta) => (
-                <div
+                <Link
                   key={alerta.id}
-                  className="bg-white p-3 rounded-xl border border-rose-200/80 shadow-xs flex items-center justify-between"
+                  href={`/projetos/${alerta.id}`}
+                  className="bg-white p-3 rounded-xl border border-rose-200/80 shadow-xs flex items-center justify-between hover:border-rose-400 hover:shadow-md hover:bg-rose-50/40 transition-all cursor-pointer group"
+                  title="Abrir Sala de Controle deste projeto"
                 >
                   <div className="min-w-0 pr-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-bold text-stone-900">{alerta.codigo}</span>
+                      <span className="font-mono text-xs font-bold text-stone-900 group-hover:text-rose-900 transition-colors">
+                        {alerta.codigo}
+                      </span>
                       <span className="text-[10px] px-1.5 py-0.2 bg-stone-100 text-stone-600 rounded">
                         {STATUS_LABELS[alerta.status] || alerta.status}
                       </span>
@@ -198,12 +202,13 @@ export default function Dashboard({
                       Resp: {alerta.vendedorNome} • 3D: {alerta.projetistaNome}
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right flex-shrink-0 flex items-center gap-1.5">
                     <span className="inline-block px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-xs">
                       +{alerta.diasParado} dias
                     </span>
+                    <ArrowRight className="w-3.5 h-3.5 text-stone-300 group-hover:text-rose-600 transition-colors" />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -472,7 +477,7 @@ export default function Dashboard({
 
                       <td className="py-3 px-4 text-right">
                         <Link
-                          href="/fila"
+                          href={`/projetos/${p.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 hover:underline"
                         >
                           Detalhes →

@@ -25,7 +25,6 @@ export type ScannedRoutes = {
     'fila.alocar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.desalocar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.iniciar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projetos.arquivar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.index': { paramsTuple?: []; params?: {} }
     'especificadores.store': { paramsTuple?: []; params?: {} }
     'especificadores.kpis': { paramsTuple?: []; params?: {} }
@@ -45,8 +44,26 @@ export type ScannedRoutes = {
     'especificadores.concorrentes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.concorrentes.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.concorrentes.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
+    'especificadores.concorrentes.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
     'especificadores.interacoes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.interacoes.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.departamentos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.departamentos.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.departamentos.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.cargos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.cargos.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.cargos.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.historico_salarial.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.historico_cargo.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.desligar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.documentos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.documentos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'documentoId': ParamValue} }
     'clientes.index': { paramsTuple?: []; params?: {} }
     'clientes.store': { paramsTuple?: []; params?: {} }
     'clientes.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -56,8 +73,18 @@ export type ScannedRoutes = {
     'clientes.enderecos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.enderecos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'enderecoId': ParamValue} }
     'clientes.converter_lead': { paramsTuple: [ParamValue]; params: {'leadId': ParamValue} }
+    'projetos.index': { paramsTuple?: []; params?: {} }
+    'projetos.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.mudar_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.arquivar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.versoes_3d.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.versoes_3d.avaliar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'versaoId': ParamValue} }
+    'projetos.versoes_3d.concluir_render': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'versaoId': ParamValue} }
+    'projetos.fechamento.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.fechamento.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.fechamento.parcelas.pagar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'parcelaId': ParamValue} }
+    'projetos.handoff.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
-
   GET: {
     'session.create': { paramsTuple?: []; params?: {} }
     'dashboard': { paramsTuple?: []; params?: {} }
@@ -75,11 +102,17 @@ export type ScannedRoutes = {
     'especificadores.decisores.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.concorrentes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.interacoes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.departamentos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.cargos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.index': { paramsTuple?: []; params?: {} }
     'clientes.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.index': { paramsTuple?: []; params?: {} }
+    'projetos.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.fechamento.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   HEAD: {
-
     'session.create': { paramsTuple?: []; params?: {} }
     'dashboard': { paramsTuple?: []; params?: {} }
     'crm.index': { paramsTuple?: []; params?: {} }
@@ -96,6 +129,15 @@ export type ScannedRoutes = {
     'especificadores.decisores.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.concorrentes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.interacoes.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.departamentos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.cargos.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.index': { paramsTuple?: []; params?: {} }
+    'colaboradores.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.index': { paramsTuple?: []; params?: {} }
+    'clientes.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.index': { paramsTuple?: []; params?: {} }
+    'projetos.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.fechamento.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   POST: {
     'session.store': { paramsTuple?: []; params?: {} }
@@ -111,11 +153,29 @@ export type ScannedRoutes = {
     'fila.alocar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.desalocar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.iniciar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projetos.arquivar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.store': { paramsTuple?: []; params?: {} }
     'especificadores.decisores.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.concorrentes.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.interacoes.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.departamentos.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.cargos.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.store': { paramsTuple?: []; params?: {} }
+    'colaboradores.historico_salarial.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.historico_cargo.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.desligar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.documentos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.store': { paramsTuple?: []; params?: {} }
+    'clientes.aprovar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.enderecos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.converter_lead': { paramsTuple: [ParamValue]; params: {'leadId': ParamValue} }
+    'projetos.mudar_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.arquivar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.versoes_3d.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.versoes_3d.avaliar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'versaoId': ParamValue} }
+    'projetos.versoes_3d.concluir_render': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'versaoId': ParamValue} }
+    'projetos.fechamento.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projetos.fechamento.parcelas.pagar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'parcelaId': ParamValue} }
+    'projetos.handoff.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'crm.leads.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -123,15 +183,24 @@ export type ScannedRoutes = {
     'especificadores.reatribuir_dono': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.decisores.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'decisorId': ParamValue} }
     'especificadores.concorrentes.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
+    'colaboradores.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PUT: {
     'briefings.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.metas.update': { paramsTuple?: []; params?: {} }
+    'colaboradores.departamentos.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.cargos.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   DELETE: {
     'especificadores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'especificadores.decisores.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'decisorId': ParamValue} }
     'especificadores.concorrentes.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
+    'colaboradores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'colaboradores.documentos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'documentoId': ParamValue} }
+    'clientes.enderecos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'enderecoId': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

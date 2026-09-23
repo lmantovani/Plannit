@@ -35,6 +35,7 @@ export default class ProjetosController {
     const search = (query.q || '').trim()
     const statusFilter = query.status as StatusProjeto | undefined
     const arquivadoFilter = query.arquivado === 'true'
+    const estagnadosFilter = query.estagnados === 'true'
 
     const projetosQuery = Projeto.query()
       .where('arquivado', arquivadoFilter)
@@ -126,17 +127,23 @@ export default class ProjetosController {
       estagnados: projetosFormatados.filter((p) => p.alertaParado).length,
     }
 
+    // Se solicitado filtro de estagnados (RN016), filtra a lista exibida mantendo os KPIs globais
+    const projetosFiltrados = estagnadosFilter
+      ? projetosFormatados.filter((p) => p.alertaParado)
+      : projetosFormatados
+
     if (this.wantsJson(request)) {
-      return response.ok({ projetos: projetosFormatados, stats })
+      return response.ok({ projetos: projetosFiltrados, stats })
     }
 
     return inertia.render('projetos/index', {
-      projetos: projetosFormatados,
+      projetos: projetosFiltrados,
       stats,
       filters: {
         q: search,
         status: statusFilter || '',
         arquivado: arquivadoFilter,
+        estagnados: estagnadosFilter,
       },
       statusOptions: Object.entries(STATUS_PROJETO_LABELS).map(([value, label]) => ({
         value,
@@ -491,25 +498,37 @@ export default class ProjetosController {
     const user = auth.user!
     const payload = await request.validateUsing(submeterVersao3DValidator)
 
-    const projeto = await Projeto.query()
-      .where('id', params.id)
-      .preload('versoesComerciais', (q) => q.orderBy('versao', 'desc'))
-      .first()
+    let novaVersao: ProjetoComercial | null = null
+    let proximaVersao = 1
+    let projetoNaoEncontrado = false
+    let projetoArquivado = false
 
-    if (!projeto) {
-      return response.notFound({ message: 'Projeto não encontrado' })
-    }
-
-    if (projeto.arquivado) {
-      return response.badRequest({ message: 'Projeto arquivado não aceita novas versões 3D' })
-    }
-
-    // Calcula próximo número de versão
-    const ultimaVersao = projeto.versoesComerciais[0]?.versao || 0
-    const proximaVersao = ultimaVersao + 1
-
-    let novaVersao: ProjetoComercial
     await db.transaction(async (trx) => {
+      // Bloqueia a linha do projeto com FOR UPDATE para evitar concorrência (R4)
+      const projeto = await Projeto.query({ client: trx })
+        .where('id', params.id)
+        .forUpdate()
+        .first()
+
+      if (!projeto) {
+        projetoNaoEncontrado = true
+        return
+      }
+
+      if (projeto.arquivado) {
+        projetoArquivado = true
+        return
+      }
+
+      // Consulta atomicamente no banco o maior número de versão existente
+      const maxVersaoRes = await trx
+        .from('projetos_comerciais')
+        .where('projeto_id', projeto.id)
+        .max('versao as max_versao')
+        .first()
+
+      proximaVersao = (Number(maxVersaoRes?.max_versao) || 0) + 1
+
       novaVersao = await ProjetoComercial.create(
         {
           projetoId: projeto.id,
@@ -536,7 +555,6 @@ export default class ProjetosController {
         projeto.alertaParado = false
         await projeto.save()
 
-
         await HistoricoStatusProjeto.create(
           {
             projetoId: projeto.id,
@@ -549,6 +567,14 @@ export default class ProjetosController {
         )
       }
     })
+
+    if (projetoNaoEncontrado) {
+      return response.notFound({ message: 'Projeto não encontrado' })
+    }
+
+    if (projetoArquivado) {
+      return response.badRequest({ message: 'Projeto arquivado não aceita novas versões 3D' })
+    }
 
     if (this.wantsJson(request)) {
       return response.created({

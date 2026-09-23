@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
@@ -11,6 +11,8 @@ import {
   Eye,
   ShieldCheck,
   Palette,
+  Plus,
+  X,
 } from 'lucide-react'
 
 import clsx from 'clsx'
@@ -56,6 +58,7 @@ interface Props {
     q: string
     status: string
     arquivado: boolean
+    estagnados?: boolean
   }
   statusOptions: Array<{ value: string; label: string }>
 }
@@ -64,14 +67,47 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
   const [searchTerm, setSearchTerm] = useState(filters.q || '')
   const [statusFilter, setStatusFilter] = useState(filters.status || '')
   const [mostrarArquivados, setMostrarArquivados] = useState(filters.arquivado || false)
+  const [apenasEstagnados, setApenasEstagnados] = useState(Boolean(filters.estagnados))
+  const [modalNovoOpen, setModalNovoOpen] = useState(false)
+  const [clienteNome, setClienteNome] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const aplicarFiltros = (novosFiltros: { q?: string; status?: string; arquivado?: boolean }) => {
+  useEffect(() => {
+    setApenasEstagnados(Boolean(filters.estagnados))
+  }, [filters.estagnados])
+
+  const toggleEstagnados = () => {
+    const nextVal = !apenasEstagnados
+    setApenasEstagnados(nextVal)
+    aplicarFiltros({ estagnados: nextVal })
+  }
+
+  const handleCriarProjeto = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!clienteNome.trim()) return
+
+    setIsSubmitting(true)
+    router.post(
+      '/briefings',
+      { clienteNome },
+      {
+        onFinish: () => {
+          setIsSubmitting(false)
+          setModalNovoOpen(false)
+        },
+      }
+    )
+  }
+
+  const aplicarFiltros = (novosFiltros: { q?: string; status?: string; arquivado?: boolean; estagnados?: boolean }) => {
+    const estVal = novosFiltros.estagnados !== undefined ? novosFiltros.estagnados : apenasEstagnados
     router.get(
       '/projetos',
       {
         q: novosFiltros.q !== undefined ? novosFiltros.q : searchTerm,
         status: novosFiltros.status !== undefined ? novosFiltros.status : statusFilter,
         arquivado: novosFiltros.arquivado !== undefined ? novosFiltros.arquivado : mostrarArquivados,
+        ...(estVal ? { estagnados: 'true' } : {}),
       },
       { preserveState: true }
     )
@@ -149,6 +185,14 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setModalNovoOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-900 text-white hover:bg-stone-800 transition-colors shadow-sm"
+            >
+              <Plus size={14} className="text-primary-400" />
+              <span>Novo Projeto</span>
+            </button>
+
             <span
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200"
               title="RN004: Renderização só avança com aprovação formal do vendedor responsável"
@@ -172,20 +216,41 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
 
         {/* Alerta de Estagnação RN016 se houver projetos parados > 5 dias */}
         {stats.estagnados > 0 && (
-          <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-4.5 flex items-start gap-4 shadow-sm">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
-              <AlertTriangle size={20} />
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-amber-950 flex items-center gap-2">
+                  Alerta de Governança RN016 — {stats.estagnados} Projeto(s) Estagnado(s)
+                </h3>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  Existem projetos na carteira sem movimentação há mais de 5 dias na mesma etapa.
+                  Acesse a Sala de Controle dos projetos destacados para atualizar o status ou
+                  solicitar ações à equipe comercial/técnica.
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-amber-950 flex items-center gap-2">
-                Alerta de Governança RN016 — {stats.estagnados} Projeto(s) Estagnado(s)
-              </h3>
-              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                Existem projetos na carteira sem movimentação há mais de 5 dias na mesma etapa.
-                Acesse a Sala de Controle dos projetos destacados para atualizar o status ou
-                solicitar ações à equipe comercial/técnica.
-              </p>
-            </div>
+            <button
+              onClick={toggleEstagnados}
+              className={clsx(
+                'px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0',
+                apenasEstagnados
+                  ? 'bg-stone-900 text-white hover:bg-stone-800'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white'
+              )}
+            >
+              {apenasEstagnados ? (
+                <>
+                  <X size={14} /> Exibir Todos os Projetos
+                </>
+              ) : (
+                <>
+                  <AlertTriangle size={14} /> Filtrar Apenas Estagnados ({stats.estagnados})
+                </>
+              )}
+            </button>
           </div>
         )}
 
@@ -236,10 +301,26 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
             </span>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-            <span className="text-[11px] font-medium text-rose-600 uppercase tracking-wider block">
-              Estagnados (&gt;5d)
-            </span>
+          <div
+            onClick={toggleEstagnados}
+            className={clsx(
+              'p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:scale-[1.02] select-none',
+              apenasEstagnados
+                ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-300'
+                : 'bg-white border-stone-200 hover:border-rose-300'
+            )}
+            title="Clique para alternar o filtro de projetos estagnados (>5 dias)"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-rose-600 uppercase tracking-wider block">
+                Estagnados (&gt;5d)
+              </span>
+              {apenasEstagnados && (
+                <span className="text-[10px] bg-rose-200 text-rose-900 font-bold px-1.5 py-0.2 rounded">
+                  Filtrado
+                </span>
+              )}
+            </div>
             <span className="text-2xl font-bold font-display text-rose-700 mt-1 block">
               {stats.estagnados}
             </span>
@@ -279,6 +360,21 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
               </select>
             </div>
 
+            <button
+              type="button"
+              onClick={toggleEstagnados}
+              className={clsx(
+                'flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-colors select-none font-medium',
+                apenasEstagnados
+                  ? 'bg-rose-100 text-rose-800 border-rose-300 font-semibold'
+                  : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+              )}
+            >
+              <AlertTriangle size={13} className={apenasEstagnados ? 'text-rose-600' : 'text-stone-400'} />
+              <span>Estagnados ({stats.estagnados})</span>
+              {apenasEstagnados && <X size={13} className="ml-0.5 text-rose-600" />}
+            </button>
+
             <label className="flex items-center gap-2 text-xs text-stone-600 cursor-pointer select-none bg-stone-50 px-3 py-2 rounded-lg border border-stone-200">
               <input
                 type="checkbox"
@@ -293,6 +389,24 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
             </label>
           </div>
         </div>
+
+        {/* Banner de Filtro Ativo */}
+        {apenasEstagnados && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-rose-900 shadow-2xs">
+            <span className="flex items-center gap-2">
+              <AlertTriangle size={15} className="text-rose-600 flex-shrink-0" />
+              <span>
+                Filtro ativo: Exibindo <strong>{projetos.length}</strong> projeto(s) estagnado(s) há mais de 5 dias (Regra RN016).
+              </span>
+            </span>
+            <button
+              onClick={toggleEstagnados}
+              className="text-rose-700 hover:text-rose-950 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <X size={14} /> Limpar filtro
+            </button>
+          </div>
+        )}
 
         {/* Tabela de Projetos */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
@@ -437,6 +551,69 @@ export default function ProjetosIndex({ projetos, stats, filters, statusOptions 
           )}
         </div>
       </div>
+
+      {/* Modal Novo Projeto / Briefing */}
+      {modalNovoOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 w-full max-w-md overflow-hidden animate-scale-in">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center font-bold">
+                  <FolderKanban size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-stone-900">Iniciar Novo Projeto</h3>
+                  <p className="text-[11px] text-stone-500">Cria a ficha oficial do projeto e o briefing técnico</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalNovoOpen(false)}
+                className="p-1 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCriarProjeto} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1">
+                  Nome do Cliente ou Obra *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Dra. Mariana Vasconcelos — Apto Jardins"
+                  value={clienteNome}
+                  onChange={(e) => setClienteNome(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-stone-50/50"
+                  autoFocus
+                />
+                <p className="text-[10px] text-stone-500 mt-1.5 leading-relaxed">
+                  O sistema gerará um código oficial (ex: <code>PRJ-2026-XXX</code>) e abrirá imediatamente o Briefing Inteligente para inserção de cômodos e acabamentos.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setModalNovoOpen(false)}
+                  className="px-3.5 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !clienteNome.trim()}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors"
+                >
+                  {isSubmitting ? 'Iniciando...' : 'Criar & Abrir Briefing'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

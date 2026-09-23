@@ -39,8 +39,8 @@ export interface Registry {
       paramsTuple: []
       params: {}
       query: {}
-      response: unknown
-      errorResponse: unknown
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/dashboard_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/dashboard_controller').default['index']>>>
     }
   }
   'session.destroy': {
@@ -257,18 +257,6 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/fila_controller').default['iniciarExecucao']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fila_controller').default['iniciarExecucao']>>>
-    }
-  }
-  'projetos.arquivar': {
-    methods: ["POST"]
-    pattern: '/projetos/:id/arquivar'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/fila').arquivarProjetoValidator)>>
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/fila').arquivarProjetoValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/fila_controller').default['arquivar']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fila_controller').default['arquivar']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'especificadores.index': {
@@ -533,6 +521,450 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/arquiteto').interacaoArquitetoValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/arquitetos_controller').default['criarInteracao']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/arquitetos_controller').default['criarInteracao']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.departamentos.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/colaboradores/departamentos'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['listarDepartamentos']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['listarDepartamentos']>>>
+    }
+  }
+  'colaboradores.departamentos.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores/departamentos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').createDepartamentoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').createDepartamentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['criarDepartamento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['criarDepartamento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.departamentos.update': {
+    methods: ["PUT"]
+    pattern: '/colaboradores/departamentos/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').updateDepartamentoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').updateDepartamentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['atualizarDepartamento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['atualizarDepartamento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.cargos.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/colaboradores/cargos'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['listarCargos']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['listarCargos']>>>
+    }
+  }
+  'colaboradores.cargos.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores/cargos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').createCargoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').createCargoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['criarCargo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['criarCargo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.cargos.update': {
+    methods: ["PUT"]
+    pattern: '/colaboradores/cargos/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').updateCargoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').updateCargoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['atualizarCargo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['atualizarCargo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/colaboradores'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['index']>>>
+    }
+  }
+  'colaboradores.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').createColaboradorValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').createColaboradorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/colaboradores/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['show']>>>
+    }
+  }
+  'colaboradores.update': {
+    methods: ["PUT"]
+    pattern: '/colaboradores/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').updateColaboradorValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').updateColaboradorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.patch': {
+    methods: ["PATCH"]
+    pattern: '/colaboradores/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').updateColaboradorValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').updateColaboradorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.destroy': {
+    methods: ["DELETE"]
+    pattern: '/colaboradores/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['destroy']>>>
+    }
+  }
+  'colaboradores.historico_salarial.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores/:id/historico-salarial'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').historicoSalarialValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').historicoSalarialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['lancarHistoricoSalarial']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['lancarHistoricoSalarial']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.historico_cargo.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores/:id/historico-cargo'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').historicoCargoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').historicoCargoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['lancarHistoricoCargo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['lancarHistoricoCargo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.desligar': {
+    methods: ["POST"]
+    pattern: '/colaboradores/:id/desligar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').desligamentoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').desligamentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['desligar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['desligar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.documentos.store': {
+    methods: ["POST"]
+    pattern: '/colaboradores/:id/documentos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/colaborador').documentoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/colaborador').documentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['adicionarDocumento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['adicionarDocumento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'colaboradores.documentos.destroy': {
+    methods: ["DELETE"]
+    pattern: '/colaboradores/:id/documentos/:documentoId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; documentoId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['removerDocumento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/colaboradores_controller').default['removerDocumento']>>>
+    }
+  }
+  'clientes.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/clientes'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['index']>>>
+    }
+  }
+  'clientes.store': {
+    methods: ["POST"]
+    pattern: '/clientes'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/cliente').createClienteValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/cliente').createClienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/clientes/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['show']>>>
+    }
+  }
+  'clientes.update': {
+    methods: ["PUT"]
+    pattern: '/clientes/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/cliente').updateClienteValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/cliente').updateClienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.patch': {
+    methods: ["PATCH"]
+    pattern: '/clientes/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/cliente').updateClienteValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/cliente').updateClienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.aprovar': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/aprovar'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['aprovarCadastro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['aprovarCadastro']>>>
+    }
+  }
+  'clientes.enderecos.store': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/enderecos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/cliente').createEnderecoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/cliente').createEnderecoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['adicionarEndereco']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['adicionarEndereco']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.enderecos.destroy': {
+    methods: ["DELETE"]
+    pattern: '/clientes/:id/enderecos/:enderecoId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; enderecoId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['removerEndereco']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['removerEndereco']>>>
+    }
+  }
+  'clientes.converter_lead': {
+    methods: ["POST"]
+    pattern: '/clientes/converter-lead/:leadId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/cliente').createClienteValidator)>>
+      paramsTuple: [ParamValue]
+      params: { leadId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/cliente').createClienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['converterLead']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['converterLead']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/projetos'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['index']>>>
+    }
+  }
+  'projetos.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/projetos/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['show']>>>
+    }
+  }
+  'projetos.mudar_status': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/status'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/projeto').mudarStatusProjetoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/projeto').mudarStatusProjetoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['mudarStatus']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['mudarStatus']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.arquivar': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/arquivar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/projeto').arquivarProjetoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/projeto').arquivarProjetoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['arquivar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['arquivar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.versoes_3d.store': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/versoes-3d'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/projeto').submeterVersao3DValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/projeto').submeterVersao3DValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['submeterVersao3D']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['submeterVersao3D']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.versoes_3d.avaliar': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/versoes-3d/:versaoId/avaliar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/projeto').avaliarVersao3DValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; versaoId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/projeto').avaliarVersao3DValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['avaliarVersao3D']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['avaliarVersao3D']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.versoes_3d.concluir_render': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/versoes-3d/:versaoId/concluir-render'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/projeto').concluirRenderValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; versaoId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/projeto').concluirRenderValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['concluirRender']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projetos_controller').default['concluirRender']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.fechamento.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/projetos/:id/fechamento'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['show']>>>
+    }
+  }
+  'projetos.fechamento.store': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/fechamento'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/fechamento').salvarFechamentoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/fechamento').salvarFechamentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarFechamento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarFechamento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.fechamento.parcelas.pagar': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/fechamento/parcelas/:parcelaId/pagar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/fechamento').liquidarParcelaValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; parcelaId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/fechamento').liquidarParcelaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['liquidarParcela']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['liquidarParcela']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projetos.handoff.store': {
+    methods: ["POST"]
+    pattern: '/projetos/:id/handoff'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/fechamento').salvarHandoffValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/fechamento').salvarHandoffValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarHandoff']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarHandoff']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
 }
