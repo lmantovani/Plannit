@@ -30,6 +30,7 @@ router
     router.post('crm/leads', [controllers.Leads, 'store']).as('crm.leads.store')
     router.patch('crm/leads/:id/status', [controllers.Leads, 'updateStatus']).as('crm.leads.update_status')
     router.post('crm/leads/:id/qualificar', [controllers.Leads, 'qualificar']).as('crm.leads.qualificar')
+    router.post('crm/leads/:id/desqualificar', [controllers.Leads, 'desqualificar']).as('crm.leads.desqualificar')
     router.post('crm/leads/:id/perder', [controllers.Leads, 'marcarPerdido']).as('crm.leads.marcar_perdido')
     router.post('crm/leads/:id/interacoes', [controllers.Leads, 'registrarInteracao']).as('crm.leads.registrar_interacao')
 

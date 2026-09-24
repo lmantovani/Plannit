@@ -1,12 +1,21 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import Lead, { OrigemLead, StatusFunil } from '#models/lead'
+import Lead, {
+  OrigemLead,
+  StatusFunil,
+  FAIXA_ORCAMENTO_LABELS,
+  PRAZO_OBRA_LABELS,
+  TIPO_IMOVEL_LABELS,
+} from '#models/lead'
 import InteracaoLead from '#models/interacao_lead'
+import Arquiteto from '#models/arquiteto'
 import User, { PerfilUsuario } from '#models/user'
 import {
   createLeadValidator,
   interacaoValidator,
   perderLeadValidator,
   updateStatusValidator,
+  qualificarLeadValidator,
+  desqualificarLeadValidator,
 } from '#validators/lead'
 import { DateTime } from 'luxon'
 
@@ -53,6 +62,8 @@ export default class LeadsController {
 
     leadsQuery
       .preload('vendedor', (vQuery) => vQuery.select('id', 'nome', 'email'))
+      .preload('qualificadoPor', (qQuery) => qQuery.select('id', 'nome', 'email'))
+      .preload('arquiteto', (aQuery) => aQuery.select('id', 'nome', 'escritorio'))
       .preload('interacoes', (iQuery) => {
         iQuery.preload('responsavel', (rQuery) => rQuery.select('id', 'nome')).orderBy('createdAt', 'desc')
       })
@@ -86,6 +97,22 @@ export default class LeadsController {
       campanha: lead.campanha,
       statusFunil: lead.statusFunil,
       qualificado: lead.qualificado,
+      orcamentoEstimado: lead.orcamentoEstimado ? Number(lead.orcamentoEstimado) : null,
+      faixaOrcamento: lead.faixaOrcamento,
+      faixaOrcamentoLabel: lead.faixaOrcamento ? FAIXA_ORCAMENTO_LABELS[lead.faixaOrcamento] || lead.faixaOrcamento : null,
+      prazoObra: lead.prazoObra,
+      prazoObraLabel: lead.prazoObra ? PRAZO_OBRA_LABELS[lead.prazoObra] || lead.prazoObra : null,
+      tipoImovel: lead.tipoImovel,
+      tipoImovelLabel: lead.tipoImovel ? TIPO_IMOVEL_LABELS[lead.tipoImovel] || lead.tipoImovel : null,
+      ambientesInteresse: (lead.ambientesInteresse as string[]) || [],
+      possuiArquiteto: lead.possuiArquiteto,
+      arquitetoId: lead.arquitetoId,
+      arquiteto: lead.arquiteto ? { id: lead.arquiteto.id, nome: lead.arquiteto.nome, escritorio: lead.arquiteto.escritorio } : null,
+      decisorPresente: lead.decisorPresente,
+      qualificadoEm: lead.qualificadoEm ? lead.qualificadoEm.toISO() : null,
+      qualificadoPorId: lead.qualificadoPorId,
+      qualificadoPor: lead.qualificadoPor ? { id: lead.qualificadoPor.id, nome: lead.qualificadoPor.nome } : null,
+      motivoDesqualificacao: lead.motivoDesqualificacao,
       motivoPerda: lead.motivoPerda,
       concorrentePerdido: lead.concorrentePerdido,
       convertidoEmCliente: lead.convertidoEmCliente,
@@ -120,10 +147,17 @@ export default class LeadsController {
       vendedores = sellers.map((s) => ({ id: s.id, nome: s.nome }))
     }
 
+    // Lista de arquitetos ativos para a modal de qualificação
+    const arquitetos = await Arquiteto.query()
+      .where('is_active', true)
+      .select('id', 'nome', 'escritorio')
+      .orderBy('nome', 'asc')
+
     return inertia.render('crm/index', {
       leads,
       estatisticas,
       vendedores,
+      arquitetos: arquitetos.map((a) => ({ id: a.id, nome: a.nome, escritorio: a.escritorio })),
       filtros: {
         q: search,
         statusFunil: statusFilter || '',
@@ -208,11 +242,24 @@ export default class LeadsController {
   }
 
   /**
-   * RN001 — Registra qualificação do lead antes de avançar no funil.
+   * RN001 — Registra qualificação estruturada do lead com validação dos 5 critérios.
    */
-  async qualificar({ params, response, session }: HttpContext) {
+  async qualificar({ params, request, auth, response, session }: HttpContext) {
+    const user = auth.user!
     const lead = await Lead.findOrFail(params.id)
+    const payload = await request.validateUsing(qualificarLeadValidator)
+
     lead.qualificado = true
+    lead.faixaOrcamento = payload.faixaOrcamento
+    lead.prazoObra = payload.prazoObra
+    lead.tipoImovel = payload.tipoImovel
+    lead.ambientesInteresse = payload.ambientesInteresse
+    lead.orcamentoEstimado = payload.orcamentoEstimado ? String(payload.orcamentoEstimado) : null
+    lead.possuiArquiteto = Boolean(payload.possuiArquiteto || payload.arquitetoId)
+    lead.arquitetoId = payload.arquitetoId || null
+    lead.decisorPresente = payload.decisorPresente !== undefined ? payload.decisorPresente : true
+    lead.qualificadoEm = DateTime.now()
+    lead.qualificadoPorId = user.id
 
     // Se estiver em etapas preliminares, avança para Em Visita
     if (
@@ -223,7 +270,51 @@ export default class LeadsController {
     }
 
     await lead.save()
-    session.flash('success', `Lead "${lead.nome}" qualificado com sucesso! Etapas de briefing liberadas.`)
+
+    // Registra interação automática de auditoria na timeline
+    const orcamentoDesc = FAIXA_ORCAMENTO_LABELS[payload.faixaOrcamento] || payload.faixaOrcamento
+    const prazoDesc = PRAZO_OBRA_LABELS[payload.prazoObra] || payload.prazoObra
+    const tipoDesc = TIPO_IMOVEL_LABELS[payload.tipoImovel] || payload.tipoImovel
+    const ambientesDesc = (payload.ambientesInteresse || []).join(', ')
+
+    await InteracaoLead.create({
+      leadId: lead.id,
+      responsavelId: user.id,
+      tipo: 'reuniao',
+      resumo: `Qualificação RN001 Concluída: [${tipoDesc}] • Orçamento: ${orcamentoDesc} • Prazo: ${prazoDesc} • Ambientes: ${ambientesDesc}.${payload.observacoes ? ` Detalhes: ${payload.observacoes}` : ''}`,
+    })
+
+    lead.ultimaInteracaoEm = DateTime.now()
+    await lead.save()
+
+    session.flash('success', `Lead "${lead.nome}" qualificado com sucesso! Etapa de briefing liberada.`)
+    return response.redirect().back()
+  }
+
+  /**
+   * RN001 — Desqualifica o lead caso não atenda aos critérios da Líder Móveis.
+   */
+  async desqualificar({ params, request, auth, response, session }: HttpContext) {
+    const user = auth.user!
+    const lead = await Lead.findOrFail(params.id)
+    const payload = await request.validateUsing(desqualificarLeadValidator)
+
+    lead.statusFunil = StatusFunil.DESQUALIFICADO
+    lead.qualificado = false
+    lead.motivoDesqualificacao = payload.motivoDesqualificacao
+    await lead.save()
+
+    await InteracaoLead.create({
+      leadId: lead.id,
+      responsavelId: user.id,
+      tipo: 'ligacao',
+      resumo: `Lead Desqualificado (RN001): ${payload.motivoDesqualificacao}`,
+    })
+
+    lead.ultimaInteracaoEm = DateTime.now()
+    await lead.save()
+
+    session.flash('success', `Lead "${lead.nome}" desqualificado.`)
     return response.redirect().back()
   }
 

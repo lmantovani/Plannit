@@ -54,6 +54,12 @@ const routes = {
     tokens: [{"old":"/crm/leads/:id/qualificar","type":0,"val":"crm","end":""},{"old":"/crm/leads/:id/qualificar","type":0,"val":"leads","end":""},{"old":"/crm/leads/:id/qualificar","type":1,"val":"id","end":""},{"old":"/crm/leads/:id/qualificar","type":0,"val":"qualificar","end":""}],
     types: placeholder as Registry['crm.leads.qualificar']['types'],
   },
+  'crm.leads.desqualificar': {
+    methods: ["POST"],
+    pattern: '/crm/leads/:id/desqualificar',
+    tokens: [{"old":"/crm/leads/:id/desqualificar","type":0,"val":"crm","end":""},{"old":"/crm/leads/:id/desqualificar","type":0,"val":"leads","end":""},{"old":"/crm/leads/:id/desqualificar","type":1,"val":"id","end":""},{"old":"/crm/leads/:id/desqualificar","type":0,"val":"desqualificar","end":""}],
+    types: placeholder as Registry['crm.leads.desqualificar']['types'],
+  },
   'crm.leads.marcar_perdido': {
     methods: ["POST"],
     pattern: '/crm/leads/:id/perder',

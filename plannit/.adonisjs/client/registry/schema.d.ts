@@ -95,12 +95,24 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/crm/leads/:id/qualificar'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/lead').qualificarLeadValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/lead').qualificarLeadValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['qualificar']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['qualificar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['qualificar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'crm.leads.desqualificar': {
+    methods: ["POST"]
+    pattern: '/crm/leads/:id/desqualificar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/lead').desqualificarLeadValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/lead').desqualificarLeadValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['desqualificar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['desqualificar']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'crm.leads.marcar_perdido': {

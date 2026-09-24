@@ -14,6 +14,7 @@ export interface ApiDefinition {
       store: typeof routes['crm.leads.store']
       updateStatus: typeof routes['crm.leads.update_status']
       qualificar: typeof routes['crm.leads.qualificar']
+      desqualificar: typeof routes['crm.leads.desqualificar']
       marcarPerdido: typeof routes['crm.leads.marcar_perdido']
       registrarInteracao: typeof routes['crm.leads.registrar_interacao']
     }

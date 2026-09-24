@@ -5,6 +5,7 @@ import {
   FUNIL_ETAPAS,
   ORIGEM_LABELS,
   timeAgo,
+  formatDate,
   formatDateTime,
 } from '../../lib/constants'
 import {
@@ -25,9 +26,11 @@ import {
   X,
   Send,
   Sparkles,
+  FileText,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
+import QualificarLeadModal, { ArquitetoOption } from '../../components/crm/QualificarLeadModal'
 
 export type LeadInteracao = {
   id: number
@@ -49,6 +52,22 @@ export type LeadItem = {
   campanha: string | null
   statusFunil: string
   qualificado: boolean
+  orcamentoEstimado: number | null
+  faixaOrcamento: string | null
+  faixaOrcamentoLabel: string | null
+  prazoObra: string | null
+  prazoObraLabel: string | null
+  tipoImovel: string | null
+  tipoImovelLabel: string | null
+  ambientesInteresse: string[]
+  possuiArquiteto: boolean
+  arquitetoId: number | null
+  arquiteto: { id: number; nome: string; escritorio: string | null } | null
+  decisorPresente: boolean
+  qualificadoEm: string | null
+  qualificadoPorId: number | null
+  qualificadoPor: { id: number; nome: string } | null
+  motivoDesqualificacao: string | null
   motivoPerda: string | null
   concorrentePerdido: string | null
   convertidoEmCliente: boolean
@@ -79,6 +98,7 @@ export type PageProps = {
   leads: LeadItem[]
   estatisticas: Estatisticas
   vendedores: VendedorOption[]
+  arquitetos: ArquitetoOption[]
   filtros: {
     q: string
     statusFunil: string
@@ -92,6 +112,7 @@ const CRMIndex: React.FC<PageProps> = ({
   leads,
   estatisticas,
   vendedores,
+  arquitetos,
   filtros,
   isVendedor,
 }) => {
@@ -105,6 +126,7 @@ const CRMIndex: React.FC<PageProps> = ({
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null)
   const [showNovoModal, setShowNovoModal] = useState(false)
   const [leadParaPerder, setLeadParaPerder] = useState<LeadItem | null>(null)
+  const [leadParaQualificar, setLeadParaQualificar] = useState<LeadItem | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   const draggedLeadId = useRef<number | null>(null)
 
@@ -159,7 +181,8 @@ const CRMIndex: React.FC<PageProps> = ({
     const etapasRestritas = ['em_briefing', 'em_projeto', 'em_fechamento']
     if (etapasRestritas.includes(targetStatus) && !lead.qualificado) {
       toast.error('RN001 — O lead precisa ser qualificado antes de avançar para etapas de Briefing ou Projeto.')
-      setSelectedLeadId(lead.id) // abre o drawer para facilitar a qualificação
+      setSelectedLeadId(lead.id)
+      setLeadParaQualificar(lead)
       return
     }
 
@@ -176,14 +199,20 @@ const CRMIndex: React.FC<PageProps> = ({
     )
   }
 
-  // Qualificar lead (RN001)
-  const handleQualificar = (leadId: number) => {
+  // Qualificar lead (RN001) - Abre o modal com critérios estruturados
+  const handleAbrirQualificacao = (lead: LeadItem) => {
+    setLeadParaQualificar(lead)
+  }
+
+  // Iniciar Briefing Técnico para o Lead Qualificado
+  const handleIniciarBriefing = (leadId: number) => {
     router.post(
-      `/crm/leads/${leadId}/qualificar`,
-      {},
+      '/briefings',
+      { leadId },
       {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Lead qualificado com sucesso!'),
+        onError: (err) => {
+          toast.error(err.erro || 'Erro ao iniciar briefing para este lead')
+        },
       }
     )
   }
@@ -501,10 +530,20 @@ const CRMIndex: React.FC<PageProps> = ({
         <LeadDrawer
           lead={selectedLead}
           onClose={() => setSelectedLeadId(null)}
-          onQualificar={() => handleQualificar(selectedLead.id)}
+          onQualificar={() => handleAbrirQualificacao(selectedLead)}
+          onIniciarBriefing={() => handleIniciarBriefing(selectedLead.id)}
           onMarcarPerdido={() => {
             setLeadParaPerder(selectedLead)
           }}
+        />
+      )}
+
+      {/* Modal de Qualificação Estruturada de Lead (RN001) */}
+      {leadParaQualificar && (
+        <QualificarLeadModal
+          lead={leadParaQualificar}
+          arquitetos={arquitetos || []}
+          onClose={() => setLeadParaQualificar(null)}
         />
       )}
 
@@ -567,12 +606,21 @@ function LeadCard({
         <h4 className="font-semibold text-xs text-stone-900 group-hover:text-primary-700 leading-snug">
           {lead.nome}
         </h4>
-        {lead.qualificado && (
+        {lead.qualificado ? (
           <span
-            title="Lead qualificado (RN001)"
-            className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1"
-          />
-        )}
+            title="Lead com critérios de qualificação validados (RN001)"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold flex-shrink-0"
+          >
+            <CheckCircle2 size={9} /> Qualificado
+          </span>
+        ) : lead.statusFunil === 'desqualificado' ? (
+          <span
+            title="Lead desqualificado"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[9px] font-bold flex-shrink-0"
+          >
+            Desqualificado
+          </span>
+        ) : null}
       </div>
 
       {/* Informações Rápidas */}
@@ -586,6 +634,13 @@ function LeadCard({
           <div className="flex items-center gap-1.5">
             <Building2 size={11} className="text-stone-400" />
             <span className="truncate">{lead.cidade}</span>
+          </div>
+        )}
+
+        {lead.qualificado && lead.ambientesInteresse && lead.ambientesInteresse.length > 0 && (
+          <div className="text-[10px] text-amber-900 bg-amber-50/70 border border-amber-200/50 rounded px-1.5 py-0.5 truncate mt-1">
+            ✨ {lead.ambientesInteresse.slice(0, 2).join(', ')}
+            {lead.ambientesInteresse.length > 2 && ` +${lead.ambientesInteresse.length - 2}`}
           </div>
         )}
       </div>
@@ -616,11 +671,13 @@ function LeadDrawer({
   lead,
   onClose,
   onQualificar,
+  onIniciarBriefing,
   onMarcarPerdido,
 }: {
   lead: LeadItem
   onClose: () => void
   onQualificar: () => void
+  onIniciarBriefing: () => void
   onMarcarPerdido: () => void
 }) {
   const [tipo, setTipo] = useState('whatsapp')
@@ -704,6 +761,17 @@ function LeadDrawer({
           </button>
         )}
 
+        {lead.qualificado && lead.statusFunil !== 'perdido' && (
+          <button
+            onClick={onIniciarBriefing}
+            className="btn btn-sm flex-1 gap-1.5 text-xs shadow-sm bg-stone-900 hover:bg-stone-800 text-white font-semibold transition-all"
+            title="Cria o projeto no sistema e abre o Briefing Inteligente"
+          >
+            <FileText size={13} className="text-primary-400" />
+            <span>Iniciar Briefing Técnico</span>
+          </button>
+        )}
+
         {lead.statusFunil !== 'perdido' && (
           <button
             onClick={onMarcarPerdido}
@@ -754,6 +822,83 @@ function LeadDrawer({
                 Concorrente: <strong>{lead.concorrentePerdido}</strong>
               </p>
             )}
+          </div>
+        )}
+
+        {lead.statusFunil === 'desqualificado' && lead.motivoDesqualificacao && (
+          <div className="col-span-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+            <div className="flex items-center gap-1.5 text-rose-800 font-semibold text-[11px]">
+              <XCircle size={13} className="text-rose-600" />
+              <span>Lead Desqualificado (RN001)</span>
+            </div>
+            <p className="text-xs text-rose-900 leading-relaxed">{lead.motivoDesqualificacao}</p>
+          </div>
+        )}
+
+        {/* Ficha de Qualificação Estruturada (RN001) */}
+        {lead.qualificado && (
+          <div className="col-span-2 p-3 bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-stone-50 border border-amber-200/80 rounded-xl space-y-2 shadow-2xs">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-amber-950">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-600" />
+                <span>Qualificação Validada (RN001)</span>
+              </span>
+              <button
+                type="button"
+                onClick={onQualificar}
+                className="text-[10px] text-amber-800 hover:text-amber-950 underline font-medium cursor-pointer"
+              >
+                Revisar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-amber-200/50">
+              <div>
+                <span className="text-[10px] text-stone-500 block uppercase font-medium">Orçamento / Imóvel</span>
+                <span className="font-semibold text-stone-800 leading-tight block">
+                  {lead.faixaOrcamentoLabel || (lead.orcamentoEstimado ? `R$ ${lead.orcamentoEstimado.toLocaleString('pt-BR')}` : 'A definir')}
+                </span>
+                <span className="text-[10px] text-stone-600">{lead.tipoImovelLabel || 'Imóvel'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-stone-500 block uppercase font-medium">Previsão da Obra</span>
+                <span className="font-semibold text-stone-800 leading-tight block">
+                  {lead.prazoObraLabel || 'Prazo padrão'}
+                </span>
+              </div>
+
+              {lead.ambientesInteresse && lead.ambientesInteresse.length > 0 && (
+                <div className="col-span-2 pt-1 border-t border-amber-200/30">
+                  <span className="text-[10px] text-stone-500 block uppercase font-medium mb-1">
+                    Ambientes Pretendidos ({lead.ambientesInteresse.length})
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {lead.ambientesInteresse.map((amb) => (
+                      <span
+                        key={amb}
+                        className="px-2 py-0.5 bg-white text-stone-800 border border-stone-200/80 rounded-md text-[10px] font-medium shadow-3xs"
+                      >
+                        {amb}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {lead.arquiteto && (
+                <div className="col-span-2 pt-1 border-t border-amber-200/30">
+                  <span className="text-[10px] text-stone-500 block uppercase font-medium">Especificador Parceiro</span>
+                  <span className="font-semibold text-primary-800 text-[11px]">
+                    {lead.arquiteto.nome} {lead.arquiteto.escritorio ? `(${lead.arquiteto.escritorio})` : ''}
+                  </span>
+                </div>
+              )}
+
+              <div className="col-span-2 text-[10px] text-stone-400 pt-1 border-t border-amber-200/30 flex items-center justify-between">
+                <span>Por: {lead.qualificadoPor?.nome || 'Vendedor'}</span>
+                <span>{lead.qualificadoEm ? formatDate(lead.qualificadoEm) : 'Auditado'}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>

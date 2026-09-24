@@ -5,7 +5,7 @@ import Briefing, { StatusBriefing } from '#models/briefing'
 import AmbienteBriefing from '#models/ambiente_briefing'
 import Projeto, { StatusProjeto } from '#models/projeto'
 import Cliente from '#models/cliente'
-import Lead from '#models/lead'
+import Lead, { StatusFunil } from '#models/lead'
 import FilaProjeto, { StatusFila } from '#models/fila_projeto'
 import HistoricoStatusProjeto from '#models/historico_status_projeto'
 import Arquiteto from '#models/arquiteto'
@@ -374,6 +374,11 @@ export default class BriefingsController {
         alteradoPorId: user.id,
         observacao: 'Criação do projeto e abertura de briefing',
       })
+
+      if (lead) {
+        lead.statusFunil = StatusFunil.EM_BRIEFING
+        await lead.save()
+      }
     } else {
       session.flash('erro', 'Informe o projeto ou o nome do cliente.')
       return response.redirect().back()
@@ -382,12 +387,50 @@ export default class BriefingsController {
     // Verifica se já existe briefing
     let briefing = await Briefing.query().where('projeto_id', projeto.id).first()
     if (!briefing) {
+      let ambientesIniciais: string[] = []
+      let faixaMin: number | null = null
+      let faixaMax: number | null = null
+
+      if (lead) {
+        if (Array.isArray(lead.ambientesInteresse)) {
+          ambientesIniciais = lead.ambientesInteresse
+        }
+        if (lead.faixaOrcamento) {
+          switch (lead.faixaOrcamento) {
+            case 'ate_40k':
+              faixaMin = 20000
+              faixaMax = 40000
+              break
+            case '40k_80k':
+              faixaMin = 40000
+              faixaMax = 80000
+              break
+            case '80k_150k':
+              faixaMin = 80000
+              faixaMax = 150000
+              break
+            case '150k_300k':
+              faixaMin = 150000
+              faixaMax = 300000
+              break
+            case 'acima_300k':
+              faixaMin = 300000
+              faixaMax = 600000
+              break
+          }
+        }
+      }
+
       briefing = await Briefing.create({
         projetoId: projeto.id,
         status: StatusBriefing.RASCUNHO,
         score: '0',
         scoreMinimo: '70',
-        ambientes: [],
+        ambientes: ambientesIniciais,
+        faixaInvestimentoMin: faixaMin ? String(faixaMin) : null,
+        faixaInvestimentoMax: faixaMax ? String(faixaMax) : null,
+        cidadeObra: lead?.cidade || null,
+        estadoObra: lead?.estado || null,
         referenciasUrl: [],
       })
     }

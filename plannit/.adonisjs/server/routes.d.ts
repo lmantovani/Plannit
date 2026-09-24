@@ -12,6 +12,7 @@ export type ScannedRoutes = {
     'crm.leads.store': { paramsTuple?: []; params?: {} }
     'crm.leads.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.qualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'crm.leads.desqualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.marcar_perdido': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.registrar_interacao': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'briefings.index': { paramsTuple?: []; params?: {} }
@@ -144,6 +145,7 @@ export type ScannedRoutes = {
     'session.destroy': { paramsTuple?: []; params?: {} }
     'crm.leads.store': { paramsTuple?: []; params?: {} }
     'crm.leads.qualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'crm.leads.desqualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.marcar_perdido': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.registrar_interacao': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'briefings.store': { paramsTuple?: []; params?: {} }

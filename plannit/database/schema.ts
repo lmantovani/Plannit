@@ -609,8 +609,10 @@ export class InteracoesLeadSchema extends BaseModel {
 }
 
 export class LeadSchema extends BaseModel {
-  static $columns = ['arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'email', 'estado', 'id', 'motivoPerda', 'nome', 'origem', 'qualificado', 'statusFunil', 'telefone', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
+  static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
   $columns = LeadSchema.$columns
+  @column()
+  declare ambientesInteresse: any | null
   @column()
   declare arquitetoId: number | null
   @column()
@@ -626,23 +628,41 @@ export class LeadSchema extends BaseModel {
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
+  declare decisorPresente: boolean
+  @column()
   declare email: string | null
   @column()
   declare estado: string | null
+  @column()
+  declare faixaOrcamento: string | null
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare motivoDesqualificacao: string | null
   @column()
   declare motivoPerda: string | null
   @column()
   declare nome: string
   @column()
+  declare orcamentoEstimado: string | null
+  @column()
   declare origem: string
   @column()
+  declare possuiArquiteto: boolean
+  @column()
+  declare prazoObra: string | null
+  @column()
   declare qualificado: boolean
+  @column.dateTime()
+  declare qualificadoEm: DateTime | null
+  @column()
+  declare qualificadoPorId: number | null
   @column()
   declare statusFunil: string
   @column()
   declare telefone: string
+  @column()
+  declare tipoImovel: string | null
   @column.dateTime()
   declare ultimaInteracaoEm: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
