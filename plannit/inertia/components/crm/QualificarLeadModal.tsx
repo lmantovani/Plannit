@@ -15,6 +15,10 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
+import EspecificadorAutocomplete from '../especificadores/EspecificadorAutocomplete'
+import ModalNovoParceiroRapido, {
+  type EspecificadorItem,
+} from '../especificadores/ModalNovoParceiroRapido'
 
 export type ArquitetoOption = {
   id: number
@@ -182,6 +186,25 @@ export default function QualificarLeadModal({
     decisorPresente: lead.decisorPresente !== undefined ? lead.decisorPresente : true,
     observacoes: '',
   })
+
+  // Lista local de especificadores para incluir o recém-cadastrado sem recarregar a tela
+  const [listaArquitetos, setListaArquitetos] = useState<ArquitetoOption[]>(arquitetos)
+  const [showNovoParceiro, setShowNovoParceiro] = useState(false)
+  const [nomeNovoParceiro, setNomeNovoParceiro] = useState('')
+
+  const abrirNovoParceiro = (nomeDigitado: string) => {
+    setNomeNovoParceiro(nomeDigitado)
+    setShowNovoParceiro(true)
+  }
+
+  const handleParceiroCriado = (novo: EspecificadorItem) => {
+    setListaArquitetos((prev) =>
+      [...prev, { id: novo.id, nome: novo.nome, escritorio: novo.escritorio ?? null }].sort(
+        (a, b) => a.nome.localeCompare(b.nome)
+      )
+    )
+    setData('arquitetoId', String(novo.id))
+  }
 
   const toggleAmbiente = (ambiente: string) => {
     if (data.ambientesInteresse.includes(ambiente)) {
@@ -533,18 +556,12 @@ export default function QualificarLeadModal({
                   <label className="block text-[11px] font-semibold text-stone-600 mb-1">
                     Selecione o Especificador da Carteira:
                   </label>
-                  <select
+                  <EspecificadorAutocomplete
+                    especificadores={listaArquitetos}
                     value={data.arquitetoId}
-                    onChange={(e) => setData('arquitetoId', e.target.value)}
-                    className="w-full text-xs bg-white border border-stone-200 rounded-lg p-2 focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Outro / Ainda não cadastrado</option>
-                    {arquitetos.map((arq) => (
-                      <option key={arq.id} value={arq.id}>
-                        {arq.nome} {arq.escritorio ? `(${arq.escritorio})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setData('arquitetoId', id)}
+                    onCadastrarNovo={abrirNovoParceiro}
+                  />
                 </div>
               )}
             </div>
@@ -631,6 +648,15 @@ export default function QualificarLeadModal({
           </form>
         )}
       </div>
+
+      {/* Cadastro rápido de especificador — fora dos <form> da qualificação para não aninhar formulários */}
+      <ModalNovoParceiroRapido
+        open={showNovoParceiro}
+        onClose={() => setShowNovoParceiro(false)}
+        onSuccess={handleParceiroCriado}
+        nomeInicial={nomeNovoParceiro}
+        subtitulo="Cadastre só o essencial agora e complete o perfil depois em Especificadores."
+      />
     </div>
   )
 }

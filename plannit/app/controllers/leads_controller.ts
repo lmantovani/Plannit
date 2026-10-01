@@ -235,6 +235,9 @@ export default class LeadsController {
       vendedorId = user.id
     }
 
+    // Especificador indicador só é vinculado quando a origem do lead é "Especificador"
+    const arquitetoId = payload.origem === OrigemLead.ARQUITETO ? payload.arquitetoId || null : null
+
     const lead = await Lead.create({
       nome: payload.nome,
       telefone: payload.telefone,
@@ -244,6 +247,8 @@ export default class LeadsController {
       origem: payload.origem || OrigemLead.OUTRO,
       campanha: payload.campanha || null,
       vendedorId: vendedorId || null,
+      arquitetoId,
+      possuiArquiteto: Boolean(arquitetoId),
       statusFunil: StatusFunil.NOVO_LEAD,
       qualificado: false,
     })

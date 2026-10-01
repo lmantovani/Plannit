@@ -43,6 +43,18 @@ export const createLeadValidator = vine.create({
   origem: vine.string().trim().maxLength(100).optional(),
   campanha: vine.string().trim().maxLength(200).optional(),
   vendedorId: vine.number().positive().optional(),
+  // Especificador que indicou o lead (só usado quando a origem é "arquiteto")
+  arquitetoId: vine
+    .number()
+    .positive()
+    .exists({
+      table: 'arquitetos',
+      column: 'id',
+      filter: (db) => {
+        db.where('is_active', true)
+      },
+    })
+    .optional(),
 })
 
 export const updateLeadValidator = vine.create({

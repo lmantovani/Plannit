@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react'
-import { Head, router, useForm } from '@inertiajs/react'
+import React, { useState, useRef, useEffect } from 'react'
+import { Head, router, useForm, usePage } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
   FUNIL_ETAPAS,
   ORIGEM_LABELS,
+  ORIGEM_ESPECIFICADOR,
   timeAgo,
   formatDate,
   formatDateTime,
@@ -28,10 +29,15 @@ import {
   Sparkles,
   FileText,
   ExternalLink,
+  RotateCw,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
 import QualificarLeadModal, { ArquitetoOption } from '../../components/crm/QualificarLeadModal'
+import ModalNovoParceiroRapido, {
+  type EspecificadorItem,
+} from '../../components/especificadores/ModalNovoParceiroRapido'
+import EspecificadorAutocomplete from '../../components/especificadores/EspecificadorAutocomplete'
 
 export type LeadInteracao = {
   id: number
@@ -586,6 +592,7 @@ const CRMIndex: React.FC<PageProps> = ({
           onClose={() => setShowNovoModal(false)}
           vendedores={vendedores}
           isVendedor={isVendedor}
+          arquitetos={arquitetos}
           origensCatalogo={origensCatalogo}
           campanhasCatalogo={campanhasCatalogo}
         />
@@ -1091,15 +1098,60 @@ function NovoLeadModal({
   onClose,
   vendedores,
   isVendedor,
+  arquitetos,
   origensCatalogo,
   campanhasCatalogo,
 }: {
   onClose: () => void
   vendedores: VendedorOption[]
   isVendedor: boolean
+  arquitetos: ArquitetoOption[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
 }) {
+  const pageProps = usePage<{ user?: { perfil?: string; isSuperuser?: boolean } }>().props
+  const user = pageProps.user
+  const canManageConfig = Boolean(
+    user?.isSuperuser ||
+    user?.perfil === 'diretoria' ||
+    user?.perfil === 'gerente_comercial'
+  )
+
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefreshCatalogs = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    setIsRefreshing(true)
+    router.reload({
+      only: ['origensCatalogo', 'campanhasCatalogo'],
+      onFinish: () => {
+        setIsRefreshing(false)
+        toast.success('Catálogos sincronizados!')
+      },
+    })
+  }
+
+  // Sincronização automática ao focar de volta na aba ou quando outra aba notificar alteração
+  useEffect(() => {
+    const handleSync = () => {
+      router.reload({ only: ['origensCatalogo', 'campanhasCatalogo'] })
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'plannit_catalogo_updated') {
+        handleSync()
+      }
+    }
+
+    window.addEventListener('focus', handleSync)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener('focus', handleSync)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [])
+
   const { data, setData, post, processing, errors, reset } = useForm({
     nome: '',
     telefone: '',
@@ -1109,7 +1161,36 @@ function NovoLeadModal({
     origem: (origensCatalogo && origensCatalogo.length > 0 ? origensCatalogo[0].slug : 'outro'),
     campanha: '',
     vendedorId: '',
+    arquitetoId: '',
   })
+
+  // Lista local de especificadores para incluir o recém-cadastrado sem recarregar a tela
+  const [listaArquitetos, setListaArquitetos] = useState<ArquitetoOption[]>(arquitetos)
+  const [showNovoParceiro, setShowNovoParceiro] = useState(false)
+  const [nomeNovoParceiro, setNomeNovoParceiro] = useState('')
+  const origemEspecificador = data.origem === ORIGEM_ESPECIFICADOR
+
+  const abrirNovoParceiro = (nomeDigitado: string) => {
+    setNomeNovoParceiro(nomeDigitado)
+    setShowNovoParceiro(true)
+  }
+
+  const handleOrigemChange = (origem: string) => {
+    setData((prev) => ({
+      ...prev,
+      origem,
+      arquitetoId: origem === ORIGEM_ESPECIFICADOR ? prev.arquitetoId : '',
+    }))
+  }
+
+  const handleParceiroCriado = (novo: EspecificadorItem) => {
+    setListaArquitetos((prev) =>
+      [...prev, { id: novo.id, nome: novo.nome, escritorio: novo.escritorio ?? null }].sort(
+        (a, b) => a.nome.localeCompare(b.nome)
+      )
+    )
+    setData('arquitetoId', String(novo.id))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1192,22 +1273,34 @@ function NovoLeadModal({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="label mb-0">Origem do Lead</label>
-                {!isVendedor && (
-                  <a
-                    href="/configuracoes?tab=origens"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
-                    title="Configurar origens em nova aba"
-                  >
-                    <span>Configurar</span>
-                    <ExternalLink size={9} />
-                  </a>
+                {canManageConfig && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleRefreshCatalogs}
+                      disabled={isRefreshing}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-stone-500 hover:text-stone-700"
+                      title="Sincronizar catálogos"
+                    >
+                      <RotateCw size={9} className={isRefreshing ? 'animate-spin' : ''} />
+                      <span>Sincronizar</span>
+                    </button>
+                    <a
+                      href="/configuracoes?tab=origens"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+                      title="Configurar origens em nova aba"
+                    >
+                      <span>Configurar</span>
+                      <ExternalLink size={9} />
+                    </a>
+                  </div>
                 )}
               </div>
               <select
                 value={data.origem}
-                onChange={(e) => setData('origem', e.target.value)}
+                onChange={(e) => handleOrigemChange(e.target.value)}
                 className="input text-xs"
               >
                 {origensCatalogo && origensCatalogo.length > 0
@@ -1223,6 +1316,32 @@ function NovoLeadModal({
                     ))}
               </select>
             </div>
+
+            {origemEspecificador && (
+              <div className="col-span-2 animate-fade-in">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label mb-0">Especificador que indicou</label>
+                  <button
+                    type="button"
+                    onClick={() => abrirNovoParceiro('')}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+                    title="Cadastrar especificador que ainda não está na carteira"
+                  >
+                    <Plus size={9} />
+                    <span>Novo especificador</span>
+                  </button>
+                </div>
+                <EspecificadorAutocomplete
+                  especificadores={listaArquitetos}
+                  value={data.arquitetoId}
+                  onChange={(id) => setData('arquitetoId', id)}
+                  onCadastrarNovo={abrirNovoParceiro}
+                />
+                {errors.arquitetoId && (
+                  <p className="text-red-500 text-[11px] mt-1">{errors.arquitetoId}</p>
+                )}
+              </div>
+            )}
 
             <div className="col-span-2">
               <div className="flex items-center justify-between mb-1">
@@ -1294,6 +1413,15 @@ function NovoLeadModal({
           </div>
         </form>
       </div>
+
+      {/* Cadastro rápido de especificador — fora do <form> do lead para não aninhar formulários */}
+      <ModalNovoParceiroRapido
+        open={showNovoParceiro}
+        onClose={() => setShowNovoParceiro(false)}
+        onSuccess={handleParceiroCriado}
+        nomeInicial={nomeNovoParceiro}
+        subtitulo="Cadastre só o essencial agora e complete o perfil depois em Especificadores."
+      />
     </div>
   )
 }

@@ -27,6 +27,9 @@ export const ORIGEM_LABELS: Record<string, string> = {
   outro: 'Outro',
 }
 
+// Slug da origem "Especificador" (OrigemLead.ARQUITETO no backend)
+export const ORIGEM_ESPECIFICADOR = 'arquiteto'
+
 export function timeAgo(dateString: string | null | undefined): string {
   if (!dateString) return 'Sem contato'
   const diff = Date.now() - new Date(dateString).getTime()
