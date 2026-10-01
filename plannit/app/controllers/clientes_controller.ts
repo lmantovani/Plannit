@@ -6,6 +6,7 @@ import EnderecoCliente from '#models/endereco_cliente'
 import Arquiteto from '#models/arquiteto'
 import Lead from '#models/lead'
 import Projeto from '#models/projeto'
+import HistoricoStatusLead from '#models/historico_status_lead'
 import { PerfilUsuario } from '#models/user'
 import {
   createClienteValidator,
@@ -293,7 +294,7 @@ export default class ClientesController {
   /**
    * Converte um lead qualificado do CRM em cliente
    */
-  async converterLead({ params, request, response, session }: HttpContext) {
+  async converterLead({ params, request, auth, response, session }: HttpContext) {
     const lead = await Lead.find(params.leadId)
     if (!lead) {
       session.flash('error', 'Lead não encontrado')
@@ -346,7 +347,25 @@ export default class ClientesController {
       lead.useTransaction(trx)
       lead.convertidoEmCliente = true
       lead.clienteId = cliente.id
+      
+      const statusAnterior = lead.statusFunil
       lead.statusFunil = 'fechado'
+
+      const refDate = lead.statusAlteradoEm || lead.createdAt
+      const tempoPermanencia = refDate ? Math.max(0, Math.floor(DateTime.now().diff(refDate, 'seconds').seconds)) : 0
+
+      await HistoricoStatusLead.create(
+        {
+          leadId: lead.id,
+          alteradoPorId: auth.user!.id,
+          statusDe: statusAnterior,
+          statusPara: lead.statusFunil,
+          tempoPermanenciaSegundos: tempoPermanencia,
+        },
+        { client: trx }
+      )
+
+      lead.statusAlteradoEm = DateTime.now()
       await lead.save()
     })
 

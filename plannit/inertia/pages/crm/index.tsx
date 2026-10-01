@@ -41,6 +41,18 @@ export type LeadInteracao = {
   responsavel: { id: number; nome: string } | null
 }
 
+export type LeadHistoricoStatus = {
+  id: number
+  statusDe: string | null
+  statusDeLabel: string | null
+  statusPara: string
+  statusParaLabel: string
+  tempoPermanenciaSegundos: number | null
+  observacao: string | null
+  createdAt: string | null
+  alteradoPor: { id: number; nome: string } | null
+}
+
 export type LeadItem = {
   id: number
   nome: string
@@ -79,6 +91,7 @@ export type LeadItem = {
   precisaAtencao: boolean
   vendedor: { id: number; nome: string; email: string } | null
   interacoes: LeadInteracao[]
+  historicoStatus: LeadHistoricoStatus[]
 }
 
 export type Estatisticas = {
@@ -684,6 +697,21 @@ function LeadDrawer({
   const [resumo, setResumo] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const eventosTimeline = [
+    ...(lead.interacoes || []).map((i) => ({
+      id: `int_${i.id}`,
+      type: 'interacao' as const,
+      date: new Date(i.createdAt || 0),
+      dataInt: i,
+    })),
+    ...(lead.historicoStatus || []).map((h) => ({
+      id: `hist_${h.id}`,
+      type: 'historico_status' as const,
+      date: new Date(h.createdAt || 0),
+      dataHist: h,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime())
+
   const handleEnviarInteracao = (e: React.FormEvent) => {
     e.preventDefault()
     if (!resumo.trim()) return
@@ -702,6 +730,13 @@ function LeadDrawer({
         onError: () => setLoading(false),
       }
     )
+  }
+
+  const formatDuration = (secs: number) => {
+    if (secs < 60) return `${secs}s`
+    if (secs < 3600) return `${Math.floor(secs / 60)}m`
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h`
+    return `${Math.floor(secs / 86400)}d`
   }
 
   const getTipoIcon = (t: string) => {
@@ -903,47 +938,83 @@ function LeadDrawer({
         )}
       </div>
 
-      {/* Linha do Tempo de Interações (RF003) */}
+      {/* Linha do Tempo de Interações (RF003) e Histórico de Status */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-            Linha do Tempo ({lead.interacoes?.length || 0})
+            Linha do Tempo ({eventosTimeline.length})
           </p>
           <span className="text-[10px] text-stone-400">
             Último: {timeAgo(lead.ultimaInteracaoEm)}
           </span>
         </div>
 
-        {!lead.interacoes || lead.interacoes.length === 0 ? (
+        {eventosTimeline.length === 0 ? (
           <div className="py-8 text-center text-xs text-stone-400">
-            Nenhuma interação registrada ainda.
+            Nenhuma interação ou movimentação registrada ainda.
           </div>
         ) : (
           <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-200">
-            {lead.interacoes.map((i) => (
-              <div key={i.id} className="relative group">
-                <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-white border-2 border-primary-500 flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary-600" />
-                </div>
-
-                <div className="bg-stone-50 border border-stone-200/80 rounded-lg p-3 space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 font-medium text-stone-700 capitalize">
-                      {getTipoIcon(i.tipo)}
-                      <span>{i.tipo}</span>
+            {eventosTimeline.map((evento) => (
+              <div key={evento.id} className="relative group">
+                {evento.type === 'interacao' ? (
+                  <>
+                    <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-white border-2 border-primary-500 flex items-center justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-600" />
                     </div>
-                    <span className="text-stone-400 text-[10px]">
-                      {timeAgo(i.createdAt)}
-                    </span>
-                  </div>
 
-                  <p className="text-xs text-stone-600 leading-relaxed">{i.resumo}</p>
+                    <div className="bg-stone-50 border border-stone-200/80 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5 font-medium text-stone-700 capitalize">
+                          {getTipoIcon(evento.dataInt.tipo)}
+                          <span>{evento.dataInt.tipo}</span>
+                        </div>
+                        <span className="text-stone-400 text-[10px]">
+                          {timeAgo(evento.dataInt.createdAt)}
+                        </span>
+                      </div>
 
-                  <div className="text-[10px] text-stone-400 pt-1 border-t border-stone-200/50 flex items-center justify-between">
-                    <span>Por: {i.responsavel?.nome || 'Sistema'}</span>
-                    <span>{formatDateTime(i.createdAt)}</span>
-                  </div>
-                </div>
+                      <p className="text-xs text-stone-600 leading-relaxed">{evento.dataInt.resumo}</p>
+
+                      <div className="text-[10px] text-stone-400 pt-1 border-t border-stone-200/50 flex items-center justify-between">
+                        <span>Por: {evento.dataInt.responsavel?.nome || 'Sistema'}</span>
+                        <span>{formatDateTime(evento.dataInt.createdAt)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-white border-2 border-stone-400 flex items-center justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
+                    </div>
+
+                    <div className="bg-white border border-stone-200/80 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5 font-medium text-stone-700">
+                          <KanbanIcon size={12} className="text-stone-500" />
+                          <span>Mudança de Fase</span>
+                        </div>
+                        <span className="text-stone-400 text-[10px]">
+                          {timeAgo(evento.dataHist.createdAt)}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-stone-600 leading-relaxed">
+                        Movido de <span className="font-medium text-stone-800">{evento.dataHist.statusDeLabel || 'Novo'}</span> para <span className="font-medium text-stone-800">{evento.dataHist.statusParaLabel}</span>
+                        {evento.dataHist.tempoPermanenciaSegundos !== null && (
+                          <span className="ml-1 text-[10px] text-stone-400">
+                            (Ficou {formatDuration(evento.dataHist.tempoPermanenciaSegundos)})
+                          </span>
+                        )}
+                      </p>
+
+                      <div className="text-[10px] text-stone-400 pt-1 border-t border-stone-200/50 flex items-center justify-between">
+                        <span>Por: {evento.dataHist.alteradoPor?.nome || 'Sistema'}</span>
+                        <span>{formatDateTime(evento.dataHist.createdAt)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>

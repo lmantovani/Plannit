@@ -5,6 +5,7 @@ import { DateTime } from 'luxon'
 import User from '#models/user'
 import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
+import HistoricoStatusLead from '#models/historico_status_lead'
 
 export enum OrigemLead {
   INSTAGRAM = 'instagram',
@@ -89,6 +90,12 @@ const jsonPrepareConsume = {
 export default class Lead extends LeadSchema {
   static table = 'leads'
 
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+
+  @column.dateTime()
+  declare statusAlteradoEm: DateTime | null
+
   @column(jsonPrepareConsume)
   declare ambientesInteresse: any | null
 
@@ -106,6 +113,11 @@ export default class Lead extends LeadSchema {
     foreignKey: 'leadId',
   })
   declare interacoes: HasMany<typeof InteracaoLead>
+
+  @hasMany(() => HistoricoStatusLead, {
+    foreignKey: 'leadId',
+  })
+  declare historicoStatus: HasMany<typeof HistoricoStatusLead>
 
   @belongsTo(() => Arquiteto, {
     foreignKey: 'arquitetoId',

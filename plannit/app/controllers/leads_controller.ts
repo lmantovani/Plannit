@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Lead, {
   OrigemLead,
   StatusFunil,
+  STATUS_FUNIL_LABELS,
   FAIXA_ORCAMENTO_LABELS,
   PRAZO_OBRA_LABELS,
   TIPO_IMOVEL_LABELS,
@@ -9,6 +10,7 @@ import Lead, {
 import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
 import User, { PerfilUsuario } from '#models/user'
+import HistoricoStatusLead from '#models/historico_status_lead'
 import {
   createLeadValidator,
   interacaoValidator,
@@ -20,6 +22,23 @@ import {
 import { DateTime } from 'luxon'
 
 export default class LeadsController {
+  private async registrarHistoricoStatus(lead: Lead, statusDe: string | null, statusPara: string, user: User) {
+    if (statusDe === statusPara) return
+
+    const refDate = lead.statusAlteradoEm || lead.createdAt
+    const tempoPermanencia = refDate ? Math.max(0, Math.floor(DateTime.now().diff(refDate, 'seconds').seconds)) : 0
+
+    await HistoricoStatusLead.create({
+      leadId: lead.id,
+      alteradoPorId: user.id,
+      statusDe: statusDe,
+      statusPara: statusPara,
+      tempoPermanenciaSegundos: statusDe ? tempoPermanencia : null,
+    })
+
+    lead.statusAlteradoEm = DateTime.now()
+  }
+
   /**
    * Lista leads no CRM — renderiza a visão Kanban/Lista via Inertia.
    * Vendedor vê apenas seus próprios leads; Gestão vê todos e pode filtrar.
@@ -66,6 +85,9 @@ export default class LeadsController {
       .preload('arquiteto', (aQuery) => aQuery.select('id', 'nome', 'escritorio'))
       .preload('interacoes', (iQuery) => {
         iQuery.preload('responsavel', (rQuery) => rQuery.select('id', 'nome')).orderBy('createdAt', 'desc')
+      })
+      .preload('historicoStatus', (hQuery) => {
+        hQuery.preload('alteradoPor', (rQuery) => rQuery.select('id', 'nome')).orderBy('createdAt', 'desc')
       })
       .orderBy('createdAt', 'desc')
 
@@ -135,6 +157,18 @@ export default class LeadsController {
           ? { id: i.responsavel.id, nome: i.responsavel.nome }
           : null,
       })),
+      historicoStatus: (lead.historicoStatus || []).map((h) => ({
+        id: h.id,
+        leadId: h.leadId,
+        statusDe: h.statusDe,
+        statusDeLabel: h.statusDe ? STATUS_FUNIL_LABELS[h.statusDe as StatusFunil] || h.statusDe : null,
+        statusPara: h.statusPara,
+        statusParaLabel: STATUS_FUNIL_LABELS[h.statusPara as StatusFunil] || h.statusPara,
+        tempoPermanenciaSegundos: h.tempoPermanenciaSegundos,
+        observacao: h.observacao,
+        createdAt: h.createdAt ? h.createdAt.toISO() : null,
+        alteradoPor: h.alteradoPor ? { id: h.alteradoPor.id, nome: h.alteradoPor.nome } : null,
+      })),
     }))
 
     // Lista de vendedores para o seletor de gestores
@@ -181,7 +215,7 @@ export default class LeadsController {
       vendedorId = user.id
     }
 
-    await Lead.create({
+    const lead = await Lead.create({
       nome: payload.nome,
       telefone: payload.telefone,
       email: payload.email || null,
@@ -194,6 +228,9 @@ export default class LeadsController {
       qualificado: false,
     })
 
+    await this.registrarHistoricoStatus(lead, null, StatusFunil.NOVO_LEAD, user)
+    await lead.save()
+
     session.flash('success', `Lead "${payload.nome}" cadastrado com sucesso!`)
     return response.redirect().back()
   }
@@ -201,9 +238,10 @@ export default class LeadsController {
   /**
    * Atualização de status no Kanban (Drag and Drop) com guardrails RN001 e RF004.
    */
-  async updateStatus({ params, request, response, session }: HttpContext) {
+  async updateStatus({ params, request, response, auth, session }: HttpContext) {
     const lead = await Lead.findOrFail(params.id)
     const payload = await request.validateUsing(updateStatusValidator)
+    const user = auth.user!
 
     const etapasPosVisita: string[] = [
       StatusFunil.EM_BRIEFING,
@@ -229,12 +267,14 @@ export default class LeadsController {
       return response.redirect().back()
     }
 
+    const statusAnterior = lead.statusFunil
     lead.statusFunil = payload.statusFunil
     if (payload.statusFunil === StatusFunil.PERDIDO) {
       lead.motivoPerda = payload.motivoPerda || null
       lead.concorrentePerdido = payload.concorrentePerdido || null
     }
 
+    await this.registrarHistoricoStatus(lead, statusAnterior, payload.statusFunil, user)
     await lead.save()
 
     session.flash('success', `Status de "${lead.nome}" atualizado para ${lead.statusFunil}.`)
@@ -261,6 +301,8 @@ export default class LeadsController {
     lead.qualificadoEm = DateTime.now()
     lead.qualificadoPorId = user.id
 
+    const statusAnterior = lead.statusFunil
+
     // Se estiver em etapas preliminares, avança para Em Visita
     if (
       lead.statusFunil === StatusFunil.NOVO_LEAD ||
@@ -269,6 +311,7 @@ export default class LeadsController {
       lead.statusFunil = StatusFunil.EM_VISITA
     }
 
+    await this.registrarHistoricoStatus(lead, statusAnterior, lead.statusFunil, user)
     await lead.save()
 
     // Registra interação automática de auditoria na timeline
@@ -299,9 +342,12 @@ export default class LeadsController {
     const lead = await Lead.findOrFail(params.id)
     const payload = await request.validateUsing(desqualificarLeadValidator)
 
+    const statusAnterior = lead.statusFunil
     lead.statusFunil = StatusFunil.DESQUALIFICADO
     lead.qualificado = false
     lead.motivoDesqualificacao = payload.motivoDesqualificacao
+
+    await this.registrarHistoricoStatus(lead, statusAnterior, lead.statusFunil, user)
     await lead.save()
 
     await InteracaoLead.create({
@@ -321,14 +367,17 @@ export default class LeadsController {
   /**
    * RF004 — Marca o lead como Perdido exigindo motivo da perda.
    */
-  async marcarPerdido({ params, request, response, session }: HttpContext) {
+  async marcarPerdido({ params, request, auth, response, session }: HttpContext) {
+    const user = auth.user!
     const lead = await Lead.findOrFail(params.id)
     const payload = await request.validateUsing(perderLeadValidator)
 
+    const statusAnterior = lead.statusFunil
     lead.statusFunil = StatusFunil.PERDIDO
     lead.motivoPerda = payload.motivoPerda
     lead.concorrentePerdido = payload.concorrentePerdido || null
 
+    await this.registrarHistoricoStatus(lead, statusAnterior, lead.statusFunil, user)
     await lead.save()
     session.flash('success', `Lead "${lead.nome}" marcado como perdido.`)
     return response.redirect().back()

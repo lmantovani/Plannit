@@ -549,6 +549,27 @@ export class HistoricoSalarialColaboradoreSchema extends BaseModel {
   declare salarioClt: string
 }
 
+export class HistoricoStatusLeadSchema extends BaseModel {
+  static $columns = ['alteradoPorId', 'createdAt', 'id', 'leadId', 'observacao', 'statusDe', 'statusPara', 'tempoPermanenciaSegundos'] as const
+  $columns = HistoricoStatusLeadSchema.$columns
+  @column()
+  declare alteradoPorId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare leadId: number
+  @column()
+  declare observacao: string | null
+  @column()
+  declare statusDe: string | null
+  @column()
+  declare statusPara: string
+  @column()
+  declare tempoPermanenciaSegundos: number | null
+}
+
 export class HistoricoStatusProjetoSchema extends BaseModel {
   static $columns = ['alteradoPorId', 'createdAt', 'id', 'observacao', 'projetoId', 'statusDe', 'statusPara'] as const
   $columns = HistoricoStatusProjetoSchema.$columns
@@ -609,7 +630,7 @@ export class InteracoesLeadSchema extends BaseModel {
 }
 
 export class LeadSchema extends BaseModel {
-  static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
+  static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusAlteradoEm', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
   $columns = LeadSchema.$columns
   @column()
   declare ambientesInteresse: any | null
@@ -657,6 +678,8 @@ export class LeadSchema extends BaseModel {
   declare qualificadoEm: DateTime | null
   @column()
   declare qualificadoPorId: number | null
+  @column.dateTime()
+  declare statusAlteradoEm: DateTime | null
   @column()
   declare statusFunil: string
   @column()
