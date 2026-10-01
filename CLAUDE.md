@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Plannit — Contexto Completo para Claude Code
 
 ## Sobre o Projeto
@@ -5,337 +9,192 @@ Plataforma de gestão operacional para **Líder Móveis Planejados** (móveis pl
 Desenvolvido por Leandro Mantovani em parceria comercial. Baseado no SRS v3.0 (23 módulos, 74 RFs, 18 RNs, 32 etapas de fluxo).
 Projeto em desenvolvimento ativo — Claude Code é o co-piloto principal.
 
-## Stack Tecnológica
-- **Backend:** Python 3.11 (Homebrew), FastAPI 0.111, PostgreSQL 18, SQLAlchemy 2.0, Alembic, JWT/bcrypt
-- **Frontend:** React 19, Vite 8, TailwindCSS 3, Zustand, Axios, Lucide React, clsx
-- **Deploy:** Railway (backend + frontend + PostgreSQL como serviços separados)
-- **OS:** macOS, PyCharm (backend), VS Code (frontend). Windows também suportado — ver seção dedicada de setup abaixo.
+## Estado do repositório
+- **`plannit/` — sistema principal.** Monólito AdonisJS v7 + Inertia.js (React 19 + TypeScript). Todo código novo vai aqui.
+- **`backend/` + `frontend/` — legado** (FastAPI + React SPA), substituído pelo monólito. Só consulta ou correção pontual; ver a seção "Legado" no fim deste arquivo.
+- O monólito nasceu na branch `feature/adonis-migration` e ainda não tem deploy configurado (sem Dockerfile nem `railway.toml` em `plannit/`). Até isso existir e chegar à `main`, o que roda no Railway é o legado.
+- Abra o Claude Code na **raiz** do repositório. Os comandos do monólito rodam dentro de `plannit/`; o `Makefile` da raiz tem atalhos `make adonis-*` e `make db-*`.
 
-## URLs de Produção (Railway)
-- **Frontend:** https://plannit-frontend-production.up.railway.app
-- **Backend API:** https://plannit-production.up.railway.app
-- **Credenciais demo:** admin@plannit.com.br / Admin@123456
+## Stack (`plannit/`)
+AdonisJS v7 · Lucid ORM · VineJS · `@adonisjs/auth` (sessão) · Inertia.js + React 19 + TypeScript · Vite · TailwindCSS 3 · lucide-react · sonner (toasts) · Luxon · PostgreSQL 16 (Docker) · Japa (testes). Node >= 24.
+
+## Comandos
+```bash
+make db-up                      # (na raiz) PostgreSQL 16 no Docker: container plannit-postgres, postgres/postgres, banco plannit
+cd plannit
+cp -n .env.example .env && node ace generate:key   # primeira vez
+node ace migration:run          # aplica migrations E regenera database/schema.ts
+node ace db:seed                # todos os seeders (idempotentes; cada um garante os usuários de que precisa)
+node ace db:seed --files database/seeders/arquiteto_seeder.ts
+npm run dev                     # http://localhost:3333 (HMR + polling)
+npm run typecheck               # tsc do servidor + tsc de inertia/tsconfig.json
+npm run lint                    # npm run format para prettier
+npm run build && node --env-file=.env build/bin/server.js
+
+# Testes Japa (suites unit / functional / browser — hoje só existe tests/functional/)
+node ace test functional
+node ace test functional --files=tests/functional/configuracoes_and_qualificacao.spec.ts
+node ace test --tests="bloqueia acesso de perfil vendedor em /configuracoes com 403"
+```
+- Os testes Japa rodam contra o **mesmo banco de desenvolvimento**: `.env.test` só sobrescreve `SESSION_DRIVER=memory` e `tests/bootstrap.ts` não faz truncate nem rollback, então os testes gravam registros reais.
+- `scripts/test_*.js` são scripts Node avulsos (`node scripts/test_http_crm.js`), não Japa. Os `test_http_*` exigem `npm run dev` rodando em `localhost:3333` e os usuários do seed; os demais acessam o Postgres direto via `pg` (`postgresql://postgres:postgres@localhost:5432/plannit`).
+- Antes de concluir uma mudança: `npm run typecheck` (precisa ficar com 0 erros) e, se mexeu em fluxo de módulo, o `scripts/test_http_<modulo>.js` correspondente.
+
+## Credenciais de teste (após `node ace db:seed`)
+| Perfil | E-mail | Senha |
+|--------|--------|-------|
+| Diretoria | admin@plannit.com.br | Admin@123456 |
+| Gerente Comercial | gerente@lidermoveis.com.br | Teste@123 |
+| Vendedor | vendedor@lidermoveis.com.br | Teste@123 |
+| Projetista | projetista@lidermoveis.com.br | Teste@123 |
+| Conferente | conferente@lidermoveis.com.br | Teste@123 |
+
+Não há usuário `RH` no seed — use o admin para o módulo Colaboradores.
+
+## Arquitetura do monólito
+- **Sem API REST separada:** as rotas em `start/routes.ts` são URLs de página (`/crm`, `/especificadores/:id`...), não `/api/v1`. GET → `inertia.render('<modulo>/index', props)`. Mutação → validator VineJS (`app/validators/`) → `session.flash('success' | 'error', msg)` → `response.redirect().back()`.
+- **JSON paralelo:** vários controllers têm um helper privado `wantsJson()`. Quando a requisição não é Inertia (`X-Inertia` ausente) e pede `application/json` ou `?format=json`, respondem JSON em vez de redirect. Bloqueios de RN devolvem um `code` (ex.: `RN005_RENDER_NAO_CONCLUIDO`, `RN006_HANDOFF_INCOMPLETO`). Os scripts `test_http_*` dependem disso.
+- **Flash → toast:** `app/middleware/inertia_middleware.ts` (`flash()`) só repassa as chaves `error` e `success`, exibidas como toast em `layouts/app_layout.tsx` e `layouts/default.tsx`. Flash com outra chave (`'erro'` em `briefings_controller.ts`, `'info'` em `fechamentos_controller.ts`/`clientes_controller.ts`) é descartado silenciosamente.
+- **Controllers auto-registrados:** `routes.ts` usa `controllers.X` de `#generated/controllers`, gerado em `.adonisjs/` pelo hook `indexEntities` do `adonisrc.ts` (no dev server e no build). Nunca editar `.adonisjs/`. Imports internos usam os aliases `#models/*`, `#validators/*`, `#services/*` etc. do `package.json`.
+- **Ordem de rotas:** caminhos fixos (`especificadores/kpis`, `colaboradores/departamentos`, `wip/configuracoes`) declarados ANTES dos com `:id` em `start/routes.ts`.
+- **Schema gerado:** `database/schema.ts` é regenerado pelo `migration:run` a partir do banco — NÃO editar. Os models estendem essas classes (`class Arquiteto extends ArquitetoSchema`) e acrescentam relações, getters computados, enums e mapas `*_LABELS`. Mudar coluna = nova migration (`node ace make:migration`) + `migration:run`. Só redeclarar `@column` no model para sobrescrever comportamento (ex.: `jsonPrepareConsume` nas colunas JSON de `lead.ts`, `briefing.ts`, `handoff.ts`).
+- **Auth e perfis:** sessão por cookie (não JWT). O grupo principal de rotas usa `middleware.auth()`. `middleware.role([PerfilUsuario...])` protege grupos de rotas (hoje só Configurações). Os demais controllers checam o perfil internamente com helpers privados (`isGestor`, `isAuthorized`, `isDiretoria`), que também aceitam `isSuperuser`. `User.hasRole()` sempre retorna `true` para `isSuperuser` ou `DIRETORIA`. `PerfilUsuario` (`app/models/user.ts`) tem 15 valores (inclui `RH` e `CLIENTE`) e define `PERFIS_GESTAO` (Diretoria + Gerente Comercial).
+- **Isolamento por perfil** é feito na query do controller: vendedor vê só os seus leads/projetos (`vendedor_id`), projetista só os seus projetos (`projetista_id`).
+- **Frontend:** `inertia.render('crm/index')` resolve `inertia/pages/crm/index.tsx`. Cada página se envolve em `layouts/app_layout.tsx` (sidebar/header, menu definido no próprio arquivo); `default.tsx` é aplicado automaticamente a todas. Componentes de módulo ficam em `pages/<modulo>/components/` e tipos em `pages/<modulo>/types.ts`. Mutações usam `router.post/patch` ou `useForm` do `@inertiajs/react`. As props compartilhadas (`user`, `errors`) vêm de `inertia_middleware.ts → share()`. Alias `~/` → `inertia/`.
+- **Serviços de domínio** em `app/services/`: `arquiteto_score_service.ts`, `briefing_score_service.ts`, `wip_service.ts`. O score de briefing tem espelho client-side em `inertia/lib/briefing_constants.ts` (`calcularScoreBriefingClient`) para o preview em tempo real — alterar os dois juntos. O score de especificador é só backend.
+- **Datas:** Luxon com `DateTime.now().toUTC()` (`TZ=UTC` no `.env`).
+- **Transações:** fluxos com várias escritas (histórico imutável + mudança de estado) usam `db.transaction(async (trx) => ...)` + `model.useTransaction(trx)` / `{ client: trx }` (ver `fechamentos_controller.ts`, `reatribuirDono` em `arquitetos_controller.ts`).
+- **Design system:** `tailwind.config.js` (paleta `primary` warm-gold + `stone`, fontes Playfair Display/DM Sans, animações `fade-in`/`slide-up`) e classes em `inertia/css/app.css` (`.card`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.input`, `.label`, `.badge`, `.table-base`, `.kanban-col`, `.kanban-card`, `.kpi-card`, `.nav-item`).
+- **Manual do usuário:** servido pelo próprio app em `/manual/index.html` (`plannit/public/manual/`); fonte em `docs/manual/`.
+
+## Módulos do monólito
+| Rota | Controller | Observação |
+|------|-----------|------------|
+| `/dashboard` | `dashboard_controller.ts` | KPIs, alerta RN016 |
+| `/crm` | `leads_controller.ts` | Kanban com drag-and-drop + lista, qualificação estruturada, histórico de status do lead |
+| `/clientes` | `clientes_controller.ts` | Ficha, endereços, aprovação cadastral (Diretoria/Gerente/Financeiro), conversão de lead |
+| `/briefings` | `briefings_controller.ts` | Cria o projeto e o briefing; score; envio para fila |
+| `/fila` | `fila_controller.ts` | Kanban de 4 colunas + monitor de WIP |
+| `/projetos` | `projetos_controller.ts` | Lista, detalhe, mudança de status, versões 3D/render, arquivamento |
+| `/projetos/:id/fechamento` | `fechamentos_controller.ts` | Contrato, parcelas (liquidação), handoff de 8 itens |
+| `/especificadores` | `arquitetos_controller.ts` | Score, decisores, concorrentes, interações, dono, metas |
+| `/colaboradores` | `colaboradores_controller.ts` | RH01 |
+| `/configuracoes` | `configuracoes_controller.ts` | Catálogos de ambientes, origens e campanhas (só Diretoria/Gerente) |
+
+**Pendentes:** Conferência e Montagem (desabilitados na sidebar), Financeiro além de parcelas, Gestão Documental, motor de notificações (RN019-RN022 — não há model de notificação no monólito), RH02-RH11 e o deploy do monólito.
 
 ## Decisões de Arquitetura
-- **Railway** escolhido para fase demo/evolução; migração para **AWS EC2** planejada quando virar negócio real
-- **Drag-and-drop no Kanban** intencionalmente fora do escopo — mudança de status é feita pelo drawer do card
-- Ambiente de demo: dados são de teste, sem valor real. Ao virar produto: rotacionar SECRET_KEY, trocar senhas e mover credenciais para variáveis de ambiente seguras
+- **Railway** escolhido para fase demo/evolução; migração para **AWS EC2** planejada quando virar negócio real.
+- **Drag-and-drop:** existe no Kanban do CRM (muda o status do lead). Em Projetos, a mudança de status é feita pela página de detalhe (`projetos/show.tsx`), sem drag-and-drop.
+- Ambiente de demo: dados de teste, sem valor real. Ao virar produto: rotacionar `APP_KEY`, trocar senhas e mover credenciais para variáveis de ambiente seguras.
 
-## Estrutura de Pastas
-```
-lider-moveis/                    ← raiz do projeto
-├── CLAUDE.md                    ← este arquivo
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/
-│   │   │   ├── __init__.py      ← registra todos os routers
-│   │   │   └── endpoints/
-│   │   │       ├── auth.py
-│   │   │       ├── users.py
-│   │   │       ├── leads.py
-│   │   │       ├── briefings.py
-│   │   │       ├── dashboard.py
-│   │   │       ├── arquitetos.py  ← módulo Especificadores completo (rota /arquitetos — nome do módulo é "Especificadores", endpoint manteve o nome de arquivo)
-│   │   │       ├── projetos.py    ← módulo projetos completo
-│   │   │       └── clientes.py    ← CRUD básico clientes
-│   │   ├── core/
-│   │   │   ├── config.py        ← pydantic-settings, extra="ignore"
-│   │   │   ├── database.py      ← SQLAlchemy engine
-│   │   │   └── security.py      ← JWT, bcrypt, require_roles()
-│   │   ├── models/
-│   │   │   ├── __init__.py      ← importa todos os models
-│   │   │   ├── user.py          ← User, PerfilUsuario (14 perfis)
-│   │   │   ├── crm.py           ← Lead, Cliente, Arquiteto (Especificador), DecisorArquiteto, ConcorrenteArquiteto, HistoricoDonoArquiteto, InteracaoArquiteto, MetaVisitasConsultor
-│   │   │   ├── projeto.py       ← Projeto, Briefing, FilaProjeto, ConfigWIP, HistoricoStatus
-│   │   │   ├── fechamento.py    ← ProjetoComercial, Fechamento, Parcela, Handoff
-│   │   │   └── notificacao.py   ← Notificacao, TipoNotificacao (inclui RN019-RN022)
-│   │   ├── schemas/
-│   │   │   ├── auth.py
-│   │   │   └── crm.py           ← inclui todos os schemas Pydantic v2 do módulo Especificadores (ArquitetoCreate/Update/Response, DecisorArquitetoResponse, ConcorrenteArquitetoResponse, ArquitetoScoreResponse, EspecificadoresKpiResponse, MetaVisitasResponse, etc.) — NÃO existe schemas/arquiteto.py separado
-│   │   ├── services/
-│   │   │   ├── briefing_score.py    ← score 0-100, 10 critérios
-│   │   │   ├── wip_service.py       ← WIP limit por projetista
-│   │   │   └── arquiteto_score.py   ← RFV × Potencial × Lealdade do módulo Especificadores
-│   │   └── main.py
-│   ├── alembic/                 ← fonte de verdade do schema a partir da migration 94d29e691390 (ver seção dedicada abaixo)
-│   ├── seed.py                  ← cria usuários + dados de teste (NÃO mais cria tabelas via create_all — ver seção Alembic)
-│   ├── requirements.txt
-│   ├── .python-version          ← "3.12" (exigido pelo Railway)
-│   ├── Dockerfile
-│   └── railway.toml
-└── frontend/
-    ├── src/
-    │   ├── App.jsx              ← rotas: /dashboard /crm /projetos /especificadores /especificadores/:id
-    │   ├── main.jsx
-    │   ├── components/
-    │   │   ├── layout/          ← AppLayout, Sidebar, Header, AuthGuard
-    │   │   ├── ui/index.jsx     ← KpiCard, Modal, ConfirmDialog, StatusBadge, Tabs, ScoreBar, etc.
-    │   │   └── especificadores/EspecificadoresKpiPanel.jsx  ← painel de KPIs da carteira (topo da listagem)
-    │   ├── lib/
-    │   │   ├── api.js           ← axios + APIs por módulo (authApi, leadsApi, projetosApi, arquitetosApi, etc.)
-    │   │   └── constants.js     ← STATUS_CONFIG (32 status), TIPO_ARQUITETO_LABELS, TIPO_INTERACAO_ARQUITETO_LABELS, SEGMENTO_CONFIG, FLAG_CONFIG, STATUS_CARTEIRA_CONFIG, formatCurrency, timeAgo
-    │   ├── pages/
-    │   │   ├── auth/LoginPage.jsx
-    │   │   ├── dashboard/DashboardPage.jsx
-    │   │   ├── crm/CRMPage.jsx
-    │   │   ├── briefing/BriefingPage.jsx      ← formulário + score em tempo real (mirror local de briefing_score.py)
-    │   │   ├── projetos/ProjetosPage.jsx      ← Kanban + Lista + Fila WIP
-    │   │   ├── especificadores/               ← módulo Especificadores (renomeado de "Arquitetos" nesta reconciliação; ArquitetosPage.jsx antigo foi removido)
-    │   │   │   ├── EspecificadoresPage.jsx     ← listagem + filtros + modal de criação
-    │   │   │   ├── EspecificadorDetalhePage.jsx
-    │   │   │   ├── EspecificadorDrawer.jsx
-    │   │   │   ├── EspecificadorTabs.jsx       ← abas Perfil/Score/Decisores (PerfilTab, ScoreTab, ContatosTabContent, EditarEspecificadorModal)
-    │   │   │   └── MetasVisitasModal.jsx       ← metas mensais de visita por consultor (gestor)
-    │   │   └── PlaceholderPages.jsx           ← módulos futuros sinalizados
-    │   ├── store/index.js       ← useAuthStore (persist) + useUIStore
-    │   └── styles/globals.css   ← design system completo
-    ├── Dockerfile               ← multi-stage: build React + nginx
-    ├── nginx.conf               ← SPA routing (try_files → index.html) + /health
-    └── railway.toml
-```
-
-## Módulos Implementados ✅
-
-### Backend
-- **Auth:** JWT 8h, 14 perfis (PerfilUsuario enum), require_roles() dependency
-- **CRM/Leads:** CRUD + interações + qualificar/perder + histórico
-- **Briefing:** formulário + score automático (10 critérios, max 100pts) + envio para fila
-- **Projetos:** fila WIP, kanban por fase, mudança status com histórico imutável, alocação gestor, flag estratégico
-- **Especificadores** (ex-"Arquitetos"): score RFV × Potencial × Lealdade, 7 segmentos, 5 flags, decisores multi-contato, concorrentes, dono da carteira (consultor_id/consultor_nome) com reatribuição + histórico imutável (HistoricoDonoArquiteto), metas mensais de visita por consultor (MetaVisitasConsultor), endpoint de KPIs da carteira, taxonomia unificada de 9 tipos de interação
-- **Dashboard:** KPIs gerenciais, funil leads, projetos ativos, KPIs de carteira de especificadores
-- **Clientes:** CRUD básico (inclui vínculo opcional a um especificador via `arquiteto_id`)
-- **Colaboradores (RH01 — Cadastro do Colaborador):** ficha completa (identificação, contato pessoal/corporativo, endereço, contratação CLT/PJ, perfil comportamental DISC primário/secundário + observações, regime de trabalho, dados bancários, organograma), histórico salarial e de cargo imutáveis, documentos, desligamento (nunca exclusão — RH-RN009) e exclusão definitiva administrativa (RH-RN011, exceção à RH-RN009). Departamentos e Cargos como cadastros próprios. Branch `feature/rh`, mergeada em `main` via PR #3 (2026-07-29).
-
-### Frontend
-- **Login:** dark, branding Líder Móveis
-- **Dashboard:** KPIs + funil + tabela projetos + auto-refresh 60s
-- **CRM:** Kanban + Lista + Drawer + histórico interações
-- **Briefing:** formulário com score em tempo real
-- **Projetos:** Kanban (5 fases) + Lista + Fila WIP + Drawer (Detalhes/Status/Histórico)
-- **Especificadores:** listagem + filtros (tipo/status/consultor) + painel de KPIs + drawer com abas (Perfil/Score/Decisores e concorrentes) + modal de metas de visita
-- **Colaboradores:** listagem + filtros (departamento/cargo/regime/status) + modal "Novo Colaborador" + modal "Departamentos & Cargos" + drawer com 5 abas (Perfil, Contratação, Remuneração, Cargo & Progressão, Documentos)
-
-## Módulos Pendentes (MVP Fase 1) ⏳
-1. **Fechamento + Handoff** — checklist 8 itens, contrato, bloqueios RN006 (model já existe em fechamento.py)
-2. **Financeiro básico** — parcelas, aprovação cadastro, bloqueios RN011
-3. **Gestão Documental** — centralização arquivos com versionamento
-
-## Regras de Negócio Implementadas
-| RN | Descrição | Implementado em |
-|----|-----------|-----------------|
-| RN001 | Lead não avança sem qualificação | leads.py → qualificar() |
-| RN002 | Briefing bloqueado se score < 70 | briefings.py → enviar_para_fila() |
-| RN003 | WIP limit por projetista | wip_service.py + projetos.py → alocar_projetista() |
-| RN004 | Render só após aprovação vendedor | projetos.py → mudar_status() |
-| RN005 | Apresentação só após render concluído | projetos.py → mudar_status() |
-| RN016 | Alerta projeto parado > 5 dias | dashboard.py, ProjetosPage.jsx |
-| RN017 | Projetos nunca deletados, só arquivados; histórico imutável | projetos.py → arquivar(), HistoricoStatusProjeto |
-| RN019-022 | Notificações módulo Especificadores (ex: ESPECIFICADOR_TRANSFERIDO na reatribuição de dono) | tipos criados em notificacao.py (motor pendente Fase 2) |
-
-## Módulo Especificadores (ex-"Arquitetos") — regras específicas
-- Nome do módulo é **Especificadores** (frontend: `/especificadores`, `pages/especificadores/`); o model, a tabela (`arquitetos`) e o router backend (`endpoints/arquitetos.py`, prefixo `/arquitetos`) mantiveram o nome histórico "Arquiteto" — não renomeados nesta reconciliação
-- `tipo` (enum `TipoEspecificador`, 6 categorias): `arquiteto`, `engenheiro`, `designer_interiores`, `decorador`, `corretor`, `outro` (Corretor e Outro adicionados nesta reconciliação)
-- Campos do cadastro: nome, escritorio, `endereco_escritorio`, telefone, email, nivel_parceria, `especialidade`, além de tipo e status_carteira
-- `Cliente.arquiteto_id` — vínculo opcional de um cliente ao especificador que o indicou
-- Score calculado SEMPRE no backend (`services/arquiteto_score.py`) — frontend NUNCA envia o score, só consome `GET /arquitetos/{id}/score`
-- Score = média de 3 pilares (RFV, Potencial, Lealdade), cada um média de 3 critérios 0-100:
-  - RFV: recência (dias desde último projeto), frequência (projetos últimos 12 meses), valor (soma contratos últimos 12 meses)
-  - Potencial: quantidade de leads + projetos ativos
-  - Lealdade: tempo de parceria (meses desde cadastro), consistência (meses c/ projeto nos últimos 12), taxa de conversão de leads
-- 7 segmentos (`determinar_segmento`): `inativo`, `novo_promissor`, `em_risco`, `campeao`, `parceiro_fiel`, `em_ascensao`, `ocasional`
-- 5 flags (`determinar_flags`): `top_indicador`, `em_risco_de_perda`, `alto_potencial`, `indicacao_alto_valor`, `especificador_esfriando` (esta última adicionada nesta reconciliação — exige em_risco + dono definido + >30 dias sem interação)
-- Datas de corte de score sempre com `datetime.now(timezone.utc)` (nunca `datetime.utcnow()`) — bug de naive/aware já corrigido também nos endpoints de KPIs
-- Dono da carteira: `Arquiteto.consultor_id` (FK User) + `consultor_nome` (property calculada, não persistida) — reatribuído via `PATCH /arquitetos/{id}/dono` (DIRETORIA/GERENTE_COMERCIAL), com histórico imutável em `HistoricoDonoArquiteto` (RN017) e notificação `ESPECIFICADOR_TRANSFERIDO` ao novo consultor
-- Metas de visita: `MetaVisitasConsultor` (meta mensal por vendedor, configurada pelo gestor) + `GET /arquitetos/metas-visitas/me` para o vendedor acompanhar seu progresso
-- `GET /arquitetos/kpis` — KPIs agregados da carteira (ativos, % venda com especificador no mês/ano, atendimentos e visitas ao escritório no mês)
-- Interações (`InteracaoArquiteto`) usam taxonomia unificada de 9 tipos: `ligacao`, `whatsapp`, `email`, `visita_escritorio`, `visita_loja`, `reuniao`, `evento`, `viagem`, `envio_brinde` — cada interação pode referenciar o lead que gerou (`lead_id`, rastreabilidade)
-- Especificador (Arquiteto) nunca deletado — desativado com `is_active=False` (`DELETE /arquitetos/{id}`, RN017). Já Decisores e Concorrentes SÃO hard-deletados hoje (`db.delete(...)`) — nota de divergência com o padrão RN017, não coberta por esta reconciliação
-- Vendedor vê apenas sua carteira via `consultor_id` na maioria das listagens; exceção: `GET /leads/?arquiteto_id=X` é intencionalmente de visibilidade aberta (mostra todos os leads gerados por um especificador, de qualquer vendedor, convertidos ou não) — usado pelo select "Lead gerado" na aba Perfil
-- **Cuidado histórico:** existiu uma branch paralela (`feature/arch`, PR #4) com um desenho divergente e mais antigo deste módulo (`TipoArquiteto`, `vendedor_id`, `FuncionarioArquiteto` como aba Decisores) que foi **descartado** ao resolver os conflitos da PR #4 em favor do desenho acima, já reconciliado e em produção — incluindo uma migration Alembic daquela branch que apagaria as tabelas de RH e desta reconciliação (nunca deve ser aplicada)
+## Regras de Negócio
+| RN | Descrição | Onde está no monólito |
+|----|-----------|-----------------------|
+| RN001 | Lead não avança sem qualificação (faixa de orçamento, prazo, tipo de imóvel, ambientes) | `leads_controller.ts → qualificar`; bloqueios em `briefings_controller.ts → store` e `clientes_controller.ts → converterLead` |
+| RN002 | Briefing bloqueado para a fila se score < `scoreMinimo` (padrão 70) | `briefings_controller.ts → enviarParaFila`, `briefing_score_service.ts` |
+| RN003 | WIP limit por projetista (padrão 3, configurável em `config_wip_projetistas`) | `wip_service.ts`, `fila_controller.ts → alocar` |
+| RN004 | Render só após aprovação do vendedor; devolução exige motivo | `projetos_controller.ts → avaliarVersao3D` |
+| RN005 | Apresentação/fechamento só com versão comercial aprovada ou finalizada | `projetos_controller.ts → mudarStatus` |
+| RN006 | Etapas técnicas (de `contato_conf` até `em_montagem`) só com handoff completo (8 itens de `ITENS_OBRIGATORIOS_HANDOFF`) | `projetos_controller.ts → mudarStatus`, `fechamentos_controller.ts → salvarHandoff`, `app/models/handoff.ts` |
+| RN016 | Alerta de projeto parado > 5 dias | `dashboard_controller.ts`, `projetos/index.tsx` |
+| RN017 | Nada de exclusão física de projeto/especificador; históricos imutáveis | `HistoricoStatusProjeto`, `HistoricoStatusLead`, `HistoricoDonoArquiteto`; `projetos_controller.ts → arquivar` |
+| RH-RN009 / RH-RN011 | Colaborador só é desligado; exclusão definitiva só pela Diretoria e só se já desligado | `colaboradores_controller.ts` |
+| RN019-022 | Notificações do módulo Especificadores | não portado |
 
 ## Módulo Projetos — fluxo de status
-- Transições seguem fluxo linear do SRS (32 etapas) — mapa PROXIMOS_STATUS em ProjetosPage.jsx
-- Kanban agrupa status por fase: Comercial → Apresentação → Técnico → Produção → Montagem
-- Toda mudança de status registra em HistoricoStatusProjeto (imutável, com autor e observação)
-- Cancelamento exige observação obrigatória
-- Código gerado automaticamente: PROJ-ANO-NNN (ex: PROJ-2025-001)
-- Projetista/Vendedor veem apenas seus projetos; gestores veem todos
+- `StatusProjeto` (`app/models/projeto.ts`) tem as 32 etapas do SRS + `cancelado`. O projeto nasce em `em_briefing` ao criar o briefing.
+- `mudarStatus` aceita qualquer status do enum (a página de detalhe oferece todos). Não há mapa de transições lineares como no legado — as únicas travas são RN005, RN006 e projeto arquivado.
+- Toda mudança de status grava `HistoricoStatusProjeto` (autor + observação) na mesma transação. A observação é opcional em `mudarStatus`; o arquivamento (`arquivar`) exige motivo e grava `cancelado` no histórico.
+- Código gerado em `briefings_controller.ts`: **`PRJ-ANO-NNN`** (ex.: `PRJ-2026-001`). Os seeders usam códigos fixos `PROJ-2026-*`.
+- Vendedor e projetista veem só os seus projetos; gestores veem todos.
+
+## Módulo Especificadores
+- Nome do módulo é **Especificadores** (rota `/especificadores`, `inertia/pages/especificadores/`). Model, tabela (`arquitetos`) e controller (`arquitetos_controller.ts`) mantêm o nome histórico "Arquiteto".
+- `TipoEspecificador`: `arquiteto`, `designer_interiores`, `decorador`, `engenheiro`, `corretor`, `outro`. Campos: nome, escritorio, `enderecoEscritorio`, telefone, email, `nivelParceria`, `especialidade`, tipo, `statusCarteira`. `Cliente`, `Lead` e `Projeto` têm `arquitetoId` opcional.
+- **Score calculado SEMPRE no backend** (`arquiteto_score_service.ts → calcularScoreArquiteto`); o frontend só consome. Score = média de 3 pilares (RFV, Potencial, Lealdade), cada um 0-100:
+  - RFV: recência (dias desde o último projeto), frequência (projetos nos últimos 12 meses), valor (soma de contratos nos últimos 12 meses)
+  - Potencial: leads ativos + projetos em andamento não arquivados
+  - Lealdade: tempo de parceria, consistência (meses com projeto no último ano), taxa de conversão de leads (padrão neutro 50%)
+- 7 segmentos em cascata (a primeira condição verdadeira vence): `inativo`, `novo_promissor` (< 90 dias de cadastro), `em_risco`, `campeao` (score >= 85), `parceiro_fiel`, `em_ascensao`, `ocasional`.
+- 5 flags: `top_indicador`, `em_risco_de_perda`, `alto_potencial`, `indicacao_alto_valor`, `especificador_esfriando` (em risco + dono definido + > 30 dias sem interação).
+- Risco de concorrência separado do score: maior `% de fechamento estimado` entre os concorrentes (< 30 baixo, 30-60 médio, > 60 alto).
+- Dono da carteira: `consultorId`. Reatribuição (`PATCH /especificadores/:id/dono`) só por gestor, gravando `HistoricoDonoArquiteto` na mesma transação. **Não há notificação** ao novo consultor (diferente do legado).
+- Soft delete (`DELETE /especificadores/:id` → `isActive = false`), permitido ao gestor ou ao consultor dono. Decisores e concorrentes SÃO hard-deletados (`.delete()`) — divergência com o padrão RN017 herdada do legado.
+- Interações (`TipoInteracaoArquiteto`, 9 tipos): `ligacao`, `whatsapp`, `email`, `visita_escritorio`, `visita_loja`, `reuniao`, `evento`, `viagem`, `envio_brinde`.
+- Metas de visita: `MetaVisitasConsultor` (meta mensal por consultor, `PUT /especificadores/metas-visitas`); o vendedor só pode definir a própria, o gestor define de qualquer um. `GET /especificadores/metas-visitas/me` e `GET /especificadores/kpis` (ativos, % de venda com especificador no mês/ano, atendimentos e visitas ao escritório no mês).
+- **Visibilidade:** a listagem mostra a carteira inteira também para o vendedor; o filtro por `consultorId` é opcional (o legado restringia o vendedor à própria carteira).
 
 ## Módulo Colaboradores (RH01 — Cadastro do Colaborador)
-- Primeiro de 11 submódulos de um SRS de RH/Departamento Pessoal (RH01-RH11) trazido pelo usuário; os demais (RH02 Comissões, RH03 Férias e Afastamentos, RH04 Acordos e Ajustes, RH05 Avaliação de Desempenho + PDI, RH06-RH11) ainda não têm spec — decompostos intencionalmente em specs sequenciais, um de cada vez. Spec do RH01: `docs/superpowers/specs/2026-07-26-colaboradores-rh01-design.md`
-- Novo perfil `RH` no `PerfilUsuario` — só `RH` e `DIRETORIA` acessam o módulo (gate client-side via `podeGerenciarColaboradores(perfil)` em `store/index.js`, além do `require_roles` no backend)
-- `Colaborador` linkado a `User` via `user_id` opcional; `Departamento`/`Cargo` como entidades próprias, sem constraint de unicidade de nome
-- Contato dividido em pessoal/corporativo tanto para telefone (`telefone_pessoal`/`telefone_corporativo`) quanto para e-mail (`email_pessoal`/`email_corporativo`)
-- Perfil comportamental DISC como par `perfil_disc_primario`/`perfil_disc_secundario` (uma avaliação DISC real normalmente resulta em 2 traços, não 1) + `observacoes_comportamentais` (texto livre) — nenhum dos dois é validado por enum no backend, só por dropdown no frontend (`PERFIL_DISC_LABELS` em `lib/constants.js`)
-- Documentos só com campo URL (sem upload real — projeto não tem infra de upload em lugar nenhum); dados bancários sem criptografia ainda (ambiente demo)
-- Histórico salarial e de cargo (promoções) imutáveis — só `POST` nos endpoints de histórico; `PUT /colaboradores/{id}` rejeita `salario_clt`/`remuneracao_complementar`/`data_vigencia_salario`/`cargo_id` diretamente
-- `gestor_id` auto-relacionamento em `Colaborador` (mini organograma: gestor direto + subordinados diretos), validado contra auto-referência e contra gestor inexistente
-- **RH-RN009:** colaborador nunca é excluído, só desligado (`is_active=False` + data/tipo/motivo/entrevista de saída)
-- **RH-RN011 (exceção deliberada à RH-RN009):** exclusão definitiva (hard delete) via `DELETE /colaboradores/{id}`, restrita ao perfil `DIRETORIA` e só permitida se o colaborador já estiver desligado — serve como purga administrativa de um cadastro já encerrado (ex.: erro de cadastro), não como atalho para o desligamento. Apaga em cascata histórico salarial, histórico de cargo e documentos vinculados, e desatrela `gestor_id` de quem tinha esse colaborador como gestor direto. Não desvincula o `User` associado (`user_id`), se houver — a conta de login continua ativa
-- Drawer com 5 abas (`ColaboradorDrawer.jsx` + `ColaboradorTabs.jsx`, mesmo padrão de `EspecificadorDrawer`/`EspecificadorTabs`): Perfil (dados cadastrais + organograma + Editar/Desligar/Excluir definitivamente), Contratação (regime, tipo de contrato, dados PJ se `regime=pj`, regime de trabalho, dados bancários, reatribuição de gestor), Remuneração, Cargo & Progressão, Documentos
+- Primeiro de 11 submódulos de um SRS de RH/Departamento Pessoal (RH01-RH11); os demais (RH02 Comissões, RH03 Férias e Afastamentos, RH04 Acordos e Ajustes, RH05 Avaliação de Desempenho + PDI, RH06-RH11) ainda não têm spec e serão especificados um de cada vez. Spec do RH01: `docs/superpowers/specs/2026-07-26-colaboradores-rh01-design.md`.
+- Acesso só para `RH`, `DIRETORIA` e superusuário (`isAuthorized` no controller).
+- `Colaborador` tem `userId` opcional; `Departamento` e `Cargo` são cadastros próprios, sem unicidade de nome.
+- Contato pessoal/corporativo para telefone e e-mail. DISC como par `perfilDiscPrimario`/`perfilDiscSecundario` (validado por enum no VineJS: `dominante`, `influente`, `estavel`, `cauteloso`) + `observacoesComportamentais`.
+- Documentos só com URL (não há infra de upload). Dados bancários sem criptografia (ambiente demo).
+- Histórico salarial e de cargo imutáveis: só `POST` em `historico-salarial`/`historico-cargo`. `PUT/PATCH /colaboradores/:id` rejeita `salarioClt`/`cargoId` no corpo.
+- `gestorId` (organograma) validado contra auto-referência.
+- **RH-RN009:** colaborador nunca é excluído na rotina, só desligado (`POST /colaboradores/:id/desligar`).
+- **RH-RN011 (exceção deliberada):** `DELETE /colaboradores/:id` só para Diretoria e só se já desligado — purga administrativa de cadastro errado. Apaga em cascata históricos e documentos e zera o `gestor_id` dos subordinados. Não desativa o `User` vinculado.
 
-## Padrões de Código
+## Como Trabalhar Neste Projeto
+1. Clone o repo e leia este CLAUDE.md por completo.
+2. Suba o banco (`make db-up`), configure `plannit/.env`, rode migrations e seed.
+3. Use o Claude Code na RAIZ do projeto.
+4. Toda decisão importante (nova RN, mudança de arquitetura, problema resolvido) deve ser registrada NESTE arquivo e commitada — este arquivo é a memória compartilhada do projeto.
+5. **Antes de escrever código em qualquer branch, dê `git pull` e confira se `main` não avançou** — já aconteceu de uma branch (`feature/arch`, PR #4) ficar semanas desatualizada em relação a um trabalho feito em paralelo em `main`, gerando conflitos de desenho e uma migration que apagaria tabelas reais.
+6. Outros documentos: `AGENTS.md` (instruções para o Antigravity, ainda descreve o legado); `PROJECT.md`, `TEST_INFRA.md`, `TEST_READY.md`, `WALKTHROUGH.md` e `.agents/` são relatórios de execuções multi-agente de fases da migração; `docs/superpowers/` tem specs e planos (a maioria escrita para o legado, mas as regras de domínio continuam válidas).
 
-### Backend
-- Endpoints usam serialização manual (dict), não response_model Pydantic
-- `require_roles(*perfis)` como dependency para controle de acesso
-- `get_current_user` para rotas autenticadas sem restrição de perfil
-- Migrations via Alembic — rodar após qualquer alteração de model (ver regra obrigatória na seção dedicada abaixo)
-- `model_config = {"env_file": ".env", "extra": "ignore"}` no config.py
-- IMPORTANTE FastAPI: rotas fixas (ex: /fila/lista, /wip/configuracoes) declaradas ANTES de rotas dinâmicas (/{id}) para evitar conflito de matching
+---
 
-### Frontend
-- Componentes de página em `pages/<modulo>/<ModuloPage>.jsx`
-- Componentes UI reutilizáveis em `components/ui/index.jsx`
-- Todas as chamadas API em `lib/api.js` agrupadas por módulo (Ex: `projetosApi.list()`)
-- Design system: cores `primary` (warm-gold), `stone` (neutros)
-- Fontes: Playfair Display (display/títulos) + DM Sans (corpo)
-- Animações: `animate-fade-in`, `animate-slide-in-right` via globals.css
-- Classes utilitárias custom: `.card`, `.card-hover`, `.btn-primary`, `.btn-secondary`, `.input`, `.label`, `.kanban-col`, `.kanban-card`, `.kpi-card`, `.badge-*`, `.table-base`
+## Legado: `backend/` (FastAPI) + `frontend/` (React SPA)
+Substituído pelo monólito; mantido para consulta e enquanto for o que roda em produção. Não adicionar funcionalidades aqui.
 
-## Deploy no Railway (fluxo e lições)
-- Deploy é AUTOMÁTICO a cada `git push origin main` — nada a fazer no painel
-- Monorepo: cada serviço tem Root Directory próprio (`backend` e `frontend`)
-- Backend roda na porta 8000, frontend (nginx) na porta 80 — configurar variável PORT em cada serviço
-- O seed NÃO roda automaticamente no deploy: rodar `python seed.py` via Console do Railway,
-  e somente DEPOIS do banco PostgreSQL existir (rodar antes causa crash)
-- Alterar FIRST_ADMIN_PASSWORD nas Variables NÃO troca a senha de usuário já criado —
-  a variável só é usada na primeira execução do seed
-- /docs desabilitado em produção (DEBUG=false) — comportamento esperado, não é bug
-- **Alembic é a fonte de verdade do schema a partir da migration `94d29e691390` (2026-07-28) — ver regra obrigatória na seção dedicada abaixo.** Antes disso, o schema era aplicado por `Base.metadata.create_all()` em `seed.py`; esse modo antigo está obsoleto e não deve mais ser usado para alterar tabelas existentes.
-- Após alterar models: rodar migration também no Railway (Console → `alembic upgrade head`)
-- Build do frontend: VITE_API_URL é injetada em BUILD TIME (ARG no Dockerfile) — mudar a variável exige redeploy
+### Stack e estrutura
+- **Backend:** Python 3.11/3.12, FastAPI 0.111, SQLAlchemy 2.0, Alembic, JWT (8h) + bcrypt. Endpoints em `backend/app/api/v1/endpoints/` (prefixo `/api/v1`; Especificadores em `/arquitetos`), models em `app/models/`, schemas Pydantic em `app/schemas/`, serviços em `app/services/` (`briefing_score.py`, `wip_service.py`, `arquiteto_score.py`). Controle de acesso com a dependency `require_roles(*perfis)`; serialização manual em dict (exceto Colaboradores, que usa `response_model`).
+- **Frontend:** React 19 + Vite + Zustand + Axios. Chamadas agrupadas por módulo em `frontend/src/lib/api.js`, constantes em `lib/constants.js`, páginas em `src/pages/<modulo>/`, store em `src/store/index.js`.
 
-## Variáveis de Ambiente
-
-### Backend (.env local)
+### Comandos
+```bash
+make setup                      # cria venv + npm install
+cd backend && source venv/bin/activate && uvicorn app.main:app --reload --port 8000   # /docs só com DEBUG=true
+cd frontend && npm run dev      # http://localhost:5173
+cd backend && python seed.py    # popula usuários e dados de teste
+cd backend && ./venv/bin/pytest                         # SQLite em memória (tests/conftest.py)
+./venv/bin/pytest tests/test_leads.py::nome_do_teste    # um teste
 ```
+
+### Variáveis de ambiente (dev/demo, sem dados reais)
+```
+# backend/.env
 DATABASE_URL=postgresql://postgres:861401@localhost:5432/plannit
 SECRET_KEY=7f3d2a1e8b4c9f6d0e5a2b7c4d1f8e3a6b9c2d5e8f1a4b7c0d3e6f9a2b5c8d1
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 APP_ENV=development
 DEBUG=true
-ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:5173"]   # precisa ser JSON array
 FIRST_ADMIN_EMAIL=admin@plannit.com.br
 FIRST_ADMIN_PASSWORD=Admin@123456
 FIRST_ADMIN_NAME=Administrador
-```
-Nota: credenciais de ambiente de desenvolvimento/demo, sem dados reais.
-Ao migrar para produto real (AWS): rotacionar SECRET_KEY e senhas.
-
-### Frontend (.env local)
-```
+# frontend/.env
 VITE_API_URL=http://localhost:8000/api/v1
 ```
 
-### Railway (produção)
-Mesmas variáveis do backend, com:
-- DATABASE_URL apontando para o PostgreSQL do Railway
-- APP_ENV=production, DEBUG=false
-- ALLOWED_ORIGINS=["https://plannit-frontend-production.up.railway.app"]
-- PORT=8000 (backend) / PORT=80 (frontend)
-- Frontend: VITE_API_URL=https://plannit-production.up.railway.app/api/v1
+### Deploy no Railway (legado)
+- URLs: frontend https://plannit-frontend-production.up.railway.app · API https://plannit-production.up.railway.app
+- Deploy automático a cada `git push origin main`. Monorepo com Root Directory `backend` (porta 8000) e `frontend` (nginx, porta 80) — variável `PORT` em cada serviço.
+- Produção: `APP_ENV=production`, `DEBUG=false` (por isso `/docs` fica desabilitado), `ALLOWED_ORIGINS=["https://plannit-frontend-production.up.railway.app"]`, `VITE_API_URL=https://plannit-production.up.railway.app/api/v1`.
+- `VITE_API_URL` é injetada em BUILD TIME (ARG no Dockerfile) — mudar exige redeploy.
+- O seed não roda no deploy: `python seed.py` pelo Console do Railway, só depois do Postgres existir. Mudar `FIRST_ADMIN_PASSWORD` não troca a senha de um usuário já criado.
 
-## Credenciais de Teste (após seed.py)
-| Perfil | E-mail | Senha |
-|--------|--------|-------|
-| Diretoria | admin@plannit.com.br | Admin@123456 |
-| Vendedor | vendedor@lidermoveis.com.br | Teste@123 |
-| Gerente | gerente@lidermoveis.com.br | Teste@123 |
-| Projetista | projetista@lidermoveis.com.br | Teste@123 |
-| Conferente | conferente@lidermoveis.com.br | Teste@123 |
+### Alembic (legado)
+- Fonte de verdade do schema desde a migration `94d29e691390_schema_inicial_completo` (2026-07-28); `Base.metadata.create_all()` no `seed.py` é obsoleto.
+- Fluxo: alterar model → `alembic revision --autogenerate -m "..."` → **revisar o arquivo em busca de `op.drop_table`/`op.drop_column` inesperados** (sintoma de autogenerate contra models desatualizados) → commit → no Railway, `alembic upgrade head`.
+- Banco que já tinha tabelas criadas por `create_all()`: rodar `alembic stamp head` uma vez. `DuplicateObject: type "X" already exists` no `upgrade` é esse caso — resolver com `stamp`, nunca apagando tabelas.
+- A branch `feature/arch` (PR #4) tinha um desenho antigo e descartado de Especificadores (`TipoArquiteto`, `vendedor_id`, `FuncionarioArquiteto`) e uma migration que apagaria as tabelas de RH — nunca aplicar.
 
-## Lições Aprendidas (problemas já resolvidos)
-- `pydantic-settings` requer `extra="ignore"` para ignorar variáveis extras do .env
-- `ALLOWED_ORIGINS` no .env precisa ser JSON array: `["http://..."]`
-- `bcrypt==4.0.1` separado do `passlib==1.7.4` no requirements.txt
-- `.python-version` com valor `3.12` necessário para Railway (Railpack auto-seleciona 3.13 que quebra pydantic-core)
-- PostgreSQL PATH no Mac: `/Library/PostgreSQL/18/bin/`
-- Python 3.14 local é incompatível com psycopg2 — usar Python 3.11 (Homebrew)
-- Claude Code instalado via npm em ~/.npm-global — PATH configurado no ~/.zshrc
-- Após alterar models, sempre rodar: `alembic revision --autogenerate -m "descricao"` e `alembic upgrade head`
-
-## Setup do Ambiente Windows — lições completas (psycopg2 + Alembic)
-Se um novo colaborador for configurar o projeto no Windows, este é o caminho testado:
-
-1. **Python:** usar 3.11 ou 3.12 — Python 3.13+ não tem wheel pronto de `psycopg2-binary==2.9.9`
-   e tenta compilar do zero, exigindo `pg_config` (PostgreSQL) no PATH
-2. **PowerShell:** liberar execução de scripts na sessão antes de ativar o venv:
-   `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-3. **PostgreSQL:** instalar localmente (postgresql.org/download/windows), anotar a senha
-   do superusuário `postgres` definida na instalação — é fácil esquecer ou digitar errado
-4. **Criar banco local:** via pgAdmin (botão direito em Databases → Create → Database → `plannit`)
-5. **Bug conhecido — UnicodeDecodeError no psycopg2 no Windows:** se o PostgreSQL local estiver
-   em locale pt-BR, mensagens de erro do servidor (com acentos) quebram o parser UTF-8 do
-   psycopg2 ANTES de mostrar o erro real — mascarando problemas como senha incorreta.
-   Diagnóstico: trocar temporariamente para `psycopg` (v3) que trata isso melhor:
-   `pip install "psycopg[binary]"`, testar conexão isolada, e então corrigir a causa raiz
-   (geralmente senha incorreta no `.env`).
-   Solução definitiva testada: usar driver `psycopg` (v3) na DATABASE_URL:
-   `postgresql+psycopg://usuario:senha@localhost:5432/banco`
-6. **.env no Windows:** evitar Notepad puro (pode gravar em ANSI/Windows-1252 e corromper
-   caracteres). Gravar via PowerShell forçando ASCII:
-   ```powershell
-   [System.IO.File]::WriteAllText("$PWD\.env", $conteudo, [System.Text.Encoding]::ASCII)
-   ```
-7. **alembic/script.py.mako ausente:** esse arquivo é gerado por `alembic init` mas pode não
-   estar commitado no repo. Recriar manualmente se faltar (template padrão do Alembic).
-8. **alembic/versions/ ausente:** criar a pasta manualmente se o Alembic reclamar de
-   `FileNotFoundError` ao gerar a primeira revision: `New-Item -ItemType Directory -Path "alembic\versions" -Force`
-
-## Alembic — regra obrigatória a partir da migration inicial (2026-07-28)
-- **seed.py** originalmente criava tabelas via `Base.metadata.create_all()` — isso NÃO deve
-  mais ser a fonte de verdade do schema. A partir da primeira migration (`94d29e691390_schema_inicial_completo`),
-  todo o controle de schema passa a ser feito via Alembic.
-- Fluxo correto para qualquer alteração de model:
-  1. Alterar o model em `app/models/`
-  2. Local: `alembic revision --autogenerate -m "descricao da mudanca"`
-  3. Revisar o arquivo gerado em `alembic/versions/` — **conferir com cuidado se não há
-     `op.drop_table`/`op.drop_column` inesperados**, sintoma de que o autogenerate rodou
-     contra um checkout de models desatualizado (já aconteceu: ver nota na seção do módulo Especificadores)
-  4. Commit + push
-  5. Após deploy no Railway: Console → `alembic upgrade head`
-- **Se o banco já tiver as tabelas criadas por `create_all()` antes do Alembic existir**
-  (nosso caso — banco de produção já tinha tudo, tanto do módulo Projetos/Especificadores
-  quanto do módulo de Colaboradores/RH): rodar UMA VEZ
-  `alembic stamp head` para sincronizar o histórico sem tentar recriar tabelas existentes.
-  Depois disso, seguir o fluxo normal de migrations.
-- Erro `DuplicateObject: type "X" already exists` ao rodar `alembic upgrade head` é o sintoma
-  clássico desse conflito create_all() vs Alembic — a solução é `alembic stamp head`, não
-  apagar tabelas.
-- Tabelas confirmadas no banco na migration inicial (`94d29e691390`): `departamentos`, `cargos`,
-  `colaboradores` (indexado por `cpf`), `historico_cargo_colaboradores`, `historico_salarial_colaboradores`,
-  `documentos_colaboradores`, `metas_visitas_consultor`, `concorrentes_arquitetos`, `historico_dono_arquitetos`,
-  `interacoes_arquitetos`, `decisores_arquitetos` — todas já documentadas nas seções de Especificadores e
-  Colaboradores acima.
-
-## Como Rodar Localmente
-```bash
-# Backend (PyCharm)
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
-# Acesse: http://localhost:8000/docs
-
-# Frontend (VS Code)
-cd frontend
-npm run dev
-# Acesse: http://localhost:5173
-
-# Seed (popular banco)
-cd backend && python seed.py
-```
-
-## Como Trabalhar Neste Projeto (para novos colaboradores)
-1. Clone o repo e leia este CLAUDE.md por completo
-2. Configure os .env conforme seção acima
-3. Rode o seed para popular o banco local
-4. Use Claude Code na RAIZ do projeto (lider-moveis/) — não dentro de backend/ ou frontend/
-5. Toda decisão importante (nova RN, mudança de arquitetura, problema resolvido) deve ser
-   registrada NESTE arquivo e commitada — este arquivo é a memória compartilhada do projeto
-6. git push origin main = deploy automático no Railway (~3-5 min)
-7. **Antes de escrever código em qualquer branch, dar `git pull` / conferir se `main` já não
-   avançou** — já aconteceu de uma branch (`feature/arch`, PR #4) ficar semanas desatualizada
-   em relação a um trabalho de reconciliação feito em paralelo em `main`, gerando conflitos
-   de desenho (não só textuais) e uma migration autogenerada que apagaria tabelas reais
+### Lições de ambiente (legado)
+- `pydantic-settings` precisa de `extra="ignore"`; `bcrypt==4.0.1` separado de `passlib==1.7.4`.
+- `.python-version` = `3.12` no Railway (o Railpack escolhe 3.13, que quebra o pydantic-core). Python 3.13+/3.14 não tem wheel de `psycopg2-binary==2.9.9`.
+- macOS: PostgreSQL em `/Library/PostgreSQL/18/bin/`.
+- Windows: com o Postgres em locale pt-BR, o psycopg2 lança `UnicodeDecodeError` antes de mostrar o erro real (geralmente senha errada) — usar `psycopg` v3 (`postgresql+psycopg://...`). Gravar o `.env` em ASCII (não pelo Notepad) e liberar scripts no PowerShell (`Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`). O guia completo está no histórico git deste arquivo.
