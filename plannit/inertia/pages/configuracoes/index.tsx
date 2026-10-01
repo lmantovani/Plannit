@@ -10,6 +10,7 @@ import {
   X,
   Power,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -50,6 +51,12 @@ interface ConfiguracoesPageProps {
 }
 
 type TabKey = 'ambientes' | 'origens' | 'campanhas'
+
+export type DeleteTarget = {
+  type: 'ambiente' | 'origem' | 'campanha'
+  id: number
+  nome: string
+}
 
 export default function ConfiguracoesPage({
   ambientes = [],
@@ -193,17 +200,38 @@ export default function ConfiguracoesPage({
     })
   }
 
-  // Handlers de exclusão com confirmação
-  const handleDeleteAmbiente = (item: AmbienteItem) => {
-    if (confirm(`Deseja realmente remover o ambiente "${item.nome}" do catálogo?`)) {
-      router.delete(`/configuracoes/ambientes/${item.id}`, {
-        onSuccess: () => {
-          toast.success(`Ambiente "${item.nome}" removido.`)
-          notifyCatalogoUpdate()
-        },
-        onError: () => toast.error('Erro ao remover ambiente.'),
-      })
+  // Modal de Exclusão Customizado
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+
+    const routeMap = {
+      ambiente: `/configuracoes/ambientes/${deleteTarget.id}`,
+      origem: `/configuracoes/origens/${deleteTarget.id}`,
+      campanha: `/configuracoes/campanhas/${deleteTarget.id}`,
     }
+
+    const labelMap = {
+      ambiente: 'Ambiente',
+      origem: 'Origem',
+      campanha: 'Campanha',
+    }
+
+    router.delete(routeMap[deleteTarget.type], {
+      onSuccess: () => {
+        toast.success(`${labelMap[deleteTarget.type]} "${deleteTarget.nome}" removido(a) com sucesso.`)
+        notifyCatalogoUpdate()
+        setDeleteTarget(null)
+        setIsDeleting(false)
+      },
+      onError: () => {
+        toast.error(`Erro ao remover ${labelMap[deleteTarget.type].toLowerCase()}.`)
+        setIsDeleting(false)
+      },
+    })
   }
 
   const handleToggleAmbiente = (item: AmbienteItem) => {
@@ -222,18 +250,6 @@ export default function ConfiguracoesPage({
     )
   }
 
-  const handleDeleteOrigem = (item: OrigemItem) => {
-    if (confirm(`Deseja realmente remover a origem "${item.nome}"?`)) {
-      router.delete(`/configuracoes/origens/${item.id}`, {
-        onSuccess: () => {
-          toast.success(`Origem "${item.nome}" removida.`)
-          notifyCatalogoUpdate()
-        },
-        onError: () => toast.error('Erro ao remover origem.'),
-      })
-    }
-  }
-
   const handleToggleOrigem = (item: OrigemItem) => {
     router.patch(
       `/configuracoes/origens/${item.id}/toggle`,
@@ -248,18 +264,6 @@ export default function ConfiguracoesPage({
         onError: () => toast.error('Erro ao alterar status da origem.'),
       }
     )
-  }
-
-  const handleDeleteCampanha = (item: CampanhaItem) => {
-    if (confirm(`Deseja realmente remover a campanha "${item.nome}"?`)) {
-      router.delete(`/configuracoes/campanhas/${item.id}`, {
-        onSuccess: () => {
-          toast.success(`Campanha "${item.nome}" removida.`)
-          notifyCatalogoUpdate()
-        },
-        onError: () => toast.error('Erro ao remover campanha.'),
-      })
-    }
   }
 
   const handleToggleCampanha = (item: CampanhaItem) => {
@@ -511,7 +515,7 @@ export default function ConfiguracoesPage({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteAmbiente(amb)}
+                              onClick={() => setDeleteTarget({ type: 'ambiente', id: amb.id, nome: amb.nome })}
                               className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title="Excluir ambiente"
                             >
@@ -601,7 +605,7 @@ export default function ConfiguracoesPage({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteOrigem(origem)}
+                              onClick={() => setDeleteTarget({ type: 'origem', id: origem.id, nome: origem.nome })}
                               className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title="Excluir origem"
                             >
@@ -693,7 +697,7 @@ export default function ConfiguracoesPage({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteCampanha(camp)}
+                              onClick={() => setDeleteTarget({ type: 'campanha', id: camp.id, nome: camp.nome })}
                               className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title="Excluir campanha"
                             >
@@ -1148,6 +1152,74 @@ export default function ConfiguracoesPage({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (DESIGN SYSTEM LÍDER) */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-md w-full overflow-hidden animate-scale-in">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 size={16} />
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-stone-900 text-sm">
+                    Confirmar Exclusão
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    {deleteTarget.type === 'ambiente' && 'Remover ambiente do catálogo oficial'}
+                    {deleteTarget.type === 'origem' && 'Remover canal de captação de lead'}
+                    {deleteTarget.type === 'campanha' && 'Remover campanha promocional'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3.5 text-xs">
+              <p className="text-stone-600 leading-relaxed">
+                Tem certeza de que deseja remover permanentemente o item{' '}
+                <strong className="text-stone-900 font-semibold bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+                  {deleteTarget.nome}
+                </strong>?
+              </p>
+
+              <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-amber-900">
+                <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  Este registro deixará de aparecer para novas qualificações e cadastros no sistema.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-xl font-medium transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                  <span>{isDeleting ? 'Removendo...' : 'Sim, Excluir'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
