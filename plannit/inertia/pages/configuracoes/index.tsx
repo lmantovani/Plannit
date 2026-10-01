@@ -148,12 +148,19 @@ export default function ConfiguracoesPage({
     })
   }
 
+  const notifyCatalogoUpdate = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('plannit_catalogo_updated', String(Date.now()))
+    }
+  }
+
   const handleUpdateAmbiente = (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingAmbiente) return
     ambienteEditForm.put(`/configuracoes/ambientes/${editingAmbiente.id}`, {
       onSuccess: () => {
         toast.success(`Ambiente "${ambienteEditForm.data.nome}" atualizado com sucesso!`)
+        notifyCatalogoUpdate()
         setEditingAmbiente(null)
       },
       onError: () => toast.error('Erro ao atualizar ambiente.'),
@@ -166,6 +173,7 @@ export default function ConfiguracoesPage({
     origemEditForm.put(`/configuracoes/origens/${editingOrigem.id}`, {
       onSuccess: () => {
         toast.success(`Origem "${origemEditForm.data.nome}" atualizada com sucesso!`)
+        notifyCatalogoUpdate()
         setEditingOrigem(null)
       },
       onError: () => toast.error('Erro ao atualizar origem.'),
@@ -178,6 +186,7 @@ export default function ConfiguracoesPage({
     campanhaEditForm.put(`/configuracoes/campanhas/${editingCampanha.id}`, {
       onSuccess: () => {
         toast.success(`Campanha "${campanhaEditForm.data.nome}" atualizada com sucesso!`)
+        notifyCatalogoUpdate()
         setEditingCampanha(null)
       },
       onError: () => toast.error('Erro ao atualizar campanha.'),
@@ -188,7 +197,10 @@ export default function ConfiguracoesPage({
   const handleDeleteAmbiente = (item: AmbienteItem) => {
     if (confirm(`Deseja realmente remover o ambiente "${item.nome}" do catálogo?`)) {
       router.delete(`/configuracoes/ambientes/${item.id}`, {
-        onSuccess: () => toast.success(`Ambiente "${item.nome}" removido.`),
+        onSuccess: () => {
+          toast.success(`Ambiente "${item.nome}" removido.`)
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao remover ambiente.'),
       })
     }
@@ -199,10 +211,12 @@ export default function ConfiguracoesPage({
       `/configuracoes/ambientes/${item.id}/toggle`,
       {},
       {
-        onSuccess: () =>
+        onSuccess: () => {
           toast.success(
             `Ambiente "${item.nome}" ${!item.isActive ? 'ativado' : 'desativado'} com sucesso.`
-          ),
+          )
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao alterar status do ambiente.'),
       }
     )
@@ -211,7 +225,10 @@ export default function ConfiguracoesPage({
   const handleDeleteOrigem = (item: OrigemItem) => {
     if (confirm(`Deseja realmente remover a origem "${item.nome}"?`)) {
       router.delete(`/configuracoes/origens/${item.id}`, {
-        onSuccess: () => toast.success(`Origem "${item.nome}" removida.`),
+        onSuccess: () => {
+          toast.success(`Origem "${item.nome}" removida.`)
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao remover origem.'),
       })
     }
@@ -222,10 +239,12 @@ export default function ConfiguracoesPage({
       `/configuracoes/origens/${item.id}/toggle`,
       {},
       {
-        onSuccess: () =>
+        onSuccess: () => {
           toast.success(
             `Origem "${item.nome}" ${!item.isActive ? 'ativada' : 'desativada'} com sucesso.`
-          ),
+          )
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao alterar status da origem.'),
       }
     )
@@ -234,7 +253,10 @@ export default function ConfiguracoesPage({
   const handleDeleteCampanha = (item: CampanhaItem) => {
     if (confirm(`Deseja realmente remover a campanha "${item.nome}"?`)) {
       router.delete(`/configuracoes/campanhas/${item.id}`, {
-        onSuccess: () => toast.success(`Campanha "${item.nome}" removida.`),
+        onSuccess: () => {
+          toast.success(`Campanha "${item.nome}" removida.`)
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao remover campanha.'),
       })
     }
@@ -245,10 +267,12 @@ export default function ConfiguracoesPage({
       `/configuracoes/campanhas/${item.id}/toggle`,
       {},
       {
-        onSuccess: () =>
+        onSuccess: () => {
           toast.success(
             `Campanha "${item.nome}" ${!item.isActive ? 'ativada' : 'desativada'} com sucesso.`
-          ),
+          )
+          notifyCatalogoUpdate()
+        },
         onError: () => toast.error('Erro ao alterar status da campanha.'),
       }
     )
@@ -260,6 +284,7 @@ export default function ConfiguracoesPage({
     ambienteForm.post('/configuracoes/ambientes', {
       onSuccess: () => {
         toast.success('Ambiente cadastrado com sucesso!')
+        notifyCatalogoUpdate()
         ambienteForm.reset()
         setModalAmbienteOpen(false)
       },
@@ -273,6 +298,7 @@ export default function ConfiguracoesPage({
     origemForm.post('/configuracoes/origens', {
       onSuccess: () => {
         toast.success('Origem cadastrada com sucesso!')
+        notifyCatalogoUpdate()
         origemForm.reset()
         setModalOrigemOpen(false)
       },
@@ -286,6 +312,7 @@ export default function ConfiguracoesPage({
     campanhaForm.post('/configuracoes/campanhas', {
       onSuccess: () => {
         toast.success('Campanha cadastrada com sucesso!')
+        notifyCatalogoUpdate()
         campanhaForm.reset()
         setModalCampanhaOpen(false)
       },

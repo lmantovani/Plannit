@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { router, useForm, usePage } from '@inertiajs/react'
 import {
   X,
@@ -11,6 +11,7 @@ import {
   DollarSign,
   Home,
   ExternalLink,
+  RotateCw,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -126,6 +127,41 @@ export default function QualificarLeadModal({
     user?.perfil === 'diretoria' ||
     user?.perfil === 'gerente_comercial'
   )
+
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefreshAmbientes = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    setIsRefreshing(true)
+    router.reload({
+      only: ['ambientesCatalogo'],
+      onFinish: () => {
+        setIsRefreshing(false)
+        toast.success('Lista de ambientes sincronizada!')
+      },
+    })
+  }
+
+  // Sincronização automática ao focar de volta na aba ou quando outra aba notificar alteração
+  useEffect(() => {
+    const handleSync = () => {
+      router.reload({ only: ['ambientesCatalogo'] })
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'plannit_catalogo_updated') {
+        handleSync()
+      }
+    }
+
+    window.addEventListener('focus', handleSync)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener('focus', handleSync)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [])
 
   const listaAmbientes = ambientesDisponiveis && ambientesDisponiveis.length > 0
     ? ambientesDisponiveis
@@ -385,16 +421,31 @@ export default function QualificarLeadModal({
                   4. Ambientes de Interesse * ({data.ambientesInteresse.length + (isOutroSelected ? 1 : 0)} selecionado(s))
                 </label>
                 {canManageConfig && (
-                  <a
-                    href="/configuracoes?tab=ambientes"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-800 hover:underline transition-colors bg-primary-50/80 px-2 py-0.5 rounded-md border border-primary-200/60"
-                    title="Abrir gerenciador de catálogo em uma nova aba"
-                  >
-                    <span>Configurar Ambientes</span>
-                    <ExternalLink size={10} />
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleRefreshAmbientes}
+                      className={clsx(
+                        'inline-flex items-center gap-1 text-[11px] font-medium text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded-md border border-stone-200 transition-colors cursor-pointer',
+                        isRefreshing && 'opacity-75'
+                      )}
+                      title="Sincronizar com o catálogo em tempo real"
+                    >
+                      <RotateCw size={10} className={clsx(isRefreshing && 'animate-spin')} />
+                      <span>{isRefreshing ? 'Sincronizando...' : 'Sincronizar'}</span>
+                    </button>
+
+                    <a
+                      href="/configuracoes?tab=ambientes"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-800 hover:underline transition-colors bg-primary-50/80 px-2 py-0.5 rounded-md border border-primary-200/60"
+                      title="Abrir gerenciador de catálogo em uma nova aba"
+                    >
+                      <span>Configurar</span>
+                      <ExternalLink size={10} />
+                    </a>
+                  </div>
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5">
