@@ -56,7 +56,16 @@ export default function ConfiguracoesPage({
   origens = [],
   campanhas = [],
 }: ConfiguracoesPageProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('ambientes')
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get('tab')
+      if (tab === 'ambientes' || tab === 'origens' || tab === 'campanhas') {
+        return tab
+      }
+    }
+    return 'ambientes'
+  })
 
   // Modais de Criação
   const [modalAmbienteOpen, setModalAmbienteOpen] = useState(false)

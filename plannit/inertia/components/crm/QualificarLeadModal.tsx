@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { router, useForm } from '@inertiajs/react'
+import { router, useForm, usePage } from '@inertiajs/react'
 import {
   X,
   Sparkles,
@@ -10,6 +10,7 @@ import {
   ThumbsDown,
   DollarSign,
   Home,
+  ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -117,6 +118,14 @@ export default function QualificarLeadModal({
   const [isDesqualificando, setIsDesqualificando] = useState(false)
   const [isOutroSelected, setIsOutroSelected] = useState(initialOutroSelected)
   const [outroDescricao, setOutroDescricao] = useState(initialOutroDescricao)
+
+  const pageProps = usePage<{ user?: { perfil?: string; isSuperuser?: boolean } }>().props
+  const user = pageProps.user
+  const canManageConfig = Boolean(
+    user?.isSuperuser ||
+    user?.perfil === 'diretoria' ||
+    user?.perfil === 'gerente_comercial'
+  )
 
   const listaAmbientes = ambientesDisponiveis && ambientesDisponiveis.length > 0
     ? ambientesDisponiveis
@@ -375,6 +384,18 @@ export default function QualificarLeadModal({
                   <Layers size={14} className="text-stone-400" />
                   4. Ambientes de Interesse * ({data.ambientesInteresse.length + (isOutroSelected ? 1 : 0)} selecionado(s))
                 </label>
+                {canManageConfig && (
+                  <a
+                    href="/configuracoes?tab=ambientes"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-800 hover:underline transition-colors bg-primary-50/80 px-2 py-0.5 rounded-md border border-primary-200/60"
+                    title="Abrir gerenciador de catálogo em uma nova aba"
+                  >
+                    <span>Configurar Ambientes</span>
+                    <ExternalLink size={10} />
+                  </a>
+                )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {listaAmbientes.map((amb) => {

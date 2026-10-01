@@ -27,6 +27,7 @@ import {
   Send,
   Sparkles,
   FileText,
+  ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -1189,7 +1190,21 @@ function NovoLeadModal({
             </div>
 
             <div>
-              <label className="label">Origem do Lead</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Origem do Lead</label>
+                {!isVendedor && (
+                  <a
+                    href="/configuracoes?tab=origens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+                    title="Configurar origens em nova aba"
+                  >
+                    <span>Configurar</span>
+                    <ExternalLink size={9} />
+                  </a>
+                )}
+              </div>
               <select
                 value={data.origem}
                 onChange={(e) => setData('origem', e.target.value)}
@@ -1210,7 +1225,21 @@ function NovoLeadModal({
             </div>
 
             <div className="col-span-2">
-              <label className="label">Campanha / Referência</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Campanha / Referência</label>
+                {!isVendedor && (
+                  <a
+                    href="/configuracoes?tab=campanhas"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+                    title="Configurar campanhas em nova aba"
+                  >
+                    <span>Configurar</span>
+                    <ExternalLink size={9} />
+                  </a>
+                )}
+              </div>
               <input
                 type="text"
                 list="crm-campanhas-list"
