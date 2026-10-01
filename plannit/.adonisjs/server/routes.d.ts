@@ -85,6 +85,19 @@ export type ScannedRoutes = {
     'projetos.fechamento.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projetos.fechamento.parcelas.pagar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'parcelaId': ParamValue} }
     'projetos.handoff.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.index': { paramsTuple?: []; params?: {} }
+    'configuracoes.ambientes.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.ambientes.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.ambientes.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.ambientes.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.origens.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.campanhas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'session.create': { paramsTuple?: []; params?: {} }
@@ -112,6 +125,7 @@ export type ScannedRoutes = {
     'projetos.index': { paramsTuple?: []; params?: {} }
     'projetos.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projetos.fechamento.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.index': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'session.create': { paramsTuple?: []; params?: {} }
@@ -139,6 +153,7 @@ export type ScannedRoutes = {
     'projetos.index': { paramsTuple?: []; params?: {} }
     'projetos.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projetos.fechamento.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.index': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'session.store': { paramsTuple?: []; params?: {} }
@@ -178,6 +193,9 @@ export type ScannedRoutes = {
     'projetos.fechamento.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projetos.fechamento.parcelas.pagar': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'parcelaId': ParamValue} }
     'projetos.handoff.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.ambientes.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.origens.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.campanhas.store': { paramsTuple?: []; params?: {} }
   }
   PATCH: {
     'crm.leads.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -187,6 +205,9 @@ export type ScannedRoutes = {
     'especificadores.concorrentes.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
     'colaboradores.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.ambientes.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PUT: {
     'briefings.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -195,6 +216,9 @@ export type ScannedRoutes = {
     'colaboradores.cargos.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'colaboradores.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.ambientes.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   DELETE: {
     'especificadores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -203,6 +227,9 @@ export type ScannedRoutes = {
     'colaboradores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'colaboradores.documentos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'documentoId': ParamValue} }
     'clientes.enderecos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'enderecoId': ParamValue} }
+    'configuracoes.ambientes.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.origens.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.campanhas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

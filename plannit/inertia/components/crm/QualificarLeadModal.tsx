@@ -26,37 +26,52 @@ interface QualificarLeadModalProps {
     nome: string
     telefone: string
     cidade?: string | null
+    faixaOrcamento?: string | null
+    orcamentoEstimado?: number | string | null
+    prazoObra?: string | null
+    tipoImovel?: string | null
+    ambientesInteresse?: string[] | string | null
+    possuiArquiteto?: boolean
+    arquitetoId?: number | null
+    decisorPresente?: boolean
   }
   arquitetos: ArquitetoOption[]
+  ambientesDisponiveis?: string[]
   onClose: () => void
   onSuccess?: () => void
 }
 
-const OPCOES_AMBIENTES = [
+const OPCOES_AMBIENTES_PADRAO = [
   'Cozinha',
-  'Living / Home',
+  'Living',
+  'Home Theater',
+  'Espaço Gourmet',
+  'Varanda',
   'Suíte Master',
+  'Quarto do Filho',
+  'Quarto da Filha',
+  'Quarto de Visita',
   'Closet',
-  'Espaço Gourmet / Varanda',
-  'Dormitórios',
-  'Banheiros / Lavabos',
+  'Banheiro',
+  'Lavabo',
   'Home Office',
   'Área de Serviço',
 ]
 
 const FAIXAS_ORCAMENTO = [
-  { value: 'ate_40k', label: 'Até R$ 40.000', desc: 'Ambiente único / Compacto' },
-  { value: '40k_80k', label: 'R$ 40.000 a R$ 80.000', desc: 'Média de 2 ambientes' },
-  { value: '80k_150k', label: 'R$ 80.000 a R$ 150.000', desc: 'Residencial Médio-Alto' },
-  { value: '150k_300k', label: 'R$ 150.000 a R$ 300.000', desc: 'Alto Padrão Completo' },
-  { value: 'acima_300k', label: 'Acima de R$ 300.000', desc: 'Super Luxo / Mansões' },
+  { value: 'ate_80k', label: 'Até R$ 80.000', desc: 'Ambiente único / Compacto' },
+  { value: '80k_150k', label: 'R$ 80.000 a R$ 150.000', desc: 'Residencial Médio' },
+  { value: '150k_300k', label: 'R$ 150.000 a R$ 300.000', desc: 'Residencial Médio-Alto' },
+  { value: '300k_500k', label: 'R$ 300.000 a R$ 500.000', desc: 'Alto Padrão' },
+  { value: 'acima_500k', label: 'Acima de R$ 500.000', desc: 'Super Luxo / Mansões' },
 ]
 
 const PRAZOS_OBRA = [
   { value: 'pronto_imediato', label: 'Imóvel pronto / Início imediato', desc: 'Alta urgência comercial' },
   { value: 'ate_3_meses', label: 'Entrega em até 3 meses', desc: 'Tempo ideal para projeto 3D' },
   { value: 'ate_6_meses', label: 'Entrega em 3 a 6 meses', desc: 'Planejamento antecipado' },
-  { value: 'mais_12_meses', label: 'Mais de 12 meses', desc: 'Prazo longo / Futuro' },
+  { value: 'mais_12_meses', label: 'Entrega em mais de 12 meses', desc: 'Prazo longo' },
+  { value: 'venda_futura_18m', label: 'Venda futura (acima de 18 meses)', desc: 'Planejamento a longo prazo / Obra na planta' },
 ]
 
 const TIPOS_IMOVEL = [
@@ -69,28 +84,63 @@ const TIPOS_IMOVEL = [
 export default function QualificarLeadModal({
   lead,
   arquitetos,
+  ambientesDisponiveis,
   onClose,
   onSuccess,
 }: QualificarLeadModalProps) {
+  // Extrai ambientes pré-existentes caso o lead já possua histórico
+  const rawAmbientes = lead.ambientesInteresse
+  const leadAmbientes: string[] = Array.isArray(rawAmbientes)
+    ? rawAmbientes
+    : typeof rawAmbientes === 'string'
+      ? (() => {
+          try {
+            const p = JSON.parse(rawAmbientes)
+            return Array.isArray(p) ? p : []
+          } catch {
+            return []
+          }
+        })()
+      : []
+
+  const outroItem = leadAmbientes.find(
+    (a) => a.toLowerCase().startsWith('outro:') || a.toLowerCase() === 'outro'
+  )
+  const initialOutroSelected = Boolean(outroItem)
+  const initialOutroDescricao = outroItem ? outroItem.replace(/^outro:\s*/i, '') : ''
+  const initialAmbientesPadrao = leadAmbientes.filter(
+    (a) => !a.toLowerCase().startsWith('outro:') && a.toLowerCase() !== 'outro'
+  )
+
   const [modo, setModo] = useState<'qualificar' | 'desqualificar'>('qualificar')
   const [motivoDesqualificacao, setMotivoDesqualificacao] = useState('')
   const [isDesqualificando, setIsDesqualificando] = useState(false)
+  const [isOutroSelected, setIsOutroSelected] = useState(initialOutroSelected)
+  const [outroDescricao, setOutroDescricao] = useState(initialOutroDescricao)
 
-  const { data, setData, post, processing } = useForm({
-    faixaOrcamento: '80k_150k',
-    orcamentoEstimado: '',
-    prazoObra: 'ate_3_meses',
-    tipoImovel: 'apartamento',
-    ambientesInteresse: ['Cozinha'] as string[],
-    possuiArquiteto: false,
-    arquitetoId: '',
-    decisorPresente: true,
+  const listaAmbientes = ambientesDisponiveis && ambientesDisponiveis.length > 0
+    ? ambientesDisponiveis
+    : OPCOES_AMBIENTES_PADRAO
+
+  const { data, setData, post, processing, transform } = useForm({
+    faixaOrcamento: lead.faixaOrcamento || '80k_150k',
+    orcamentoEstimado: lead.orcamentoEstimado ? String(lead.orcamentoEstimado) : '',
+    prazoObra: lead.prazoObra || 'ate_3_meses',
+    tipoImovel: lead.tipoImovel || 'apartamento',
+    ambientesInteresse: (initialAmbientesPadrao.length > 0
+      ? initialAmbientesPadrao
+      : initialOutroSelected
+        ? []
+        : ['Cozinha']) as string[],
+    possuiArquiteto: Boolean(lead.possuiArquiteto || lead.arquitetoId),
+    arquitetoId: lead.arquitetoId ? String(lead.arquitetoId) : '',
+    decisorPresente: lead.decisorPresente !== undefined ? lead.decisorPresente : true,
     observacoes: '',
   })
 
   const toggleAmbiente = (ambiente: string) => {
     if (data.ambientesInteresse.includes(ambiente)) {
-      if (data.ambientesInteresse.length === 1) {
+      if (data.ambientesInteresse.length === 1 && !isOutroSelected) {
         toast.error('Selecione pelo menos um ambiente de interesse')
         return
       }
@@ -106,10 +156,25 @@ export default function QualificarLeadModal({
   const handleQualificarSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (data.ambientesInteresse.length === 0) {
+    if (isOutroSelected && (!outroDescricao.trim() || outroDescricao.trim().length < 2)) {
+      toast.error('Informe uma descrição com no mínimo 2 caracteres para o ambiente "Outro".')
+      return
+    }
+
+    const finalAmbientes = [...data.ambientesInteresse]
+    if (isOutroSelected && outroDescricao.trim()) {
+      finalAmbientes.push(`Outro: ${outroDescricao.trim()}`)
+    }
+
+    if (finalAmbientes.length === 0) {
       toast.error('Selecione pelo menos um ambiente de interesse.')
       return
     }
+
+    transform((currentData) => ({
+      ...currentData,
+      ambientesInteresse: finalAmbientes,
+    }))
 
     post(`/crm/leads/${lead.id}/qualificar`, {
       onSuccess: () => {
@@ -308,11 +373,11 @@ export default function QualificarLeadModal({
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Layers size={14} className="text-stone-400" />
-                  4. Ambientes de Interesse * ({data.ambientesInteresse.length} selecionado(s))
+                  4. Ambientes de Interesse * ({data.ambientesInteresse.length + (isOutroSelected ? 1 : 0)} selecionado(s))
                 </label>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {OPCOES_AMBIENTES.map((amb) => {
+                {listaAmbientes.map((amb) => {
                   const selected = data.ambientesInteresse.includes(amb)
                   return (
                     <button
@@ -320,7 +385,7 @@ export default function QualificarLeadModal({
                       type="button"
                       onClick={() => toggleAmbiente(amb)}
                       className={clsx(
-                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1 select-none',
+                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1 select-none cursor-pointer',
                         selected
                           ? 'bg-stone-900 text-white border-stone-900 shadow-2xs'
                           : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
@@ -331,7 +396,48 @@ export default function QualificarLeadModal({
                     </button>
                   )
                 })}
+
+                {/* Opção interativa Outro */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isOutroSelected
+                    setIsOutroSelected(next)
+                    if (!next) {
+                      setOutroDescricao('')
+                    }
+                  }}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1 select-none cursor-pointer',
+                    isOutroSelected
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-2xs font-semibold'
+                      : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                  )}
+                >
+                  {isOutroSelected && <CheckCircle2 size={12} className="text-white" />}
+                  <span>Outro</span>
+                </button>
               </div>
+
+              {/* Input descritivo obrigatório quando Outro estiver selecionado */}
+              {isOutroSelected && (
+                <div className="mt-2.5 p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1 animate-fade-in">
+                  <label className="block text-[11px] font-semibold text-amber-950">
+                    Descrição do Ambiente "Outro" *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={outroDescricao}
+                    onChange={(e) => setOutroDescricao(e.target.value)}
+                    placeholder="Ex: Adega Climatizada, Brinquedoteca, Academia, etc."
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-stone-800"
+                  />
+                  <p className="text-[10px] text-amber-700">
+                    Campo obrigatório para descrever o ambiente fora do catálogo padrão.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 5. Acompanhamento de Arquiteto */}

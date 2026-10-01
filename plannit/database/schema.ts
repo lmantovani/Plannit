@@ -28,6 +28,25 @@ export class AmbientesBriefingSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class AmbientesCatalogoSchema extends BaseModel {
+  static $columns = ['categoria', 'createdAt', 'id', 'isActive', 'nome', 'ordem', 'updatedAt'] as const
+  $columns = AmbientesCatalogoSchema.$columns
+  @column()
+  declare categoria: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ArquitetoSchema extends BaseModel {
   static $columns = ['consultorId', 'createdAt', 'email', 'enderecoEscritorio', 'escritorio', 'especialidade', 'id', 'isActive', 'nivelParceria', 'nome', 'statusCarteira', 'telefone', 'tipo', 'updatedAt'] as const
   $columns = ArquitetoSchema.$columns
@@ -108,6 +127,25 @@ export class BriefingSchema extends BaseModel {
   declare scoreMinimo: string
   @column()
   declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class CampanhasLeadSchema extends BaseModel {
+  static $columns = ['createdAt', 'dataFim', 'dataInicio', 'id', 'isActive', 'nome', 'updatedAt'] as const
+  $columns = CampanhasLeadSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare dataFim: DateTime | null
+  @column.dateTime()
+  declare dataInicio: DateTime | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare nome: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
@@ -707,6 +745,23 @@ export class MetasVisitasConsultorSchema extends BaseModel {
   declare id: number
   @column()
   declare metaVisitasMes: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class OrigensLeadCatalogoSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'isActive', 'nome', 'slug', 'updatedAt'] as const
+  $columns = OrigensLeadCatalogoSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare slug: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

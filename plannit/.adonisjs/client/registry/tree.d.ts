@@ -131,4 +131,25 @@ export interface ApiDefinition {
       store: typeof routes['projetos.handoff.store']
     }
   }
+  configuracoes: {
+    index: typeof routes['configuracoes.index']
+    ambientes: {
+      store: typeof routes['configuracoes.ambientes.store']
+      update: typeof routes['configuracoes.ambientes.update']
+      toggle: typeof routes['configuracoes.ambientes.toggle']
+      destroy: typeof routes['configuracoes.ambientes.destroy']
+    }
+    origens: {
+      store: typeof routes['configuracoes.origens.store']
+      update: typeof routes['configuracoes.origens.update']
+      toggle: typeof routes['configuracoes.origens.toggle']
+      destroy: typeof routes['configuracoes.origens.destroy']
+    }
+    campanhas: {
+      store: typeof routes['configuracoes.campanhas.store']
+      update: typeof routes['configuracoes.campanhas.update']
+      toggle: typeof routes['configuracoes.campanhas.toggle']
+      destroy: typeof routes['configuracoes.campanhas.destroy']
+    }
+  }
 }

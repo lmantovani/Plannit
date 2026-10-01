@@ -492,6 +492,84 @@ const routes = {
     tokens: [{"old":"/projetos/:id/handoff","type":0,"val":"projetos","end":""},{"old":"/projetos/:id/handoff","type":1,"val":"id","end":""},{"old":"/projetos/:id/handoff","type":0,"val":"handoff","end":""}],
     types: placeholder as Registry['projetos.handoff.store']['types'],
   },
+  'configuracoes.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/configuracoes',
+    tokens: [{"old":"/configuracoes","type":0,"val":"configuracoes","end":""}],
+    types: placeholder as Registry['configuracoes.index']['types'],
+  },
+  'configuracoes.ambientes.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/ambientes',
+    tokens: [{"old":"/configuracoes/ambientes","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/ambientes","type":0,"val":"ambientes","end":""}],
+    types: placeholder as Registry['configuracoes.ambientes.store']['types'],
+  },
+  'configuracoes.ambientes.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/ambientes/:id',
+    tokens: [{"old":"/configuracoes/ambientes/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/ambientes/:id","type":0,"val":"ambientes","end":""},{"old":"/configuracoes/ambientes/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.ambientes.update']['types'],
+  },
+  'configuracoes.ambientes.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/ambientes/:id/toggle',
+    tokens: [{"old":"/configuracoes/ambientes/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/ambientes/:id/toggle","type":0,"val":"ambientes","end":""},{"old":"/configuracoes/ambientes/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/ambientes/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.ambientes.toggle']['types'],
+  },
+  'configuracoes.ambientes.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/ambientes/:id',
+    tokens: [{"old":"/configuracoes/ambientes/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/ambientes/:id","type":0,"val":"ambientes","end":""},{"old":"/configuracoes/ambientes/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.ambientes.destroy']['types'],
+  },
+  'configuracoes.origens.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/origens',
+    tokens: [{"old":"/configuracoes/origens","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/origens","type":0,"val":"origens","end":""}],
+    types: placeholder as Registry['configuracoes.origens.store']['types'],
+  },
+  'configuracoes.origens.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/origens/:id',
+    tokens: [{"old":"/configuracoes/origens/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/origens/:id","type":0,"val":"origens","end":""},{"old":"/configuracoes/origens/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.origens.update']['types'],
+  },
+  'configuracoes.origens.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/origens/:id/toggle',
+    tokens: [{"old":"/configuracoes/origens/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/origens/:id/toggle","type":0,"val":"origens","end":""},{"old":"/configuracoes/origens/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/origens/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.origens.toggle']['types'],
+  },
+  'configuracoes.origens.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/origens/:id',
+    tokens: [{"old":"/configuracoes/origens/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/origens/:id","type":0,"val":"origens","end":""},{"old":"/configuracoes/origens/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.origens.destroy']['types'],
+  },
+  'configuracoes.campanhas.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/campanhas',
+    tokens: [{"old":"/configuracoes/campanhas","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/campanhas","type":0,"val":"campanhas","end":""}],
+    types: placeholder as Registry['configuracoes.campanhas.store']['types'],
+  },
+  'configuracoes.campanhas.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/campanhas/:id',
+    tokens: [{"old":"/configuracoes/campanhas/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/campanhas/:id","type":0,"val":"campanhas","end":""},{"old":"/configuracoes/campanhas/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.campanhas.update']['types'],
+  },
+  'configuracoes.campanhas.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/campanhas/:id/toggle',
+    tokens: [{"old":"/configuracoes/campanhas/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/campanhas/:id/toggle","type":0,"val":"campanhas","end":""},{"old":"/configuracoes/campanhas/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/campanhas/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.campanhas.toggle']['types'],
+  },
+  'configuracoes.campanhas.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/campanhas/:id',
+    tokens: [{"old":"/configuracoes/campanhas/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/campanhas/:id","type":0,"val":"campanhas","end":""},{"old":"/configuracoes/campanhas/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.campanhas.destroy']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

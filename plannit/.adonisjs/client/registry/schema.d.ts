@@ -979,4 +979,160 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarHandoff']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'configuracoes.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/configuracoes'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['index']>>>
+    }
+  }
+  'configuracoes.ambientes.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/ambientes'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createAmbienteValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createAmbienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeAmbiente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeAmbiente']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.ambientes.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/ambientes/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateAmbienteValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateAmbienteValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateAmbiente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateAmbiente']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.ambientes.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/ambientes/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleAmbiente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleAmbiente']>>>
+    }
+  }
+  'configuracoes.ambientes.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/ambientes/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyAmbiente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyAmbiente']>>>
+    }
+  }
+  'configuracoes.origens.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/origens'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createOrigemValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createOrigemValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeOrigem']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeOrigem']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.origens.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/origens/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateOrigemValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateOrigemValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateOrigem']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateOrigem']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.origens.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/origens/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleOrigem']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleOrigem']>>>
+    }
+  }
+  'configuracoes.origens.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/origens/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyOrigem']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyOrigem']>>>
+    }
+  }
+  'configuracoes.campanhas.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/campanhas'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createCampanhaValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createCampanhaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCampanha']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCampanha']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.campanhas.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/campanhas/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateCampanhaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateCampanhaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCampanha']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCampanha']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.campanhas.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/campanhas/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCampanha']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCampanha']>>>
+    }
+  }
+  'configuracoes.campanhas.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/campanhas/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCampanha']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCampanha']>>>
+    }
+  }
 }

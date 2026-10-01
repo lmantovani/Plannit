@@ -397,12 +397,8 @@ export default class BriefingsController {
         }
         if (lead.faixaOrcamento) {
           switch (lead.faixaOrcamento) {
-            case 'ate_40k':
-              faixaMin = 20000
-              faixaMax = 40000
-              break
-            case '40k_80k':
-              faixaMin = 40000
+            case 'ate_80k':
+              faixaMin = 30000
               faixaMax = 80000
               break
             case '80k_150k':
@@ -412,6 +408,22 @@ export default class BriefingsController {
             case '150k_300k':
               faixaMin = 150000
               faixaMax = 300000
+              break
+            case '300k_500k':
+              faixaMin = 300000
+              faixaMax = 500000
+              break
+            case 'acima_500k':
+              faixaMin = 500000
+              faixaMax = 1000000
+              break
+            case 'ate_40k':
+              faixaMin = 20000
+              faixaMax = 40000
+              break
+            case '40k_80k':
+              faixaMin = 40000
+              faixaMax = 80000
               break
             case 'acima_300k':
               faixaMin = 300000

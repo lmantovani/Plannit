@@ -11,6 +11,9 @@ import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
 import User, { PerfilUsuario } from '#models/user'
 import HistoricoStatusLead from '#models/historico_status_lead'
+import AmbienteCatalogo from '#models/ambiente_catalogo'
+import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
+import CampanhaLead from '#models/campanha_lead'
 import {
   createLeadValidator,
   interacaoValidator,
@@ -187,11 +190,28 @@ export default class LeadsController {
       .select('id', 'nome', 'escritorio')
       .orderBy('nome', 'asc')
 
+    // Tabelas de apoio ativas
+    const ambientesCatalogo = await AmbienteCatalogo.query()
+      .where('isActive', true)
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const origensCatalogo = await OrigemLeadCatalogo.query()
+      .where('isActive', true)
+      .orderBy('nome', 'asc')
+
+    const campanhasCatalogo = await CampanhaLead.query()
+      .where('isActive', true)
+      .orderBy('nome', 'asc')
+
     return inertia.render('crm/index', {
       leads,
       estatisticas,
       vendedores,
       arquitetos: arquitetos.map((a) => ({ id: a.id, nome: a.nome, escritorio: a.escritorio })),
+      ambientesCatalogo: ambientesCatalogo.map((a) => ({ id: a.id, nome: a.nome, categoria: a.categoria })),
+      origensCatalogo: origensCatalogo.map((o) => ({ id: o.id, nome: o.nome, slug: o.slug })),
+      campanhasCatalogo: campanhasCatalogo.map((c) => ({ id: c.id, nome: c.nome })),
       filtros: {
         q: search,
         statusFunil: statusFilter || '',

@@ -52,10 +52,16 @@ export const ORIGEM_LEAD_LABELS: Record<OrigemLead, string> = {
 }
 
 export const FAIXA_ORCAMENTO_LABELS: Record<string, string> = {
-  ate_40k: 'Até R$ 40.000',
-  '40k_80k': 'R$ 40.000 a R$ 80.000',
+  // Novas faixas R2
+  ate_80k: 'Até R$ 80.000',
   '80k_150k': 'R$ 80.000 a R$ 150.000',
   '150k_300k': 'R$ 150.000 a R$ 300.000',
+  '300k_500k': 'R$ 300.000 a R$ 500.000',
+  acima_500k: 'Acima de R$ 500.000',
+
+  // Compatibilidade com registros legados
+  ate_40k: 'Até R$ 40.000',
+  '40k_80k': 'R$ 40.000 a R$ 80.000',
   acima_300k: 'Acima de R$ 300.000 (Alto Padrão)',
 }
 
@@ -64,6 +70,7 @@ export const PRAZO_OBRA_LABELS: Record<string, string> = {
   ate_3_meses: 'Entrega em até 3 meses',
   ate_6_meses: 'Entrega em 3 a 6 meses',
   mais_12_meses: 'Entrega em mais de 12 meses',
+  venda_futura_18m: 'Venda futura (acima de 18 meses)',
 }
 
 export const TIPO_IMOVEL_LABELS: Record<string, string> = {

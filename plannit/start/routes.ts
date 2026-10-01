@@ -10,6 +10,7 @@
 import { middleware } from '#start/kernel'
 import { controllers } from '#generated/controllers'
 import router from '@adonisjs/core/services/router'
+import { PerfilUsuario } from '#models/user'
 
 router
   .group(() => {
@@ -143,6 +144,33 @@ router
     router.post('projetos/:id/fechamento', [controllers.Fechamentos, 'salvarFechamento']).as('projetos.fechamento.store')
     router.post('projetos/:id/fechamento/parcelas/:parcelaId/pagar', [controllers.Fechamentos, 'liquidarParcela']).as('projetos.fechamento.parcelas.pagar')
     router.post('projetos/:id/handoff', [controllers.Fechamentos, 'salvarHandoff']).as('projetos.handoff.store')
+
+    // ==========================================
+    // CONFIGURAÇÕES & TABELAS DE APOIO (ETAPA 2)
+    // ==========================================
+    router
+      .group(() => {
+        router.get('configuracoes', [controllers.Configuracoes, 'index']).as('configuracoes.index')
+
+        // Ambientes
+        router.post('configuracoes/ambientes', [controllers.Configuracoes, 'storeAmbiente']).as('configuracoes.ambientes.store')
+        router.put('configuracoes/ambientes/:id', [controllers.Configuracoes, 'updateAmbiente']).as('configuracoes.ambientes.update')
+        router.patch('configuracoes/ambientes/:id/toggle', [controllers.Configuracoes, 'toggleAmbiente']).as('configuracoes.ambientes.toggle')
+        router.delete('configuracoes/ambientes/:id', [controllers.Configuracoes, 'destroyAmbiente']).as('configuracoes.ambientes.destroy')
+
+        // Origens
+        router.post('configuracoes/origens', [controllers.Configuracoes, 'storeOrigem']).as('configuracoes.origens.store')
+        router.put('configuracoes/origens/:id', [controllers.Configuracoes, 'updateOrigem']).as('configuracoes.origens.update')
+        router.patch('configuracoes/origens/:id/toggle', [controllers.Configuracoes, 'toggleOrigem']).as('configuracoes.origens.toggle')
+        router.delete('configuracoes/origens/:id', [controllers.Configuracoes, 'destroyOrigem']).as('configuracoes.origens.destroy')
+
+        // Campanhas
+        router.post('configuracoes/campanhas', [controllers.Configuracoes, 'storeCampanha']).as('configuracoes.campanhas.store')
+        router.put('configuracoes/campanhas/:id', [controllers.Configuracoes, 'updateCampanha']).as('configuracoes.campanhas.update')
+        router.patch('configuracoes/campanhas/:id/toggle', [controllers.Configuracoes, 'toggleCampanha']).as('configuracoes.campanhas.toggle')
+        router.delete('configuracoes/campanhas/:id', [controllers.Configuracoes, 'destroyCampanha']).as('configuracoes.campanhas.destroy')
+      })
+      .use(middleware.role([PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL]))
   })
   .use(middleware.auth())
 

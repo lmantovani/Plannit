@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Menu,
   BookOpen,
+  Sliders,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -133,6 +134,9 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
       section: 'Gestão',
       items: [
         { label: 'Colaboradores', href: '/colaboradores', icon: UserCog, badge: 'RH-RN009' },
+        ...(user?.isSuperuser || user?.perfil === 'diretoria' || user?.perfil === 'gerente_comercial'
+          ? [{ label: 'Configurações', href: '/configuracoes', icon: Sliders }]
+          : []),
       ],
     },
     {

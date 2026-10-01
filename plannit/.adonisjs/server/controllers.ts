@@ -8,6 +8,7 @@ export const controllers = {
   Briefings: () => import('#controllers/briefings_controller'),
   Clientes: () => import('#controllers/clientes_controller'),
   Colaboradores: () => import('#controllers/colaboradores_controller'),
+  Configuracoes: () => import('#controllers/configuracoes_controller'),
   Dashboard: () => import('#controllers/dashboard_controller'),
   Fechamentos: () => import('#controllers/fechamentos_controller'),
   Fila: () => import('#controllers/fila_controller'),

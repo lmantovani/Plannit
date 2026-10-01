@@ -112,6 +112,9 @@ export type PageProps = {
   estatisticas: Estatisticas
   vendedores: VendedorOption[]
   arquitetos: ArquitetoOption[]
+  ambientesCatalogo?: { id: number; nome: string; categoria: string }[]
+  origensCatalogo?: { id: number; nome: string; slug: string }[]
+  campanhasCatalogo?: { id: number; nome: string }[]
   filtros: {
     q: string
     statusFunil: string
@@ -126,6 +129,9 @@ const CRMIndex: React.FC<PageProps> = ({
   estatisticas,
   vendedores,
   arquitetos,
+  ambientesCatalogo = [],
+  origensCatalogo = [],
+  campanhasCatalogo = [],
   filtros,
   isVendedor,
 }) => {
@@ -142,6 +148,16 @@ const CRMIndex: React.FC<PageProps> = ({
   const [leadParaQualificar, setLeadParaQualificar] = useState<LeadItem | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   const draggedLeadId = useRef<number | null>(null)
+
+  const origensMap = React.useMemo(() => {
+    const map: Record<string, string> = { ...ORIGEM_LABELS }
+    if (origensCatalogo) {
+      for (const o of origensCatalogo) {
+        map[o.slug] = o.nome
+      }
+    }
+    return map
+  }, [origensCatalogo])
 
   // Encontra lead selecionado sempre atualizado
   const selectedLead = leads.find((l) => l.id === selectedLeadId) || null
@@ -308,7 +324,7 @@ const CRMIndex: React.FC<PageProps> = ({
               className="input py-1.5 text-xs w-36"
             >
               <option value="">Todas Origens</option>
-              {Object.entries(ORIGEM_LABELS).map(([k, v]) => (
+              {Object.entries(origensMap).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
                 </option>
@@ -440,6 +456,7 @@ const CRMIndex: React.FC<PageProps> = ({
                             lead={lead}
                             onClick={() => setSelectedLeadId(lead.id)}
                             onDragStart={() => handleDragStart(lead.id)}
+                            origensMap={origensMap}
                           />
                         ))
                       )}
@@ -501,7 +518,7 @@ const CRMIndex: React.FC<PageProps> = ({
                         <td className="py-3 px-3 text-stone-600">{l.cidade || '—'}</td>
                         <td className="py-3 px-3">
                           <span className="badge badge-neutro text-[10px]">
-                            {ORIGEM_LABELS[l.origem] || l.origem}
+                            {origensMap[l.origem] || l.origem}
                           </span>
                         </td>
                         <td className="py-3 px-3">
@@ -548,6 +565,7 @@ const CRMIndex: React.FC<PageProps> = ({
           onMarcarPerdido={() => {
             setLeadParaPerder(selectedLead)
           }}
+          origensMap={origensMap}
         />
       )}
 
@@ -556,6 +574,7 @@ const CRMIndex: React.FC<PageProps> = ({
         <QualificarLeadModal
           lead={leadParaQualificar}
           arquitetos={arquitetos || []}
+          ambientesDisponiveis={ambientesCatalogo?.map((a) => a.nome)}
           onClose={() => setLeadParaQualificar(null)}
         />
       )}
@@ -566,6 +585,8 @@ const CRMIndex: React.FC<PageProps> = ({
           onClose={() => setShowNovoModal(false)}
           vendedores={vendedores}
           isVendedor={isVendedor}
+          origensCatalogo={origensCatalogo}
+          campanhasCatalogo={campanhasCatalogo}
         />
       )}
 
@@ -587,10 +608,12 @@ function LeadCard({
   lead,
   onClick,
   onDragStart,
+  origensMap,
 }: {
   lead: LeadItem
   onClick: () => void
   onDragStart: () => void
+  origensMap?: Record<string, string>
 }) {
   return (
     <div
@@ -661,7 +684,7 @@ function LeadCard({
       {/* Rodapé do Card */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-100 text-[10px]">
         <span className="badge badge-neutro text-[9px] py-0 px-1.5">
-          {ORIGEM_LABELS[lead.origem] || lead.origem}
+          {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
         </span>
 
         <span
@@ -686,12 +709,14 @@ function LeadDrawer({
   onQualificar,
   onIniciarBriefing,
   onMarcarPerdido,
+  origensMap,
 }: {
   lead: LeadItem
   onClose: () => void
   onQualificar: () => void
   onIniciarBriefing: () => void
   onMarcarPerdido: () => void
+  origensMap?: Record<string, string>
 }) {
   const [tipo, setTipo] = useState('whatsapp')
   const [resumo, setResumo] = useState('')
@@ -823,7 +848,7 @@ function LeadDrawer({
         <div>
           <p className="text-[10px] font-semibold text-stone-400 uppercase">Origem</p>
           <p className="font-medium text-stone-700 mt-0.5">
-            {ORIGEM_LABELS[lead.origem] || lead.origem}
+            {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
           </p>
         </div>
 
@@ -1065,10 +1090,14 @@ function NovoLeadModal({
   onClose,
   vendedores,
   isVendedor,
+  origensCatalogo,
+  campanhasCatalogo,
 }: {
   onClose: () => void
   vendedores: VendedorOption[]
   isVendedor: boolean
+  origensCatalogo?: { id: number; nome: string; slug: string }[]
+  campanhasCatalogo?: { id: number; nome: string }[]
 }) {
   const { data, setData, post, processing, errors, reset } = useForm({
     nome: '',
@@ -1076,7 +1105,7 @@ function NovoLeadModal({
     email: '',
     cidade: '',
     estado: 'SP',
-    origem: 'outro',
+    origem: (origensCatalogo && origensCatalogo.length > 0 ? origensCatalogo[0].slug : 'outro'),
     campanha: '',
     vendedorId: '',
   })
@@ -1166,11 +1195,17 @@ function NovoLeadModal({
                 onChange={(e) => setData('origem', e.target.value)}
                 className="input text-xs"
               >
-                {Object.entries(ORIGEM_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
+                {origensCatalogo && origensCatalogo.length > 0
+                  ? origensCatalogo.map((o) => (
+                      <option key={o.id} value={o.slug}>
+                        {o.nome}
+                      </option>
+                    ))
+                  : Object.entries(ORIGEM_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
               </select>
             </div>
 
@@ -1178,11 +1213,19 @@ function NovoLeadModal({
               <label className="label">Campanha / Referência</label>
               <input
                 type="text"
+                list="crm-campanhas-list"
                 value={data.campanha}
                 onChange={(e) => setData('campanha', e.target.value)}
-                placeholder="Ex: Instagram Cozinhas Premium / Indicação Arq. Bruno"
+                placeholder="Ex: Campanha Cozinhas & Gourmet / Indicação Arq. Bruno"
                 className="input text-xs"
               />
+              {campanhasCatalogo && campanhasCatalogo.length > 0 && (
+                <datalist id="crm-campanhas-list">
+                  {campanhasCatalogo.map((c) => (
+                    <option key={c.id} value={c.nome} />
+                  ))}
+                </datalist>
+              )}
             </div>
 
             {!isVendedor && vendedores && vendedores.length > 0 && (
