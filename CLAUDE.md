@@ -54,7 +54,7 @@ Não há usuário `RH` no seed — use o admin para o módulo Colaboradores.
 ## Arquitetura do monólito
 - **Sem API REST separada:** as rotas em `start/routes.ts` são URLs de página (`/crm`, `/especificadores/:id`...), não `/api/v1`. GET → `inertia.render('<modulo>/index', props)`. Mutação → validator VineJS (`app/validators/`) → `session.flash('success' | 'error', msg)` → `response.redirect().back()`.
 - **JSON paralelo:** vários controllers têm um helper privado `wantsJson()`. Quando a requisição não é Inertia (`X-Inertia` ausente) e pede `application/json` ou `?format=json`, respondem JSON em vez de redirect. Bloqueios de RN devolvem um `code` (ex.: `RN005_RENDER_NAO_CONCLUIDO`, `RN006_HANDOFF_INCOMPLETO`). Os scripts `test_http_*` dependem disso.
-- **Flash → toast:** `app/middleware/inertia_middleware.ts` (`flash()`) só repassa as chaves `error` e `success`, exibidas como toast em `layouts/app_layout.tsx` e `layouts/default.tsx`. Flash com outra chave (`'erro'` em `briefings_controller.ts`, `'info'` em `fechamentos_controller.ts`/`clientes_controller.ts`) é descartado silenciosamente.
+- **Flash → toast:** use só as chaves `error` e `success` em `session.flash(...)`. `app/middleware/inertia_middleware.ts` (`flash()`) repassa apenas essas duas, exibidas como toast em `layouts/app_layout.tsx` e `layouts/default.tsx`; qualquer outra chave é descartada sem aviso (ver "Bugs conhecidos").
 - **Controllers auto-registrados:** `routes.ts` usa `controllers.X` de `#generated/controllers`, gerado em `.adonisjs/` pelo hook `indexEntities` do `adonisrc.ts` (no dev server e no build). Nunca editar `.adonisjs/`. Imports internos usam os aliases `#models/*`, `#validators/*`, `#services/*` etc. do `package.json`.
 - **Ordem de rotas:** caminhos fixos (`especificadores/kpis`, `colaboradores/departamentos`, `wip/configuracoes`) declarados ANTES dos com `:id` em `start/routes.ts`.
 - **Schema gerado:** `database/schema.ts` é regenerado pelo `migration:run` a partir do banco — NÃO editar. Os models estendem essas classes (`class Arquiteto extends ArquitetoSchema`) e acrescentam relações, getters computados, enums e mapas `*_LABELS`. Mudar coluna = nova migration (`node ace make:migration`) + `migration:run`. Só redeclarar `@column` no model para sobrescrever comportamento (ex.: `jsonPrepareConsume` nas colunas JSON de `lead.ts`, `briefing.ts`, `handoff.ts`).
@@ -82,6 +82,11 @@ Não há usuário `RH` no seed — use o admin para o módulo Colaboradores.
 | `/configuracoes` | `configuracoes_controller.ts` | Catálogos de ambientes, origens e campanhas (só Diretoria/Gerente) |
 
 **Pendentes:** Conferência e Montagem (desabilitados na sidebar), Financeiro além de parcelas, Gestão Documental, motor de notificações (RN019-RN022 — não há model de notificação no monólito), RH02-RH11 e o deploy do monólito.
+
+## Bugs conhecidos
+Remover o item daqui quando for corrigido.
+- **Flash com chave errada nunca aparece para o usuário** (registrado em 2026-10-01). `briefings_controller.ts` e `fila_controller.ts` gravam `session.flash('erro', ...)` em vez de `'error'`; `projetos_controller.ts` (versão 3D devolvida), `fechamentos_controller.ts` (handoff salvo com itens pendentes) e `clientes_controller.ts` (cadastro já aprovado) gravam `'info'`, que o `app_layout.tsx` sabe exibir, mas o `flash()` do `inertia_middleware.ts` não repassa. Efeito mais grave: na Fila, alocar um projetista lotado (RN003) é recusado sem nenhuma mensagem. Correção: trocar `'erro'` por `'error'` e incluir `info` no `flash()` do middleware.
+- **`briefings_controller.ts → store` responde JSON a requisição Inertia** (registrado em 2026-10-01). Quando o lead enviado pelo CRM não existe ou não está qualificado (RN001), o controller grava o flash e devolve `response.badRequest({...})` mesmo para requisições Inertia, sem passar pelo padrão `wantsJson()`. Deveria fazer flash `error` + `redirect().back()` quando a requisição for Inertia.
 
 ## Decisões de Arquitetura
 - **Railway** escolhido para fase demo/evolução; migração para **AWS EC2** planejada quando virar negócio real.
