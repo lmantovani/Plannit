@@ -1,12 +1,7 @@
 import React, { useState } from 'react'
 import { UserCheck, AlertCircle, X, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
-
-const getXsrfToken = (): string => {
-  if (typeof document === 'undefined') return ''
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
-}
+import { getXsrfToken } from '../../lib/http'
 
 export interface EspecificadorItem {
   id: number

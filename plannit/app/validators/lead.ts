@@ -1,4 +1,4 @@
-import vine from '@vinejs/vine'
+import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 import type { FieldContext } from '@vinejs/vine/types'
 
 /**
@@ -41,7 +41,19 @@ export const createLeadValidator = vine.create({
   cidade: vine.string().trim().maxLength(100).optional(),
   estado: vine.string().trim().maxLength(2).optional(),
   origem: vine.string().trim().maxLength(100).optional(),
-  campanha: vine.string().trim().maxLength(200).optional(),
+  // Campanha só do catálogo ativo (Configurações → Campanhas), para os KPIs não dependerem de texto livre
+  campanha: vine
+    .string()
+    .trim()
+    .maxLength(200)
+    .exists({
+      table: 'campanhas_lead',
+      column: 'nome',
+      filter: (db) => {
+        db.where('is_active', true)
+      },
+    })
+    .optional(),
   vendedorId: vine.number().positive().optional(),
   // Especificador que indicou o lead (só usado quando a origem é "arquiteto")
   arquitetoId: vine
@@ -55,6 +67,11 @@ export const createLeadValidator = vine.create({
       },
     })
     .optional(),
+})
+
+createLeadValidator.messagesProvider = new SimpleMessagesProvider({
+  'arquitetoId.database.exists': 'Especificador não encontrado ou inativo.',
+  'campanha.database.exists': 'Selecione uma campanha ativa do catálogo.',
 })
 
 export const updateLeadValidator = vine.create({

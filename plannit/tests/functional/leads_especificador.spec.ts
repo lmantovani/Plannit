@@ -46,16 +46,12 @@ test.group('CRM — Lead com origem Especificador', (group) => {
     const telefone = `(11) 9${Date.now().toString().slice(-8)}`
     telefonesCriados.push(telefone)
 
-    await client
-      .post('/crm/leads')
-      .loginAs(vendedor)
-      .withCsrfToken()
-      .form({
-        nome: 'Lead Indicado por Especificador',
-        telefone,
-        origem: 'arquiteto',
-        arquitetoId: especificador.id,
-      })
+    await client.post('/crm/leads').loginAs(vendedor).withCsrfToken().form({
+      nome: 'Lead Indicado por Especificador',
+      telefone,
+      origem: 'arquiteto',
+      arquitetoId: especificador.id,
+    })
 
     const lead = await Lead.findByOrFail('telefone', telefone)
     assert.equal(lead.arquitetoId, especificador.id)
@@ -68,21 +64,20 @@ test.group('CRM — Lead com origem Especificador', (group) => {
       'Vendedor Teste Esp',
       PerfilUsuario.VENDEDOR
     )
-    const especificador = await Arquiteto.create({ nome: 'Arq. Teste Outra Origem', isActive: true })
+    const especificador = await Arquiteto.create({
+      nome: 'Arq. Teste Outra Origem',
+      isActive: true,
+    })
     especificadoresCriados.push(especificador.id)
     const telefone = `(11) 9${Date.now().toString().slice(-8)}`
     telefonesCriados.push(telefone)
 
-    await client
-      .post('/crm/leads')
-      .loginAs(vendedor)
-      .withCsrfToken()
-      .form({
-        nome: 'Lead Vindo do Instagram',
-        telefone,
-        origem: 'instagram',
-        arquitetoId: especificador.id,
-      })
+    await client.post('/crm/leads').loginAs(vendedor).withCsrfToken().form({
+      nome: 'Lead Vindo do Instagram',
+      telefone,
+      origem: 'instagram',
+      arquitetoId: especificador.id,
+    })
 
     const lead = await Lead.findByOrFail('telefone', telefone)
     assert.isNull(lead.arquitetoId)

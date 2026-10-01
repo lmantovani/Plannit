@@ -38,6 +38,7 @@ import ModalNovoParceiroRapido, {
   type EspecificadorItem,
 } from '../../components/especificadores/ModalNovoParceiroRapido'
 import EspecificadorAutocomplete from '../../components/especificadores/EspecificadorAutocomplete'
+import CampanhaAutocomplete from '../../components/crm/CampanhaAutocomplete'
 
 export type LeadInteracao = {
   id: number
@@ -1345,8 +1346,8 @@ function NovoLeadModal({
 
             <div className="col-span-2">
               <div className="flex items-center justify-between mb-1">
-                <label className="label mb-0">Campanha / Referência</label>
-                {!isVendedor && (
+                <label className="label mb-0">Campanha</label>
+                {canManageConfig && (
                   <a
                     href="/configuracoes?tab=campanhas"
                     target="_blank"
@@ -1359,20 +1360,14 @@ function NovoLeadModal({
                   </a>
                 )}
               </div>
-              <input
-                type="text"
-                list="crm-campanhas-list"
+              <CampanhaAutocomplete
+                campanhas={campanhasCatalogo || []}
                 value={data.campanha}
-                onChange={(e) => setData('campanha', e.target.value)}
-                placeholder="Ex: Campanha Cozinhas & Gourmet / Indicação Arq. Bruno"
-                className="input text-xs"
+                onChange={(nome) => setData('campanha', nome)}
+                podeCadastrar={canManageConfig}
               />
-              {campanhasCatalogo && campanhasCatalogo.length > 0 && (
-                <datalist id="crm-campanhas-list">
-                  {campanhasCatalogo.map((c) => (
-                    <option key={c.id} value={c.nome} />
-                  ))}
-                </datalist>
+              {errors.campanha && (
+                <p className="text-red-500 text-[11px] mt-1">{errors.campanha}</p>
               )}
             </div>
 
