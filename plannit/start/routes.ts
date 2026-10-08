@@ -146,6 +146,17 @@ router
     router.post('projetos/:id/handoff', [controllers.Fechamentos, 'salvarHandoff']).as('projetos.handoff.store')
 
     // ==========================================
+    // MÓDULO DE AGENDA (REQUISITO R2)
+    // ==========================================
+    router.get('agenda', [controllers.Agenda, 'index']).as('agenda.index')
+    router.post('agenda/compromissos', [controllers.Agenda, 'store']).as('agenda.compromissos.store')
+    router.put('agenda/compromissos/:id', [controllers.Agenda, 'update']).as('agenda.compromissos.update')
+    router.patch('agenda/compromissos/:id', [controllers.Agenda, 'update']).as('agenda.compromissos.patch')
+    router.patch('agenda/compromissos/:id/reagendar', [controllers.Agenda, 'reagendar']).as('agenda.compromissos.reagendar')
+    router.patch('agenda/compromissos/:id/cancelar', [controllers.Agenda, 'cancelar']).as('agenda.compromissos.cancelar')
+    router.patch('agenda/compromissos/:id/concluir', [controllers.Agenda, 'concluir']).as('agenda.compromissos.concluir')
+
+    // ==========================================
     // CONFIGURAÇÕES & TABELAS DE APOIO (ETAPA 2)
     // ==========================================
     router
@@ -169,6 +180,12 @@ router
         router.put('configuracoes/campanhas/:id', [controllers.Configuracoes, 'updateCampanha']).as('configuracoes.campanhas.update')
         router.patch('configuracoes/campanhas/:id/toggle', [controllers.Configuracoes, 'toggleCampanha']).as('configuracoes.campanhas.toggle')
         router.delete('configuracoes/campanhas/:id', [controllers.Configuracoes, 'destroyCampanha']).as('configuracoes.campanhas.destroy')
+
+        // Tipos de Compromisso (Agenda)
+        router.post('configuracoes/tipos-compromisso', [controllers.Configuracoes, 'storeTipoCompromisso']).as('configuracoes.tipos_compromisso.store')
+        router.put('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'updateTipoCompromisso']).as('configuracoes.tipos_compromisso.update')
+        router.patch('configuracoes/tipos-compromisso/:id/toggle', [controllers.Configuracoes, 'toggleTipoCompromisso']).as('configuracoes.tipos_compromisso.toggle')
+        router.delete('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'destroyTipoCompromisso']).as('configuracoes.tipos_compromisso.destroy')
       })
       .use(middleware.role([PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL]))
   })

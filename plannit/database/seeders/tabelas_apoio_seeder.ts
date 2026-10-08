@@ -56,5 +56,20 @@ export default class TabelasApoioSeeder extends BaseSeeder {
       ]
       await db.table('campanhas_lead').multiInsert(campanhasPadrao)
     }
+
+    // 4. Tipos de Compromisso Padrão (Agenda)
+    const countTipos = await db.from('tipos_compromisso_catalogo').count('* as total')
+    if (Number(countTipos[0]?.total || 0) === 0) {
+      const tiposPadrao = [
+        { nome: 'Briefing Técnico', slug: 'briefing_tecnico', cor: '#3B82F6', ordem: 10, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Visita e Medição no Local', slug: 'visita_medicao', cor: '#10B981', ordem: 20, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Apresentação de Projeto 3D', slug: 'apresentacao_3d', cor: '#8B5CF6', ordem: 30, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Visita à Obra', slug: 'visita_obra', cor: '#F59E0B', ordem: 40, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Reunião de Alinhamento na Loja', slug: 'reuniao_loja', cor: '#EC4899', ordem: 50, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Alinhamento com Especificador / Arquiteto', slug: 'alinhamento_especificador', cor: '#6366F1', ordem: 60, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Outro', slug: 'outro', cor: '#6B7280', ordem: 70, is_active: true, created_at: now, updated_at: now },
+      ]
+      await db.table('tipos_compromisso_catalogo').multiInsert(tiposPadrao)
+    }
   }
 }

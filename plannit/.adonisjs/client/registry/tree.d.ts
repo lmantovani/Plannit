@@ -131,6 +131,17 @@ export interface ApiDefinition {
       store: typeof routes['projetos.handoff.store']
     }
   }
+  agenda: {
+    index: typeof routes['agenda.index']
+    compromissos: {
+      store: typeof routes['agenda.compromissos.store']
+      update: typeof routes['agenda.compromissos.update']
+      patch: typeof routes['agenda.compromissos.patch']
+      reagendar: typeof routes['agenda.compromissos.reagendar']
+      cancelar: typeof routes['agenda.compromissos.cancelar']
+      concluir: typeof routes['agenda.compromissos.concluir']
+    }
+  }
   configuracoes: {
     index: typeof routes['configuracoes.index']
     ambientes: {
@@ -150,6 +161,12 @@ export interface ApiDefinition {
       update: typeof routes['configuracoes.campanhas.update']
       toggle: typeof routes['configuracoes.campanhas.toggle']
       destroy: typeof routes['configuracoes.campanhas.destroy']
+    }
+    tiposCompromisso: {
+      store: typeof routes['configuracoes.tipos_compromisso.store']
+      update: typeof routes['configuracoes.tipos_compromisso.update']
+      toggle: typeof routes['configuracoes.tipos_compromisso.toggle']
+      destroy: typeof routes['configuracoes.tipos_compromisso.destroy']
     }
   }
 }

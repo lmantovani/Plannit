@@ -492,6 +492,48 @@ const routes = {
     tokens: [{"old":"/projetos/:id/handoff","type":0,"val":"projetos","end":""},{"old":"/projetos/:id/handoff","type":1,"val":"id","end":""},{"old":"/projetos/:id/handoff","type":0,"val":"handoff","end":""}],
     types: placeholder as Registry['projetos.handoff.store']['types'],
   },
+  'agenda.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/agenda',
+    tokens: [{"old":"/agenda","type":0,"val":"agenda","end":""}],
+    types: placeholder as Registry['agenda.index']['types'],
+  },
+  'agenda.compromissos.store': {
+    methods: ["POST"],
+    pattern: '/agenda/compromissos',
+    tokens: [{"old":"/agenda/compromissos","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos","type":0,"val":"compromissos","end":""}],
+    types: placeholder as Registry['agenda.compromissos.store']['types'],
+  },
+  'agenda.compromissos.update': {
+    methods: ["PUT"],
+    pattern: '/agenda/compromissos/:id',
+    tokens: [{"old":"/agenda/compromissos/:id","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos/:id","type":0,"val":"compromissos","end":""},{"old":"/agenda/compromissos/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['agenda.compromissos.update']['types'],
+  },
+  'agenda.compromissos.patch': {
+    methods: ["PATCH"],
+    pattern: '/agenda/compromissos/:id',
+    tokens: [{"old":"/agenda/compromissos/:id","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos/:id","type":0,"val":"compromissos","end":""},{"old":"/agenda/compromissos/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['agenda.compromissos.patch']['types'],
+  },
+  'agenda.compromissos.reagendar': {
+    methods: ["PATCH"],
+    pattern: '/agenda/compromissos/:id/reagendar',
+    tokens: [{"old":"/agenda/compromissos/:id/reagendar","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos/:id/reagendar","type":0,"val":"compromissos","end":""},{"old":"/agenda/compromissos/:id/reagendar","type":1,"val":"id","end":""},{"old":"/agenda/compromissos/:id/reagendar","type":0,"val":"reagendar","end":""}],
+    types: placeholder as Registry['agenda.compromissos.reagendar']['types'],
+  },
+  'agenda.compromissos.cancelar': {
+    methods: ["PATCH"],
+    pattern: '/agenda/compromissos/:id/cancelar',
+    tokens: [{"old":"/agenda/compromissos/:id/cancelar","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos/:id/cancelar","type":0,"val":"compromissos","end":""},{"old":"/agenda/compromissos/:id/cancelar","type":1,"val":"id","end":""},{"old":"/agenda/compromissos/:id/cancelar","type":0,"val":"cancelar","end":""}],
+    types: placeholder as Registry['agenda.compromissos.cancelar']['types'],
+  },
+  'agenda.compromissos.concluir': {
+    methods: ["PATCH"],
+    pattern: '/agenda/compromissos/:id/concluir',
+    tokens: [{"old":"/agenda/compromissos/:id/concluir","type":0,"val":"agenda","end":""},{"old":"/agenda/compromissos/:id/concluir","type":0,"val":"compromissos","end":""},{"old":"/agenda/compromissos/:id/concluir","type":1,"val":"id","end":""},{"old":"/agenda/compromissos/:id/concluir","type":0,"val":"concluir","end":""}],
+    types: placeholder as Registry['agenda.compromissos.concluir']['types'],
+  },
   'configuracoes.index': {
     methods: ["GET","HEAD"],
     pattern: '/configuracoes',
@@ -569,6 +611,30 @@ const routes = {
     pattern: '/configuracoes/campanhas/:id',
     tokens: [{"old":"/configuracoes/campanhas/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/campanhas/:id","type":0,"val":"campanhas","end":""},{"old":"/configuracoes/campanhas/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['configuracoes.campanhas.destroy']['types'],
+  },
+  'configuracoes.tipos_compromisso.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/tipos-compromisso',
+    tokens: [{"old":"/configuracoes/tipos-compromisso","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso","type":0,"val":"tipos-compromisso","end":""}],
+    types: placeholder as Registry['configuracoes.tipos_compromisso.store']['types'],
+  },
+  'configuracoes.tipos_compromisso.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/tipos-compromisso/:id',
+    tokens: [{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"tipos-compromisso","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.tipos_compromisso.update']['types'],
+  },
+  'configuracoes.tipos_compromisso.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/tipos-compromisso/:id/toggle',
+    tokens: [{"old":"/configuracoes/tipos-compromisso/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso/:id/toggle","type":0,"val":"tipos-compromisso","end":""},{"old":"/configuracoes/tipos-compromisso/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/tipos-compromisso/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.tipos_compromisso.toggle']['types'],
+  },
+  'configuracoes.tipos_compromisso.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/tipos-compromisso/:id',
+    tokens: [{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"tipos-compromisso","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.tipos_compromisso.destroy']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 

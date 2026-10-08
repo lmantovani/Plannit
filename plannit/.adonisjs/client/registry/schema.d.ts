@@ -979,6 +979,90 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/fechamentos_controller').default['salvarHandoff']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'agenda.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/agenda'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['index']>>>
+    }
+  }
+  'agenda.compromissos.store': {
+    methods: ["POST"]
+    pattern: '/agenda/compromissos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').createCompromissoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').createCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'agenda.compromissos.update': {
+    methods: ["PUT"]
+    pattern: '/agenda/compromissos/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').updateCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').updateCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'agenda.compromissos.patch': {
+    methods: ["PATCH"]
+    pattern: '/agenda/compromissos/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').updateCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').updateCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'agenda.compromissos.reagendar': {
+    methods: ["PATCH"]
+    pattern: '/agenda/compromissos/:id/reagendar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').reagendarCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').reagendarCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['reagendar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['reagendar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'agenda.compromissos.cancelar': {
+    methods: ["PATCH"]
+    pattern: '/agenda/compromissos/:id/cancelar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').cancelarCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').cancelarCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['cancelar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['cancelar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'agenda.compromissos.concluir': {
+    methods: ["PATCH"]
+    pattern: '/agenda/compromissos/:id/concluir'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/compromisso_agenda').concluirCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/compromisso_agenda').concluirCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['concluir']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/agenda_controller').default['concluir']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'configuracoes.index': {
     methods: ["GET","HEAD"]
     pattern: '/configuracoes'
@@ -1133,6 +1217,54 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCampanha']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCampanha']>>>
+    }
+  }
+  'configuracoes.tipos_compromisso.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/tipos-compromisso'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createTipoCompromissoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createTipoCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeTipoCompromisso']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeTipoCompromisso']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.tipos_compromisso.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/tipos-compromisso/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateTipoCompromissoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateTipoCompromissoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateTipoCompromisso']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateTipoCompromisso']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.tipos_compromisso.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/tipos-compromisso/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleTipoCompromisso']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleTipoCompromisso']>>>
+    }
+  }
+  'configuracoes.tipos_compromisso.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/tipos-compromisso/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
     }
   }
 }

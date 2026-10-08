@@ -5,6 +5,7 @@ import {
   Layers,
   Compass,
   Megaphone,
+  Calendar,
   Plus,
   Trash2,
   X,
@@ -14,6 +15,19 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
+
+export const CORES_PALETA_TIPOS = [
+  '#3B82F6', // Azul (Briefing)
+  '#10B981', // Verde Esmeralda (Medição)
+  '#8B5CF6', // Roxo (Apresentação 3D)
+  '#F59E0B', // Âmbar (Obra)
+  '#EC4899', // Rosa (Reunião Loja)
+  '#6366F1', // Índigo (Especificador)
+  '#06B6D4', // Ciano
+  '#EF4444', // Vermelho
+  '#C8841A', // Ouro Líder
+  '#6B7280', // Cinza (Outro)
+]
 
 export type AmbienteItem = {
   id: number
@@ -44,16 +58,28 @@ export type CampanhaItem = {
   updatedAt: string | null
 }
 
+export type TipoCompromissoItem = {
+  id: number
+  nome: string
+  slug: string
+  cor: string
+  ordem: number
+  isActive: boolean
+  createdAt: string | null
+  updatedAt: string | null
+}
+
 interface ConfiguracoesPageProps {
   ambientes: AmbienteItem[]
   origens: OrigemItem[]
   campanhas: CampanhaItem[]
+  tiposCompromisso?: TipoCompromissoItem[]
 }
 
-type TabKey = 'ambientes' | 'origens' | 'campanhas'
+type TabKey = 'ambientes' | 'origens' | 'campanhas' | 'tipos_compromisso'
 
 export type DeleteTarget = {
-  type: 'ambiente' | 'origem' | 'campanha'
+  type: 'ambiente' | 'origem' | 'campanha' | 'tipo_compromisso'
   id: number
   nome: string
 }
@@ -62,12 +88,18 @@ export default function ConfiguracoesPage({
   ambientes = [],
   origens = [],
   campanhas = [],
+  tiposCompromisso = [],
 }: ConfiguracoesPageProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const tab = params.get('tab')
-      if (tab === 'ambientes' || tab === 'origens' || tab === 'campanhas') {
+      if (
+        tab === 'ambientes' ||
+        tab === 'origens' ||
+        tab === 'campanhas' ||
+        tab === 'tipos_compromisso'
+      ) {
         return tab
       }
     }
@@ -78,11 +110,13 @@ export default function ConfiguracoesPage({
   const [modalAmbienteOpen, setModalAmbienteOpen] = useState(false)
   const [modalOrigemOpen, setModalOrigemOpen] = useState(false)
   const [modalCampanhaOpen, setModalCampanhaOpen] = useState(false)
+  const [modalTipoCompromissoOpen, setModalTipoCompromissoOpen] = useState(false)
 
   // Modais de Edição
   const [editingAmbiente, setEditingAmbiente] = useState<AmbienteItem | null>(null)
   const [editingOrigem, setEditingOrigem] = useState<OrigemItem | null>(null)
   const [editingCampanha, setEditingCampanha] = useState<CampanhaItem | null>(null)
+  const [editingTipoCompromisso, setEditingTipoCompromisso] = useState<TipoCompromissoItem | null>(null)
 
   // Forms de Criação
   const ambienteForm = useForm({
@@ -105,6 +139,14 @@ export default function ConfiguracoesPage({
     isActive: true,
   })
 
+  const tipoCompromissoForm = useForm({
+    nome: '',
+    slug: '',
+    cor: '#3B82F6',
+    ordem: 0,
+    isActive: true,
+  })
+
   // Forms de Edição
   const ambienteEditForm = useForm({
     nome: '',
@@ -123,6 +165,14 @@ export default function ConfiguracoesPage({
     nome: '',
     dataInicio: '',
     dataFim: '',
+    isActive: true,
+  })
+
+  const tipoCompromissoEditForm = useForm({
+    nome: '',
+    slug: '',
+    cor: '#3B82F6',
+    ordem: 0,
     isActive: true,
   })
 
@@ -155,9 +205,23 @@ export default function ConfiguracoesPage({
     })
   }
 
-  const notifyCatalogoUpdate = () => {
+  const handleOpenEditTipoCompromisso = (item: TipoCompromissoItem) => {
+    setEditingTipoCompromisso(item)
+    tipoCompromissoEditForm.setData({
+      nome: item.nome,
+      slug: item.slug,
+      cor: item.cor || '#3B82F6',
+      ordem: item.ordem,
+      isActive: item.isActive,
+    })
+  }
+
+  const notifyCatalogoUpdate = (catalogo?: string) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('plannit_catalogo_updated', String(Date.now()))
+      localStorage.setItem(
+        'plannit_catalogo_updated',
+        catalogo ? `${catalogo}:${Date.now()}` : String(Date.now())
+      )
     }
   }
 
@@ -200,6 +264,19 @@ export default function ConfiguracoesPage({
     })
   }
 
+  const handleUpdateTipoCompromisso = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingTipoCompromisso) return
+    tipoCompromissoEditForm.put(`/configuracoes/tipos-compromisso/${editingTipoCompromisso.id}`, {
+      onSuccess: () => {
+        toast.success(`Tipo de compromisso "${tipoCompromissoEditForm.data.nome}" atualizado com sucesso!`)
+        notifyCatalogoUpdate('tipos_compromisso')
+        setEditingTipoCompromisso(null)
+      },
+      onError: () => toast.error('Erro ao atualizar tipo de compromisso.'),
+    })
+  }
+
   // Modal de Exclusão Customizado
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -212,18 +289,20 @@ export default function ConfiguracoesPage({
       ambiente: `/configuracoes/ambientes/${deleteTarget.id}`,
       origem: `/configuracoes/origens/${deleteTarget.id}`,
       campanha: `/configuracoes/campanhas/${deleteTarget.id}`,
+      tipo_compromisso: `/configuracoes/tipos-compromisso/${deleteTarget.id}`,
     }
 
     const labelMap = {
       ambiente: 'Ambiente',
       origem: 'Origem',
       campanha: 'Campanha',
+      tipo_compromisso: 'Tipo de compromisso',
     }
 
     router.delete(routeMap[deleteTarget.type], {
       onSuccess: () => {
         toast.success(`${labelMap[deleteTarget.type]} "${deleteTarget.nome}" removido(a) com sucesso.`)
-        notifyCatalogoUpdate()
+        notifyCatalogoUpdate(deleteTarget.type === 'tipo_compromisso' ? 'tipos_compromisso' : undefined)
         setDeleteTarget(null)
         setIsDeleting(false)
       },
@@ -282,6 +361,22 @@ export default function ConfiguracoesPage({
     )
   }
 
+  const handleToggleTipoCompromisso = (item: TipoCompromissoItem) => {
+    router.patch(
+      `/configuracoes/tipos-compromisso/${item.id}/toggle`,
+      {},
+      {
+        onSuccess: () => {
+          toast.success(
+            `Tipo de compromisso "${item.nome}" ${!item.isActive ? 'ativado' : 'desativado'} com sucesso.`
+          )
+          notifyCatalogoUpdate('tipos_compromisso')
+        },
+        onError: () => toast.error('Erro ao alterar status do tipo de compromisso.'),
+      }
+    )
+  }
+
   // Submit Criar Ambiente
   const handleSubmitAmbiente = (e: React.FormEvent) => {
     e.preventDefault()
@@ -321,6 +416,20 @@ export default function ConfiguracoesPage({
         setModalCampanhaOpen(false)
       },
       onError: () => toast.error('Erro ao cadastrar campanha.'),
+    })
+  }
+
+  // Submit Criar Tipo de Compromisso
+  const handleSubmitTipoCompromisso = (e: React.FormEvent) => {
+    e.preventDefault()
+    tipoCompromissoForm.post('/configuracoes/tipos-compromisso', {
+      onSuccess: () => {
+        toast.success('Tipo de compromisso cadastrado com sucesso!')
+        notifyCatalogoUpdate('tipos_compromisso')
+        tipoCompromissoForm.reset()
+        setModalTipoCompromissoOpen(false)
+      },
+      onError: () => toast.error('Erro ao cadastrar tipo de compromisso.'),
     })
   }
 
@@ -403,6 +512,29 @@ export default function ConfiguracoesPage({
                 {campanhas.length}
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('tipos_compromisso')}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none',
+                activeTab === 'tipos_compromisso'
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              )}
+            >
+              <Calendar size={15} />
+              <span>Tipos de Compromisso</span>
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                  activeTab === 'tipos_compromisso'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-stone-200 text-stone-700'
+                )}
+              >
+                {tiposCompromisso.length}
+              </span>
+            </button>
           </div>
 
           <div>
@@ -433,6 +565,16 @@ export default function ConfiguracoesPage({
               >
                 <Plus size={15} />
                 <span>Nova Campanha</span>
+              </button>
+            )}
+
+            {activeTab === 'tipos_compromisso' && (
+              <button
+                onClick={() => setModalTipoCompromissoOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <Plus size={15} />
+                <span>Novo Tipo de Compromisso</span>
               </button>
             )}
           </div>
@@ -700,6 +842,112 @@ export default function ConfiguracoesPage({
                               onClick={() => setDeleteTarget({ type: 'campanha', id: camp.id, nome: camp.nome })}
                               className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title="Excluir campanha"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: TIPOS DE COMPROMISSO */}
+        {activeTab === 'tipos_compromisso' && (
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-stone-900 text-sm">
+                  Tipos de Compromisso & Encontros da Agenda
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Classificação operacional de compromissos para alinhamento entre loja, obra e cliente.
+                </p>
+              </div>
+              <div className="text-xs text-stone-400 font-medium">
+                {tiposCompromisso.filter((t) => t.isActive).length} ativos de {tiposCompromisso.length} cadastrados
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-stone-200 bg-stone-50/70 text-stone-600 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-6 w-20">Ordem</th>
+                    <th className="py-3 px-6">Nome do Tipo</th>
+                    <th className="py-3 px-6">Identificador (Slug)</th>
+                    <th className="py-3 px-6">Cor / Visual</th>
+                    <th className="py-3 px-6 w-32">Status</th>
+                    <th className="py-3 px-6 text-right w-36">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-stone-700">
+                  {tiposCompromisso.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-stone-400">
+                        Nenhum tipo de compromisso cadastrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    tiposCompromisso.map((tipo) => (
+                      <tr key={tipo.id} className="hover:bg-stone-50/60 transition-colors">
+                        <td className="py-3.5 px-6 font-mono text-stone-500 font-semibold">
+                          {tipo.ordem}
+                        </td>
+                        <td className="py-3.5 px-6 font-semibold text-stone-900">
+                          {tipo.nome}
+                        </td>
+                        <td className="py-3.5 px-6 font-mono text-[11px] text-stone-500">
+                          {tipo.slug}
+                        </td>
+                        <td className="py-3.5 px-6">
+                          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border border-stone-200/80 bg-stone-50 shadow-2xs">
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs border border-black/10"
+                              style={{ backgroundColor: tipo.cor || '#3B82F6' }}
+                            />
+                            <span className="font-mono text-[11px] font-medium text-stone-600 uppercase">
+                              {tipo.cor || '#3B82F6'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-6">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleTipoCompromisso(tipo)}
+                            className={clsx(
+                              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-[11px] transition-colors cursor-pointer',
+                              tipo.isActive
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200 border border-stone-200'
+                            )}
+                            title="Clique para alternar o status"
+                          >
+                            <Power size={11} />
+                            <span>{tipo.isActive ? 'Ativo' : 'Inativo'}</span>
+                          </button>
+                        </td>
+                        <td className="py-3.5 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditTipoCompromisso(tipo)}
+                              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+                              title="Editar tipo de compromisso"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDeleteTarget({ type: 'tipo_compromisso', id: tipo.id, nome: tipo.nome })
+                              }
+                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Excluir tipo de compromisso"
                             >
                               <Trash2 size={15} />
                             </button>
@@ -1156,6 +1404,250 @@ export default function ConfiguracoesPage({
         </div>
       )}
 
+      {/* MODAL CRIAR TIPO DE COMPROMISSO */}
+      {modalTipoCompromissoOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-md w-full overflow-hidden animate-scale-in">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/70">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center">
+                  <Calendar size={15} />
+                </div>
+                <h3 className="font-semibold text-stone-900 text-sm">
+                  Cadastrar Tipo de Compromisso
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalTipoCompromissoOpen(false)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmitTipoCompromisso} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                  Nome do Tipo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Briefing Técnico, Visita Obra, etc."
+                  value={tipoCompromissoForm.data.nome}
+                  onChange={(e) => tipoCompromissoForm.setData('nome', e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                    Slug (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Auto-gerado se vazio"
+                    value={tipoCompromissoForm.data.slug}
+                    onChange={(e) => tipoCompromissoForm.setData('slug', e.target.value)}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono text-[11px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                    Ordem de Exibição
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={tipoCompromissoForm.data.ordem}
+                    onChange={(e) => tipoCompromissoForm.setData('ordem', Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Cor de Identificação Visual
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {CORES_PALETA_TIPOS.map((cor) => (
+                    <button
+                      key={cor}
+                      type="button"
+                      onClick={() => tipoCompromissoForm.setData('cor', cor)}
+                      className={clsx(
+                        'w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                        tipoCompromissoForm.data.cor.toLowerCase() === cor.toLowerCase()
+                          ? 'border-stone-900 scale-110 ring-2 ring-primary-500/30'
+                          : 'border-white'
+                      )}
+                      style={{ backgroundColor: cor }}
+                      title={cor}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={tipoCompromissoForm.data.cor}
+                    onChange={(e) => tipoCompromissoForm.setData('cor', e.target.value)}
+                    className="w-8 h-8 rounded-lg border border-stone-200 cursor-pointer bg-stone-50 p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={tipoCompromissoForm.data.cor}
+                    onChange={(e) => tipoCompromissoForm.setData('cor', e.target.value)}
+                    placeholder="#3B82F6"
+                    className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setModalTipoCompromissoOpen(false)}
+                  className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-xl font-medium cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={tipoCompromissoForm.processing || !tipoCompromissoForm.data.nome.trim()}
+                  className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {tipoCompromissoForm.processing ? 'Cadastrando...' : 'Cadastrar Tipo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR TIPO DE COMPROMISSO */}
+      {editingTipoCompromisso && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-md w-full overflow-hidden animate-scale-in">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/70">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-6 h-6 rounded-md shadow-2xs border border-black/10 shrink-0"
+                  style={{ backgroundColor: tipoCompromissoEditForm.data.cor || '#3B82F6' }}
+                />
+                <h3 className="font-semibold text-stone-900 text-sm">
+                  Editar Tipo: {editingTipoCompromisso.nome}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTipoCompromisso(null)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateTipoCompromisso} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                  Nome do Tipo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Briefing Técnico"
+                  value={tipoCompromissoEditForm.data.nome}
+                  onChange={(e) => tipoCompromissoEditForm.setData('nome', e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                    Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={tipoCompromissoEditForm.data.slug}
+                    onChange={(e) => tipoCompromissoEditForm.setData('slug', e.target.value)}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono text-[11px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
+                    Ordem de Exibição
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={tipoCompromissoEditForm.data.ordem}
+                    onChange={(e) => tipoCompromissoEditForm.setData('ordem', Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Cor de Identificação Visual
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {CORES_PALETA_TIPOS.map((cor) => (
+                    <button
+                      key={cor}
+                      type="button"
+                      onClick={() => tipoCompromissoEditForm.setData('cor', cor)}
+                      className={clsx(
+                        'w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                        tipoCompromissoEditForm.data.cor.toLowerCase() === cor.toLowerCase()
+                          ? 'border-stone-900 scale-110 ring-2 ring-primary-500/30'
+                          : 'border-white'
+                      )}
+                      style={{ backgroundColor: cor }}
+                      title={cor}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={tipoCompromissoEditForm.data.cor}
+                    onChange={(e) => tipoCompromissoEditForm.setData('cor', e.target.value)}
+                    className="w-8 h-8 rounded-lg border border-stone-200 cursor-pointer bg-stone-50 p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={tipoCompromissoEditForm.data.cor}
+                    onChange={(e) => tipoCompromissoEditForm.setData('cor', e.target.value)}
+                    placeholder="#3B82F6"
+                    className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingTipoCompromisso(null)}
+                  className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-xl font-medium cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={tipoCompromissoEditForm.processing || !tipoCompromissoEditForm.data.nome.trim()}
+                  className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {tipoCompromissoEditForm.processing ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (DESIGN SYSTEM LÍDER) */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
@@ -1173,6 +1665,7 @@ export default function ConfiguracoesPage({
                     {deleteTarget.type === 'ambiente' && 'Remover ambiente do catálogo oficial'}
                     {deleteTarget.type === 'origem' && 'Remover canal de captação de lead'}
                     {deleteTarget.type === 'campanha' && 'Remover campanha promocional'}
+                    {deleteTarget.type === 'tipo_compromisso' && 'Remover tipo de compromisso da agenda'}
                   </p>
                 </div>
               </div>

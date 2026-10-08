@@ -1,8 +1,10 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+import db from '@adonisjs/lucid/services/db'
 import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
+import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
 import User, { PerfilUsuario } from '#models/user'
 import {
   createAmbienteValidator,
@@ -11,6 +13,8 @@ import {
   updateOrigemValidator,
   createCampanhaValidator,
   updateCampanhaValidator,
+  createTipoCompromissoValidator,
+  updateTipoCompromissoValidator,
 } from '#validators/configuracao'
 
 function slugify(text: string): string {
@@ -40,7 +44,7 @@ export default class ConfiguracoesController {
   /**
    * Painel de parametrização administrativa de tabelas de apoio
    */
-  async index({ inertia, auth, response }: HttpContext) {
+  async index({ inertia, auth, response, request }: HttpContext) {
     const user = auth.user!
     if (!this.isAuthorized(user)) {
       return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
@@ -56,7 +60,11 @@ export default class ConfiguracoesController {
     const campanhas = await CampanhaLead.query()
       .orderBy('createdAt', 'desc')
 
-    return inertia.render('configuracoes/index', {
+    const tiposCompromisso = await TipoCompromissoCatalogo.query()
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const payload = {
       ambientes: ambientes.map((a) => ({
         id: a.id,
         nome: a.nome,
@@ -83,7 +91,23 @@ export default class ConfiguracoesController {
         createdAt: c.createdAt?.toISO() || null,
         updatedAt: c.updatedAt?.toISO() || null,
       })),
-    })
+      tiposCompromisso: tiposCompromisso.map((t) => ({
+        id: t.id,
+        nome: t.nome,
+        slug: t.slug,
+        cor: t.cor,
+        ordem: t.ordem,
+        isActive: t.isActive,
+        createdAt: t.createdAt?.toISO() || null,
+        updatedAt: t.updatedAt?.toISO() || null,
+      })),
+    }
+
+    if (request.qs().format === 'json') {
+      return response.json(payload)
+    }
+
+    return inertia.render('configuracoes/index', payload)
   }
 
   // ==========================================
@@ -455,4 +479,172 @@ export default class ConfiguracoesController {
     session.flash('success', `Campanha "${campanha.nome}" removida do catálogo.`)
     return response.redirect().back()
   }
+
+  // ==========================================
+  // TIPOS DE COMPROMISSO (AGENDA)
+  // ==========================================
+
+  async storeTipoCompromisso({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createTipoCompromissoValidator)
+    const slug = payload.slug ? slugify(payload.slug) : slugify(payload.nome)
+
+    if (!slug || slug.length < 2) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+      }
+      session.flash('error', 'Identificador (slug) inválido ou vazio.')
+      return response.redirect().back()
+    }
+
+    const existing = await TipoCompromissoCatalogo.findBy('slug', slug)
+    if (existing) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: `O tipo de compromisso com identificador "${slug}" já existe.` })
+      }
+      session.flash('error', `O tipo de compromisso com identificador "${slug}" já existe.`)
+      return response.redirect().back()
+    }
+
+    const tipo = await TipoCompromissoCatalogo.create({
+      nome: payload.nome,
+      slug,
+      cor: payload.cor || '#3B82F6',
+      ordem: payload.ordem !== undefined ? payload.ordem : 0,
+      isActive: payload.isActive !== undefined ? payload.isActive : true,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.status(201).json(tipo)
+    }
+
+    session.flash('success', `Tipo de compromisso "${tipo.nome}" cadastrado com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async updateTipoCompromisso({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const tipo = await TipoCompromissoCatalogo.findOrFail(params.id)
+    const payload = await request.validateUsing(updateTipoCompromissoValidator)
+
+    if (payload.nome !== undefined) tipo.nome = payload.nome
+    if (payload.slug !== undefined) {
+      const slugRaw = payload.slug || payload.nome || tipo.nome
+      const slug = slugify(slugRaw)
+      if (!slug || slug.length < 2) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+        }
+        session.flash('error', 'Identificador (slug) inválido ou vazio.')
+        return response.redirect().back()
+      }
+
+      const existing = await TipoCompromissoCatalogo.query()
+        .where('slug', slug)
+        .whereNot('id', tipo.id)
+        .first()
+
+      if (existing) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: `O identificador "${slug}" já está em uso.` })
+        }
+        session.flash('error', `O identificador "${slug}" já está em uso.`)
+        return response.redirect().back()
+      }
+      tipo.slug = slug
+    }
+    if (payload.cor !== undefined) tipo.cor = payload.cor
+    if (payload.ordem !== undefined) tipo.ordem = payload.ordem
+    if (payload.isActive !== undefined) tipo.isActive = payload.isActive
+
+    await tipo.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(tipo)
+    }
+
+    session.flash('success', `Tipo de compromisso "${tipo.nome}" atualizado com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async toggleTipoCompromisso({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const tipo = await TipoCompromissoCatalogo.findOrFail(params.id)
+    tipo.isActive = !tipo.isActive
+    await tipo.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(tipo)
+    }
+
+    session.flash(
+      'success',
+      `Tipo de compromisso "${tipo.nome}" ${tipo.isActive ? 'ativado' : 'desativado'} com sucesso.`
+    )
+    return response.redirect().back()
+  }
+
+  async destroyTipoCompromisso({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const tipo = await TipoCompromissoCatalogo.findOrFail(params.id)
+
+    // Verificar se existem compromissos vinculados antes de excluir
+    try {
+      const hasTable = await db.rawQuery(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'compromissos_agenda'
+        )`
+      )
+      const tableExists = Boolean(hasTable.rows?.[0]?.exists)
+      if (tableExists) {
+        const checkVinculos = await db
+          .from('compromissos_agenda')
+          .where('tipo_id', tipo.id)
+          .count('* as total')
+        const total = Number(checkVinculos[0]?.total || 0)
+        if (total > 0) {
+          if (this.wantsJson(request)) {
+            return response.status(400).json({
+              message: `Não é possível excluir o tipo "${tipo.nome}" pois existem ${total} compromisso(s) vinculado(s). Recomendamos desativá-lo.`,
+            })
+          }
+          session.flash(
+            'error',
+            `Não é possível excluir o tipo "${tipo.nome}" pois existem ${total} compromisso(s) vinculado(s). Recomendamos desativá-lo.`
+          )
+          return response.redirect().back()
+        }
+      }
+    } catch {
+      // Ignora erro de verificação de tabela caso não exista
+    }
+
+    await tipo.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({ message: 'Tipo de compromisso removido com sucesso' })
+    }
+
+    session.flash('success', `Tipo de compromisso "${tipo.nome}" removido do catálogo.`)
+    return response.redirect().back()
+  }
 }
+

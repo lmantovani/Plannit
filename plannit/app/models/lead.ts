@@ -6,6 +6,7 @@ import User from '#models/user'
 import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
 import HistoricoStatusLead from '#models/historico_status_lead'
+import CompromissoAgenda from '#models/compromisso_agenda'
 
 export enum OrigemLead {
   INSTAGRAM = 'instagram',
@@ -125,6 +126,11 @@ export default class Lead extends LeadSchema {
     foreignKey: 'leadId',
   })
   declare historicoStatus: HasMany<typeof HistoricoStatusLead>
+
+  @hasMany(() => CompromissoAgenda, {
+    foreignKey: 'leadId',
+  })
+  declare compromissos: HasMany<typeof CompromissoAgenda>
 
   @belongsTo(() => Arquiteto, {
     foreignKey: 'arquitetoId',

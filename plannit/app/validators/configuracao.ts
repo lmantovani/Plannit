@@ -71,3 +71,20 @@ export const updateCampanhaValidator = vine.create({
   isActive: vine.boolean().optional(),
 })
 
+export const createTipoCompromissoValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const updateTipoCompromissoValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100).optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+

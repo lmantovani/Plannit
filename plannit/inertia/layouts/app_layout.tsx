@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, usePage, router } from '@inertiajs/react'
 import {
   LayoutDashboard,
+  Calendar,
   Users,
   FileText,
   Layers,
@@ -109,6 +110,7 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
       section: 'Principal',
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, exact: true },
+        { label: 'Agenda', href: '/agenda', icon: Calendar },
       ],
     },
     {

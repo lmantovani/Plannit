@@ -14,6 +14,8 @@ import HistoricoStatusLead from '#models/historico_status_lead'
 import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
+import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
+import { StatusCompromisso } from '#models/compromisso_agenda'
 import {
   createLeadValidator,
   interacaoValidator,
@@ -25,6 +27,13 @@ import {
 import { DateTime } from 'luxon'
 
 export default class LeadsController {
+  private wantsJson(request: HttpContext['request']): boolean {
+    const isInertia = Boolean(request.header('x-inertia'))
+    if (isInertia) return false
+    const accept = request.header('accept') || ''
+    return accept.includes('application/json') || request.ajax() || request.qs().format === 'json'
+  }
+
   private async registrarHistoricoStatus(lead: Lead, statusDe: string | null, statusPara: string, user: User) {
     if (statusDe === statusPara) return
 
@@ -46,7 +55,7 @@ export default class LeadsController {
    * Lista leads no CRM — renderiza a visão Kanban/Lista via Inertia.
    * Vendedor vê apenas seus próprios leads; Gestão vê todos e pode filtrar.
    */
-  async index({ request, inertia, auth }: HttpContext) {
+  async index({ request, inertia, auth, response }: HttpContext) {
     const user = auth.user!
     const query = request.qs()
     const search = (query.q || '').trim()
@@ -86,6 +95,12 @@ export default class LeadsController {
       .preload('vendedor', (vQuery) => vQuery.select('id', 'nome', 'email'))
       .preload('qualificadoPor', (qQuery) => qQuery.select('id', 'nome', 'email'))
       .preload('arquiteto', (aQuery) => aQuery.select('id', 'nome', 'escritorio'))
+      .preload('compromissos', (cQuery) => {
+        cQuery
+          .orderBy('data_hora_inicio', 'asc')
+          .preload('tipo')
+          .preload('responsavel', (rQuery) => rQuery.select('id', 'nome'))
+      })
       .preload('interacoes', (iQuery) => {
         iQuery.preload('responsavel', (rQuery) => rQuery.select('id', 'nome')).orderBy('createdAt', 'desc')
       })
@@ -110,69 +125,148 @@ export default class LeadsController {
       estagnados: rawLeads.filter((l) => l.precisaAtencao).length,
     }
 
+    const agora = DateTime.now()
+
     // Formata leads para o frontend com getters computados e relações seguras
-    const leads = rawLeads.map((lead) => ({
-      id: lead.id,
-      nome: lead.nome,
-      telefone: lead.telefone,
-      email: lead.email,
-      cidade: lead.cidade,
-      estado: lead.estado,
-      origem: lead.origem,
-      campanha: lead.campanha,
-      statusFunil: lead.statusFunil,
-      qualificado: lead.qualificado,
-      orcamentoEstimado: lead.orcamentoEstimado ? Number(lead.orcamentoEstimado) : null,
-      faixaOrcamento: lead.faixaOrcamento,
-      faixaOrcamentoLabel: lead.faixaOrcamento ? FAIXA_ORCAMENTO_LABELS[lead.faixaOrcamento] || lead.faixaOrcamento : null,
-      prazoObra: lead.prazoObra,
-      prazoObraLabel: lead.prazoObra ? PRAZO_OBRA_LABELS[lead.prazoObra] || lead.prazoObra : null,
-      tipoImovel: lead.tipoImovel,
-      tipoImovelLabel: lead.tipoImovel ? TIPO_IMOVEL_LABELS[lead.tipoImovel] || lead.tipoImovel : null,
-      ambientesInteresse: (lead.ambientesInteresse as string[]) || [],
-      possuiArquiteto: lead.possuiArquiteto,
-      arquitetoId: lead.arquitetoId,
-      arquiteto: lead.arquiteto ? { id: lead.arquiteto.id, nome: lead.arquiteto.nome, escritorio: lead.arquiteto.escritorio } : null,
-      decisorPresente: lead.decisorPresente,
-      qualificadoEm: lead.qualificadoEm ? lead.qualificadoEm.toISO() : null,
-      qualificadoPorId: lead.qualificadoPorId,
-      qualificadoPor: lead.qualificadoPor ? { id: lead.qualificadoPor.id, nome: lead.qualificadoPor.nome } : null,
-      motivoDesqualificacao: lead.motivoDesqualificacao,
-      motivoPerda: lead.motivoPerda,
-      concorrentePerdido: lead.concorrentePerdido,
-      convertidoEmCliente: lead.convertidoEmCliente,
-      ultimaInteracaoEm: lead.ultimaInteracaoEm ? lead.ultimaInteracaoEm.toISO() : null,
-      createdAt: lead.createdAt ? lead.createdAt.toISO() : null,
-      updatedAt: lead.updatedAt ? lead.updatedAt.toISO() : null,
-      vendedorId: lead.vendedorId,
-      diasSemInteracao: lead.diasSemInteracao,
-      precisaAtencao: lead.precisaAtencao,
-      vendedor: lead.vendedor
-        ? { id: lead.vendedor.id, nome: lead.vendedor.nome, email: lead.vendedor.email }
-        : null,
-      interacoes: (lead.interacoes || []).map((i) => ({
-        id: i.id,
-        leadId: i.leadId,
-        tipo: i.tipo,
-        resumo: i.resumo,
-        createdAt: i.createdAt ? i.createdAt.toISO() : null,
-        responsavel: i.responsavel
-          ? { id: i.responsavel.id, nome: i.responsavel.nome }
+    const leads = rawLeads.map((lead) => {
+      const compromissosAbertos = (lead.compromissos || []).filter(
+        (c) => c.status === StatusCompromisso.AGENDADO || c.status === StatusCompromisso.REAGENDADO
+      )
+      const proximo = compromissosAbertos[0] || null
+
+      let proximoCompromisso: any = null
+      if (proximo) {
+        const dtInicio = proximo.dataHoraInicio
+        const dtFim = proximo.dataHoraFim
+        const isHoje = dtInicio ? dtInicio.hasSame(agora, 'day') : false
+        const isAtrasado = Boolean(
+          (dtFim && dtFim < agora) || (dtInicio && dtInicio < agora.minus({ hours: 1 }))
+        )
+
+        proximoCompromisso = {
+          id: proximo.id,
+          titulo: proximo.titulo,
+          dataHoraInicio: dtInicio ? dtInicio.toISO() : null,
+          dataHoraFim: dtFim ? dtFim.toISO() : null,
+          local: proximo.local,
+          status: proximo.status,
+          tipoNome: proximo.tipo?.nome || 'Geral',
+          tipoCor: proximo.tipo?.cor || '#64748B',
+          responsavelNome: proximo.responsavel?.nome || 'Não definido',
+          isHoje,
+          isAtrasado,
+          tipo: proximo.tipo
+            ? {
+                id: proximo.tipo.id,
+                nome: proximo.tipo.nome,
+                slug: proximo.tipo.slug,
+                cor: proximo.tipo.cor,
+              }
+            : null,
+          responsavel: proximo.responsavel
+            ? {
+                id: proximo.responsavel.id,
+                nome: proximo.responsavel.nome,
+              }
+            : null,
+        }
+      }
+
+      const compromissos = (lead.compromissos || []).map((c) => ({
+        id: c.id,
+        titulo: c.titulo,
+        dataHoraInicio: c.dataHoraInicio ? c.dataHoraInicio.toISO() : null,
+        dataHoraFim: c.dataHoraFim ? c.dataHoraFim.toISO() : null,
+        local: c.local,
+        status: c.status,
+        responsavelNome: c.responsavel?.nome || 'Não definido',
+        responsavelId: c.responsavelId,
+        tipoNome: c.tipo?.nome || 'Geral',
+        tipoCor: c.tipo?.cor || '#64748B',
+        tipoId: c.tipoId,
+        desfecho: c.desfecho,
+        observacoes: c.observacoes,
+        tipo: c.tipo
+          ? {
+              id: c.tipo.id,
+              nome: c.tipo.nome,
+              slug: c.tipo.slug,
+              cor: c.tipo.cor,
+            }
           : null,
-      })),
-      historicoStatus: (lead.historicoStatus || []).map((h) => ({
-        id: h.id,
-        leadId: h.leadId,
-        statusDe: h.statusDe,
-        statusDeLabel: h.statusDe ? STATUS_FUNIL_LABELS[h.statusDe as StatusFunil] || h.statusDe : null,
-        statusPara: h.statusPara,
-        statusParaLabel: STATUS_FUNIL_LABELS[h.statusPara as StatusFunil] || h.statusPara,
-        tempoPermanenciaSegundos: h.tempoPermanenciaSegundos,
-        observacao: h.observacao,
-        createdAt: h.createdAt ? h.createdAt.toISO() : null,
-        alteradoPor: h.alteradoPor ? { id: h.alteradoPor.id, nome: h.alteradoPor.nome } : null,
-      })),
-    }))
+        responsavel: c.responsavel
+          ? {
+              id: c.responsavel.id,
+              nome: c.responsavel.nome,
+            }
+          : null,
+      }))
+
+      return {
+        id: lead.id,
+        nome: lead.nome,
+        telefone: lead.telefone,
+        email: lead.email,
+        cidade: lead.cidade,
+        estado: lead.estado,
+        origem: lead.origem,
+        campanha: lead.campanha,
+        statusFunil: lead.statusFunil,
+        qualificado: lead.qualificado,
+        orcamentoEstimado: lead.orcamentoEstimado ? Number(lead.orcamentoEstimado) : null,
+        faixaOrcamento: lead.faixaOrcamento,
+        faixaOrcamentoLabel: lead.faixaOrcamento ? FAIXA_ORCAMENTO_LABELS[lead.faixaOrcamento] || lead.faixaOrcamento : null,
+        prazoObra: lead.prazoObra,
+        prazoObraLabel: lead.prazoObra ? PRAZO_OBRA_LABELS[lead.prazoObra] || lead.prazoObra : null,
+        tipoImovel: lead.tipoImovel,
+        tipoImovelLabel: lead.tipoImovel ? TIPO_IMOVEL_LABELS[lead.tipoImovel] || lead.tipoImovel : null,
+        ambientesInteresse: (lead.ambientesInteresse as string[]) || [],
+        possuiArquiteto: lead.possuiArquiteto,
+        arquitetoId: lead.arquitetoId,
+        arquiteto: lead.arquiteto ? { id: lead.arquiteto.id, nome: lead.arquiteto.nome, escritorio: lead.arquiteto.escritorio } : null,
+        decisorPresente: lead.decisorPresente,
+        qualificadoEm: lead.qualificadoEm ? lead.qualificadoEm.toISO() : null,
+        qualificadoPorId: lead.qualificadoPorId,
+        qualificadoPor: lead.qualificadoPor ? { id: lead.qualificadoPor.id, nome: lead.qualificadoPor.nome } : null,
+        motivoDesqualificacao: lead.motivoDesqualificacao,
+        motivoPerda: lead.motivoPerda,
+        concorrentePerdido: lead.concorrentePerdido,
+        convertidoEmCliente: lead.convertidoEmCliente,
+        ultimaInteracaoEm: lead.ultimaInteracaoEm ? lead.ultimaInteracaoEm.toISO() : null,
+        createdAt: lead.createdAt ? lead.createdAt.toISO() : null,
+        updatedAt: lead.updatedAt ? lead.updatedAt.toISO() : null,
+        vendedorId: lead.vendedorId,
+        diasSemInteracao: lead.diasSemInteracao,
+        precisaAtencao: lead.precisaAtencao,
+        vendedor: lead.vendedor
+          ? { id: lead.vendedor.id, nome: lead.vendedor.nome, email: lead.vendedor.email }
+          : null,
+        interacoes: (lead.interacoes || []).map((i) => ({
+          id: i.id,
+          leadId: i.leadId,
+          tipo: i.tipo,
+          resumo: i.resumo,
+          createdAt: i.createdAt ? i.createdAt.toISO() : null,
+          responsavel: i.responsavel
+            ? { id: i.responsavel.id, nome: i.responsavel.nome }
+            : null,
+        })),
+        historicoStatus: (lead.historicoStatus || []).map((h) => ({
+          id: h.id,
+          leadId: h.leadId,
+          statusDe: h.statusDe,
+          statusDeLabel: h.statusDe ? STATUS_FUNIL_LABELS[h.statusDe as StatusFunil] || h.statusDe : null,
+          statusPara: h.statusPara,
+          statusParaLabel: STATUS_FUNIL_LABELS[h.statusPara as StatusFunil] || h.statusPara,
+          tempoPermanenciaSegundos: h.tempoPermanenciaSegundos,
+          observacao: h.observacao,
+          createdAt: h.createdAt ? h.createdAt.toISO() : null,
+          alteradoPor: h.alteradoPor ? { id: h.alteradoPor.id, nome: h.alteradoPor.nome } : null,
+        })),
+        proximoCompromisso,
+        compromissos,
+      }
+    })
 
     // Lista de vendedores para o seletor de gestores
     let vendedores: Array<{ id: number; nome: string }> = []
@@ -204,14 +298,39 @@ export default class LeadsController {
       .where('isActive', true)
       .orderBy('nome', 'asc')
 
-    return inertia.render('crm/index', {
+    const tiposCompromissoCatalogo = await TipoCompromissoCatalogo.query()
+      .where('isActive', true)
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const colaboradores = (user.isGestor || user.isSuperuser)
+      ? await User.query()
+          .where('is_active', true)
+          .orderBy('nome', 'asc')
+          .select('id', 'nome', 'email', 'perfil')
+      : [{ id: user.id, nome: user.nome, email: user.email, perfil: user.perfil }]
+
+    const props = {
       leads,
       estatisticas,
       vendedores,
+      colaboradores: colaboradores.map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        email: c.email,
+        perfil: c.perfil,
+      })),
       arquitetos: arquitetos.map((a) => ({ id: a.id, nome: a.nome, escritorio: a.escritorio })),
       ambientesCatalogo: ambientesCatalogo.map((a) => ({ id: a.id, nome: a.nome, categoria: a.categoria })),
       origensCatalogo: origensCatalogo.map((o) => ({ id: o.id, nome: o.nome, slug: o.slug })),
       campanhasCatalogo: campanhasCatalogo.map((c) => ({ id: c.id, nome: c.nome })),
+      tiposCompromissoCatalogo: tiposCompromissoCatalogo.map((t) => ({
+        id: t.id,
+        nome: t.nome,
+        slug: t.slug,
+        cor: t.cor,
+        ordem: t.ordem,
+      })),
       filtros: {
         q: search,
         statusFunil: statusFilter || '',
@@ -219,7 +338,13 @@ export default class LeadsController {
         vendedorId: vendedorFilter || '',
       },
       isVendedor: user.perfil === PerfilUsuario.VENDEDOR,
-    })
+    }
+
+    if (this.wantsJson(request)) {
+      return response.json(props)
+    }
+
+    return inertia.render('crm/index', props)
   }
 
   /**

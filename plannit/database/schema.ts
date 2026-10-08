@@ -313,6 +313,43 @@ export class ColaboradoreSchema extends BaseModel {
   declare userId: number | null
 }
 
+export class CompromissosAgendumSchema extends BaseModel {
+  static $columns = ['clienteId', 'createdAt', 'criadoPorId', 'dataHoraFim', 'dataHoraInicio', 'desfecho', 'id', 'leadId', 'local', 'observacoes', 'projetoId', 'responsavelId', 'status', 'tipoId', 'titulo', 'updatedAt'] as const
+  $columns = CompromissosAgendumSchema.$columns
+  @column()
+  declare clienteId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare criadoPorId: number
+  @column.dateTime()
+  declare dataHoraFim: DateTime
+  @column.dateTime()
+  declare dataHoraInicio: DateTime
+  @column()
+  declare desfecho: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare leadId: number | null
+  @column()
+  declare local: string | null
+  @column()
+  declare observacoes: string | null
+  @column()
+  declare projetoId: number | null
+  @column()
+  declare responsavelId: number
+  @column()
+  declare status: string
+  @column()
+  declare tipoId: number
+  @column()
+  declare titulo: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ConcorrentesArquitetoSchema extends BaseModel {
   static $columns = ['arquitetoId', 'createdAt', 'id', 'nomeConcorrente', 'observacoes', 'percentualFechamentoEstimado', 'registradoPorId', 'updatedAt'] as const
   $columns = ConcorrentesArquitetoSchema.$columns
@@ -871,6 +908,27 @@ export class ProjetosComerciaiSchema extends BaseModel {
   declare validadoPorId: number | null
   @column()
   declare versao: number
+}
+
+export class TiposCompromissoCatalogoSchema extends BaseModel {
+  static $columns = ['cor', 'createdAt', 'id', 'isActive', 'nome', 'ordem', 'slug', 'updatedAt'] as const
+  $columns = TiposCompromissoCatalogoSchema.$columns
+  @column()
+  declare cor: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column()
+  declare slug: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class UserSchema extends BaseModel {

@@ -4,6 +4,7 @@ import Lead, { StatusFunil, FAIXA_ORCAMENTO_LABELS, PRAZO_OBRA_LABELS } from '#m
 import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
+import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
 
 test.group('Configurações & Parametrização CRM', () => {
   test('bloqueia acesso a usuários não autenticados em /configuracoes', async ({ client }) => {
@@ -580,4 +581,150 @@ test.group('Configurações & Parametrização CRM', () => {
 
     await campanha.delete()
   })
+
+  test('CRUD completo de Tipos de Compromisso da Agenda', async ({ client, assert }) => {
+    let diretoria = await User.findBy('email', 'diretoria.teste.cfg@lidermoveis.com.br')
+    if (!diretoria) {
+      diretoria = await User.create({
+        nome: 'Diretoria Teste Cfg',
+        email: 'diretoria.teste.cfg@lidermoveis.com.br',
+        password: 'Password123!',
+        perfil: PerfilUsuario.DIRETORIA,
+        isActive: true,
+        isSuperuser: false,
+      })
+    }
+
+    // 1. Criar novo tipo
+    const createRes = await client
+      .post('/configuracoes/tipos-compromisso')
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        nome: 'Reunião de Especificação Vip',
+        slug: 'reuniao_especificacao_vip',
+        cor: '#6366F1',
+        ordem: 25,
+        isActive: true,
+      })
+    createRes.assertStatus(201)
+    const tipoId = createRes.body().id
+    assert.exists(tipoId)
+
+    // 2. Toggle status
+    const toggleRes = await client
+      .patch(`/configuracoes/tipos-compromisso/${tipoId}/toggle`)
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+    toggleRes.assertStatus(200)
+    assert.isFalse(toggleRes.body().isActive)
+
+    // 3. Atualizar dados
+    const updateRes = await client
+      .put(`/configuracoes/tipos-compromisso/${tipoId}`)
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        nome: 'Reunião VIP Atualizada',
+        cor: '#10B981',
+        ordem: 35,
+        isActive: true,
+      })
+    updateRes.assertStatus(200)
+    assert.equal(updateRes.body().nome, 'Reunião VIP Atualizada')
+    assert.equal(updateRes.body().cor, '#10B981')
+    assert.equal(updateRes.body().ordem, 35)
+    assert.isTrue(updateRes.body().isActive)
+
+    // 4. Excluir tipo
+    const deleteRes = await client
+      .delete(`/configuracoes/tipos-compromisso/${tipoId}`)
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+    deleteRes.assertStatus(200)
+
+    const findAfterDelete = await TipoCompromissoCatalogo.find(tipoId)
+    assert.isNull(findAfterDelete)
+  })
+
+  test('bloqueia acesso de perfil vendedor a mutações em /configuracoes/tipos-compromisso com 403', async ({ client }) => {
+    let vendedor = await User.findBy('email', 'vendedor.teste.cfg@lidermoveis.com.br')
+    if (!vendedor) {
+      vendedor = await User.create({
+        nome: 'Vendedor Teste Cfg',
+        email: 'vendedor.teste.cfg@lidermoveis.com.br',
+        password: 'Password123!',
+        perfil: PerfilUsuario.VENDEDOR,
+        isActive: true,
+        isSuperuser: false,
+      })
+    }
+
+    const response = await client
+      .post('/configuracoes/tipos-compromisso')
+      .loginAs(vendedor)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        nome: 'Tipo Não Autorizado',
+        cor: '#3B82F6',
+      })
+    response.assertStatus(403)
+  })
+
+  test('rejeita criação de tipo de compromisso com slug duplicado', async ({ client }) => {
+    let diretoria = await User.findBy('email', 'diretoria.teste.cfg@lidermoveis.com.br')
+    if (!diretoria) {
+      diretoria = await User.create({
+        nome: 'Diretoria Teste Cfg',
+        email: 'diretoria.teste.cfg@lidermoveis.com.br',
+        password: 'Password123!',
+        perfil: PerfilUsuario.DIRETORIA,
+        isActive: true,
+        isSuperuser: false,
+      })
+    }
+
+    const response = await client
+      .post('/configuracoes/tipos-compromisso')
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        nome: 'Outro Briefing Técnico',
+        slug: 'briefing_tecnico',
+        cor: '#3B82F6',
+      })
+    response.assertStatus(400)
+  })
+
+  test('rejeita formato de cor hexadecimal inválido com status 422', async ({ client }) => {
+    let diretoria = await User.findBy('email', 'diretoria.teste.cfg@lidermoveis.com.br')
+    if (!diretoria) {
+      diretoria = await User.create({
+        nome: 'Diretoria Teste Cfg',
+        email: 'diretoria.teste.cfg@lidermoveis.com.br',
+        password: 'Password123!',
+        perfil: PerfilUsuario.DIRETORIA,
+        isActive: true,
+        isSuperuser: false,
+      })
+    }
+
+    const response = await client
+      .post('/configuracoes/tipos-compromisso')
+      .loginAs(diretoria)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        nome: 'Tipo Cor Invalida',
+        cor: 'azul-claro',
+      })
+    response.assertStatus(422)
+  })
 })
+

@@ -30,8 +30,10 @@ import {
   FileText,
   ExternalLink,
   RotateCw,
+  MapPin,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { DateTime } from 'luxon'
 import { toast } from 'sonner'
 import QualificarLeadModal, { ArquitetoOption } from '../../components/crm/QualificarLeadModal'
 import ModalNovoParceiroRapido, {
@@ -39,6 +41,9 @@ import ModalNovoParceiroRapido, {
 } from '../../components/especificadores/ModalNovoParceiroRapido'
 import EspecificadorAutocomplete from '../../components/especificadores/EspecificadorAutocomplete'
 import CampanhaAutocomplete from '../../components/crm/CampanhaAutocomplete'
+import ModalNovoCompromisso from '../agenda/components/ModalNovoCompromisso'
+import ModalConcluirCompromisso from '../agenda/components/ModalConcluirCompromisso'
+import type { TipoCompromisso, Colaborador, Compromisso } from '../agenda/types'
 
 export type LeadInteracao = {
   id: number
@@ -59,6 +64,40 @@ export type LeadHistoricoStatus = {
   observacao: string | null
   createdAt: string | null
   alteradoPor: { id: number; nome: string } | null
+}
+
+export type ProximoCompromissoLead = {
+  id: number
+  titulo: string
+  dataHoraInicio: string
+  dataHoraFim?: string | null
+  local?: string | null
+  status?: string
+  tipoNome: string
+  tipoCor: string
+  responsavelNome: string
+  isHoje: boolean
+  isAtrasado: boolean
+  tipo?: { id: number; nome: string; slug?: string; cor: string } | null
+  responsavel?: { id: number; nome: string } | null
+}
+
+export type CompromissoItemLead = {
+  id: number
+  titulo: string
+  dataHoraInicio: string
+  dataHoraFim?: string | null
+  local?: string | null
+  status: string
+  responsavelNome: string
+  responsavelId?: number
+  tipoNome: string
+  tipoCor: string
+  tipoId?: number
+  desfecho?: string | null
+  observacoes?: string | null
+  tipo?: { id: number; nome: string; slug?: string; cor: string } | null
+  responsavel?: { id: number; nome: string } | null
 }
 
 export type LeadItem = {
@@ -100,6 +139,8 @@ export type LeadItem = {
   vendedor: { id: number; nome: string; email: string } | null
   interacoes: LeadInteracao[]
   historicoStatus: LeadHistoricoStatus[]
+  proximoCompromisso?: ProximoCompromissoLead | null
+  compromissos?: CompromissoItemLead[]
 }
 
 export type Estatisticas = {
@@ -119,10 +160,12 @@ export type PageProps = {
   leads: LeadItem[]
   estatisticas: Estatisticas
   vendedores: VendedorOption[]
+  colaboradores?: Colaborador[]
   arquitetos: ArquitetoOption[]
   ambientesCatalogo?: { id: number; nome: string; categoria: string }[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
+  tiposCompromissoCatalogo?: TipoCompromisso[]
   filtros: {
     q: string
     statusFunil: string
@@ -132,14 +175,62 @@ export type PageProps = {
   isVendedor: boolean
 }
 
+export function getBadgeUrgenciaCompromisso(proximo: ProximoCompromissoLead) {
+  let labelHorario = ''
+  try {
+    const dt = DateTime.fromISO(proximo.dataHoraInicio)
+    if (dt.isValid) {
+      const hora = dt.minute === 0 ? dt.toFormat('HH') + 'h' : dt.toFormat('HH:mm')
+      const data = dt.toFormat('dd/MM')
+      labelHorario = `${data} ${hora}`
+    } else {
+      labelHorario = proximo.dataHoraInicio
+    }
+  } catch {
+    labelHorario = proximo.dataHoraInicio
+  }
+
+  const tipoNome = proximo.tipoNome || proximo.titulo
+
+  if (proximo.isAtrasado) {
+    return {
+      classes: 'bg-rose-50 text-rose-700 border-rose-200',
+      iconClass: 'text-rose-600',
+      statusText: 'Atrasado',
+      labelHorario,
+      tipoNome,
+    }
+  }
+
+  if (proximo.isHoje) {
+    return {
+      classes: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold',
+      iconClass: 'text-blue-600',
+      statusText: 'Hoje',
+      labelHorario,
+      tipoNome,
+    }
+  }
+
+  return {
+    classes: 'bg-stone-50 text-stone-700 border-stone-200',
+    iconClass: 'text-stone-500',
+    statusText: 'Futuro',
+    labelHorario,
+    tipoNome,
+  }
+}
+
 const CRMIndex: React.FC<PageProps> = ({
   leads,
   estatisticas,
   vendedores,
+  colaboradores = [],
   arquitetos,
   ambientesCatalogo = [],
   origensCatalogo = [],
   campanhasCatalogo = [],
+  tiposCompromissoCatalogo = [],
   filtros,
   isVendedor,
 }) => {
@@ -154,6 +245,8 @@ const CRMIndex: React.FC<PageProps> = ({
   const [showNovoModal, setShowNovoModal] = useState(false)
   const [leadParaPerder, setLeadParaPerder] = useState<LeadItem | null>(null)
   const [leadParaQualificar, setLeadParaQualificar] = useState<LeadItem | null>(null)
+  const [agendamentoLead, setAgendamentoLead] = useState<LeadItem | null>(null)
+  const [compromissoParaConcluir, setCompromissoParaConcluir] = useState<Compromisso | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   const draggedLeadId = useRef<number | null>(null)
 
@@ -573,6 +666,8 @@ const CRMIndex: React.FC<PageProps> = ({
           onMarcarPerdido={() => {
             setLeadParaPerder(selectedLead)
           }}
+          onAgendarCompromisso={(leadAlvo) => setAgendamentoLead(leadAlvo)}
+          onConcluirCompromisso={(compAlvo) => setCompromissoParaConcluir(compAlvo)}
           origensMap={origensMap}
         />
       )}
@@ -604,6 +699,29 @@ const CRMIndex: React.FC<PageProps> = ({
         <PerderLeadModal
           lead={leadParaPerder}
           onClose={() => setLeadParaPerder(null)}
+        />
+      )}
+
+      {/* Modal Agendar Encontro da Agenda (R4) */}
+      {agendamentoLead && (
+        <ModalNovoCompromisso
+          isOpen={Boolean(agendamentoLead)}
+          onClose={() => setAgendamentoLead(null)}
+          tipos={tiposCompromissoCatalogo}
+          colaboradores={colaboradores}
+          leads={leads.map((l) => ({ id: l.id, nome: l.nome, telefone: l.telefone, cidade: l.cidade }))}
+          podeVerEquipe={!isVendedor}
+          defaultLeadId={agendamentoLead.id}
+          travarLead={true}
+        />
+      )}
+
+      {/* Modal Concluir Compromisso da Agenda (R4) */}
+      {compromissoParaConcluir && (
+        <ModalConcluirCompromisso
+          isOpen={Boolean(compromissoParaConcluir)}
+          onClose={() => setCompromissoParaConcluir(null)}
+          compromisso={compromissoParaConcluir}
         />
       )}
     </AppLayout>
@@ -690,6 +808,25 @@ function LeadCard({
         )}
       </div>
 
+      {/* Badge de Próximo Compromisso (R4) */}
+      {lead.proximoCompromisso && (() => {
+        const badgeInfo = getBadgeUrgenciaCompromisso(lead.proximoCompromisso)
+        return (
+          <div
+            className={clsx(
+              'flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] mt-2 transition-all truncate shadow-3xs',
+              badgeInfo.classes
+            )}
+            title={`Próximo Compromisso (${badgeInfo.statusText}): ${lead.proximoCompromisso.titulo} (${badgeInfo.tipoNome})\nData: ${lead.proximoCompromisso.dataHoraInicio}\nResponsável: ${lead.proximoCompromisso.responsavelNome}`}
+          >
+            <Calendar size={11} className={clsx('shrink-0', badgeInfo.iconClass)} />
+            <span className="font-semibold shrink-0">{badgeInfo.labelHorario}</span>
+            <span className="opacity-40">·</span>
+            <span className="truncate">{badgeInfo.tipoNome}</span>
+          </div>
+        )
+      })()}
+
       {/* Rodapé do Card */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-100 text-[10px]">
         <span className="badge badge-neutro text-[9px] py-0 px-1.5">
@@ -718,6 +855,8 @@ function LeadDrawer({
   onQualificar,
   onIniciarBriefing,
   onMarcarPerdido,
+  onAgendarCompromisso,
+  onConcluirCompromisso,
   origensMap,
 }: {
   lead: LeadItem
@@ -725,6 +864,8 @@ function LeadDrawer({
   onQualificar: () => void
   onIniciarBriefing: () => void
   onMarcarPerdido: () => void
+  onAgendarCompromisso: (lead: LeadItem) => void
+  onConcluirCompromisso: (compromisso: any) => void
   origensMap?: Record<string, string>
 }) {
   const [tipo, setTipo] = useState('whatsapp')
@@ -818,8 +959,8 @@ function LeadDrawer({
         </button>
       </div>
 
-      {/* Ações Rápidas (RN001 & RF004) */}
-      <div className="p-3 bg-stone-100/70 border-b border-stone-200/80 flex items-center justify-between gap-2 text-xs">
+      {/* Ações Rápidas (RN001 & RF004 & R4) */}
+      <div className="p-3 bg-stone-100/70 border-b border-stone-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
         {!lead.qualificado && lead.statusFunil !== 'perdido' && (
           <button
             onClick={onQualificar}
@@ -843,11 +984,23 @@ function LeadDrawer({
 
         {lead.statusFunil !== 'perdido' && (
           <button
+            type="button"
+            onClick={() => onAgendarCompromisso(lead)}
+            className="btn btn-secondary btn-sm flex-1 gap-1.5 text-xs text-stone-700 hover:text-stone-900 shadow-2xs"
+            title="Agendar novo encontro, reunião ou visita com este lead"
+          >
+            <Calendar size={13} className="text-primary-600 shrink-0" />
+            <span>Agendar Encontro</span>
+          </button>
+        )}
+
+        {lead.statusFunil !== 'perdido' && (
+          <button
             onClick={onMarcarPerdido}
             className="btn btn-secondary btn-sm text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-300"
           >
             <XCircle size={13} />
-            <span>Marcar como Perdido</span>
+            <span>Perdido</span>
           </button>
         )}
       </div>
@@ -972,8 +1125,161 @@ function LeadDrawer({
         )}
       </div>
 
-      {/* Linha do Tempo de Interações (RF003) e Histórico de Status */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Linha do Tempo de Interações (RF003), Histórico e Compromissos */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Seção Dedicada: Compromissos Agendados (R4) */}
+        <div className="bg-stone-50/70 border border-stone-200/90 rounded-xl p-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Calendar size={13} className="text-primary-600 shrink-0" />
+              <p className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
+                Compromissos Agendados ({lead.compromissos?.length || 0})
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAgendarCompromisso(lead)}
+              className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <Plus size={11} />
+              <span>Novo</span>
+            </button>
+          </div>
+
+          {(!lead.compromissos || lead.compromissos.length === 0) ? (
+            <div className="bg-white rounded-lg p-3 border border-dashed border-stone-200 text-center space-y-1.5">
+              <p className="text-xs text-stone-400">Nenhum compromisso agendado.</p>
+              <button
+                type="button"
+                onClick={() => onAgendarCompromisso(lead)}
+                className="btn btn-secondary btn-xs gap-1 mx-auto text-[11px] text-stone-700"
+              >
+                <Calendar size={11} className="text-primary-600" />
+                <span>Agendar Encontro</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {lead.compromissos.map((comp) => {
+                let horarioFormatado = comp.dataHoraInicio
+                try {
+                  const dt = DateTime.fromISO(comp.dataHoraInicio)
+                  if (dt.isValid) {
+                    horarioFormatado = dt.toFormat('dd/MM/yyyy HH:mm')
+                  }
+                } catch {
+                  horarioFormatado = comp.dataHoraInicio
+                }
+                const isPendente = comp.status === 'agendado' || comp.status === 'reagendado'
+                const isConcluido = comp.status === 'concluido'
+                const isCancelado = comp.status === 'cancelado'
+
+                return (
+                  <div
+                    key={comp.id}
+                    className="bg-white rounded-lg p-2.5 border border-stone-200/90 shadow-3xs space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: comp.tipoCor || '#3B82F6' }}
+                          />
+                          <span className="text-[10px] font-bold text-stone-500 uppercase">
+                            {comp.tipoNome}
+                          </span>
+                          <span
+                            className={clsx(
+                              'text-[9px] px-1.5 py-0.2 rounded font-semibold',
+                              isConcluido && 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                              isCancelado && 'bg-rose-50 text-rose-700 border border-rose-200 line-through',
+                              isPendente && 'bg-blue-50 text-blue-700 border border-blue-200'
+                            )}
+                          >
+                            {comp.status === 'agendado'
+                              ? 'Agendado'
+                              : comp.status === 'reagendado'
+                              ? 'Reagendado'
+                              : comp.status === 'concluido'
+                              ? 'Concluído'
+                              : 'Cancelado'}
+                          </span>
+                        </div>
+                        <h5 className="text-xs font-semibold text-stone-900 leading-snug">
+                          {comp.titulo}
+                        </h5>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px] text-stone-500 pt-1 border-t border-stone-100">
+                      <div className="flex items-center gap-1">
+                        <Clock size={10} className="text-stone-400 shrink-0" />
+                        <span>{horarioFormatado}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <User size={10} className="text-stone-400 shrink-0" />
+                        <span className="truncate">{comp.responsavelNome}</span>
+                      </div>
+                      {comp.local && (
+                        <div className="col-span-2 flex items-center gap-1 text-stone-500">
+                          <MapPin size={10} className="text-stone-400 shrink-0" />
+                          <span className="truncate">{comp.local}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desfecho destacado */}
+                    {isConcluido && comp.desfecho && (
+                      <div className="p-2 bg-emerald-50/80 border border-emerald-200/90 rounded-md text-xs space-y-0.5">
+                        <div className="flex items-center gap-1 text-emerald-800 font-semibold text-[10px]">
+                          <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
+                          <span>Desfecho Registrado:</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-950 leading-relaxed pl-3.5">
+                          {comp.desfecho}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Ações */}
+                    <div className="pt-1 flex items-center justify-between text-xs border-t border-stone-50">
+                      {isPendente ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onConcluirCompromisso({
+                              ...comp,
+                              lead: { id: lead.id, nome: lead.nome, telefone: lead.telefone, cidade: lead.cidade },
+                            })
+                          }
+                          className="btn btn-primary btn-xs gap-1 text-[10px] py-0.5 px-2 shadow-3xs"
+                        >
+                          <CheckCircle2 size={11} />
+                          <span>Concluir</span>
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+
+                      <a
+                        href={`/agenda?leadId=${lead.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-stone-400 hover:text-stone-700 flex items-center gap-0.5 hover:underline"
+                        title="Abrir detalhes deste lead na Agenda"
+                      >
+                        <span>Ver na Agenda</span>
+                        <ExternalLink size={9} />
+                      </a>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
             Linha do Tempo ({eventosTimeline.length})
