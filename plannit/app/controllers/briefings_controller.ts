@@ -38,6 +38,10 @@ export default class BriefingsController {
           .preload('lead', (lQuery) => lQuery.select('id', 'nome', 'telefone'))
       })
       .preload('ambientesDetalhados')
+      // Projeto arquivado (RN017) não aparece mais na lista nem nas contagens de briefings
+      .whereHas('projeto', (pQuery) => {
+        pQuery.where('arquivado', false)
+      })
       .orderBy('updatedAt', 'desc')
 
     // Isolamento por perfil: Vendedor só vê projetos sob sua responsabilidade
@@ -306,12 +310,26 @@ export default class BriefingsController {
 
     let projeto: Projeto | null = null
 
+    // Lead que já tem projeto em aberto reaproveita esse projeto (e o briefing dele) em vez de criar
+    // outro: clicar de novo em "Iniciar Briefing" no CRM gerava projetos e briefings duplicados
+    const projetoAbertoDoLead =
+      !projetoId && lead
+        ? await Projeto.query()
+            .where('lead_id', lead.id)
+            .where('arquivado', false)
+            .whereNot('status', StatusProjeto.CANCELADO)
+            .orderBy('id', 'desc')
+            .first()
+        : null
+
     if (projetoId) {
       projeto = await Projeto.find(projetoId)
       if (!projeto) {
         session.flash('erro', 'Projeto não encontrado')
         return response.redirect().back()
       }
+    } else if (projetoAbertoDoLead) {
+      projeto = projetoAbertoDoLead
     } else if ((clienteNome && clienteNome.trim()) || lead) {
       const nomeFinal = (clienteNome && clienteNome.trim()) || lead!.nome
 
@@ -455,10 +473,14 @@ export default class BriefingsController {
       })
     }
 
-    session.flash('sucesso', 'Briefing iniciado com sucesso!')
+    const mensagem = projetoAbertoDoLead
+      ? 'Este lead já tem um briefing em andamento. Abrimos o existente.'
+      : 'Briefing iniciado com sucesso!'
+    session.flash('success', mensagem)
     if (request.header('accept')?.includes('application/json')) {
-      return response.status(201).json({
-        message: 'Briefing iniciado com sucesso!',
+      return response.status(projetoAbertoDoLead ? 200 : 201).json({
+        message: mensagem,
+        reaproveitado: Boolean(projetoAbertoDoLead),
         projeto,
         briefing,
       })

@@ -337,7 +337,11 @@ const CRMIndex: React.FC<PageProps> = ({
   }
 
   // Iniciar Briefing Técnico para o Lead Qualificado
+  const [iniciandoBriefing, setIniciandoBriefing] = useState(false)
+
   const handleIniciarBriefing = (leadId: number) => {
+    if (iniciandoBriefing) return
+    setIniciandoBriefing(true)
     router.post(
       '/briefings',
       { leadId },
@@ -345,6 +349,7 @@ const CRMIndex: React.FC<PageProps> = ({
         onError: (err) => {
           toast.error(err.erro || 'Erro ao iniciar briefing para este lead')
         },
+        onFinish: () => setIniciandoBriefing(false),
       }
     )
   }
@@ -668,6 +673,7 @@ const CRMIndex: React.FC<PageProps> = ({
           onClose={() => setSelectedLeadId(null)}
           onQualificar={() => handleAbrirQualificacao(selectedLead)}
           onIniciarBriefing={() => handleIniciarBriefing(selectedLead.id)}
+          iniciandoBriefing={iniciandoBriefing}
           onMarcarPerdido={() => {
             setLeadParaPerder(selectedLead)
           }}
@@ -862,6 +868,7 @@ function LeadDrawer({
   onClose,
   onQualificar,
   onIniciarBriefing,
+  iniciandoBriefing,
   onMarcarPerdido,
   onAgendarCompromisso,
   onConcluirCompromisso,
@@ -871,6 +878,7 @@ function LeadDrawer({
   onClose: () => void
   onQualificar: () => void
   onIniciarBriefing: () => void
+  iniciandoBriefing: boolean
   onMarcarPerdido: () => void
   onAgendarCompromisso: (lead: LeadItem) => void
   onConcluirCompromisso: (compromisso: any) => void
@@ -879,6 +887,11 @@ function LeadDrawer({
   const [tipo, setTipo] = useState('whatsapp')
   const [resumo, setResumo] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // A partir de "Em Briefing" o lead já tem projeto e briefing: o botão abre o existente
+  const briefingJaIniciado = ['em_briefing', 'em_projeto', 'em_fechamento', 'fechado'].includes(
+    lead.statusFunil
+  )
 
   const eventosTimeline = [
     ...(lead.interacoes || []).map((i) => ({
@@ -982,11 +995,22 @@ function LeadDrawer({
         {lead.qualificado && lead.statusFunil !== 'perdido' && (
           <button
             onClick={onIniciarBriefing}
-            className="btn btn-sm flex-1 gap-1.5 text-xs shadow-sm bg-stone-900 hover:bg-stone-800 text-white font-semibold transition-all"
-            title="Cria o projeto no sistema e abre o Briefing Inteligente"
+            disabled={iniciandoBriefing}
+            className="btn btn-sm flex-1 gap-1.5 text-xs shadow-sm bg-stone-900 hover:bg-stone-800 text-white font-semibold transition-all disabled:opacity-60"
+            title={
+              briefingJaIniciado
+                ? 'Abre o Briefing Inteligente já existente deste lead'
+                : 'Cria o projeto no sistema e abre o Briefing Inteligente'
+            }
           >
             <FileText size={13} className="text-primary-400" />
-            <span>Iniciar Briefing Técnico</span>
+            <span>
+              {iniciandoBriefing
+                ? 'Abrindo...'
+                : briefingJaIniciado
+                  ? 'Abrir Briefing Técnico'
+                  : 'Iniciar Briefing Técnico'}
+            </span>
           </button>
         )}
 
