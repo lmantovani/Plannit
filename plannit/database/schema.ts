@@ -705,7 +705,7 @@ export class InteracoesLeadSchema extends BaseModel {
 }
 
 export class LeadSchema extends BaseModel {
-  static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusAlteradoEm', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
+  static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'origemDescricao', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusAlteradoEm', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
   $columns = LeadSchema.$columns
   @column()
   declare ambientesInteresse: any | null
@@ -743,6 +743,8 @@ export class LeadSchema extends BaseModel {
   declare orcamentoEstimado: string | null
   @column()
   declare origem: string
+  @column()
+  declare origemDescricao: string | null
   @column()
   declare possuiArquiteto: boolean
   @column()

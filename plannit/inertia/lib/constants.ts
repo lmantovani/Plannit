@@ -30,6 +30,9 @@ export const ORIGEM_LABELS: Record<string, string> = {
 // Slug da origem "Especificador" (OrigemLead.ARQUITETO no backend)
 export const ORIGEM_ESPECIFICADOR = 'arquiteto'
 
+// Slug da origem "Outro" (OrigemLead.OUTRO no backend), que exige descrever a origem
+export const ORIGEM_OUTRO = 'outro'
+
 export function timeAgo(dateString: string | null | undefined): string {
   if (!dateString) return 'Sem contato'
   const diff = Date.now() - new Date(dateString).getTime()

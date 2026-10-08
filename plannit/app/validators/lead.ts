@@ -41,6 +41,14 @@ export const createLeadValidator = vine.create({
   cidade: vine.string().trim().maxLength(100).optional(),
   estado: vine.string().trim().maxLength(2).optional(),
   origem: vine.string().trim().maxLength(100).optional(),
+  // Texto livre obrigatório quando a origem é "Outro" (base para padronizar novas origens no futuro)
+  origemDescricao: vine
+    .string()
+    .trim()
+    .minLength(2)
+    .maxLength(200)
+    .optional()
+    .requiredWhen('origem', '=', 'outro'),
   // Campanha só do catálogo ativo (Configurações → Campanhas), para os KPIs não dependerem de texto livre
   campanha: vine
     .string()
@@ -72,6 +80,8 @@ export const createLeadValidator = vine.create({
 createLeadValidator.messagesProvider = new SimpleMessagesProvider({
   'arquitetoId.database.exists': 'Especificador não encontrado ou inativo.',
   'campanha.database.exists': 'Selecione uma campanha ativa do catálogo.',
+  'origemDescricao.required': 'Informe qual é a origem do lead.',
+  'origemDescricao.minLength': 'Descreva a origem com no mínimo 2 caracteres.',
 })
 
 export const updateLeadValidator = vine.create({

@@ -5,6 +5,7 @@ import {
   FUNIL_ETAPAS,
   ORIGEM_LABELS,
   ORIGEM_ESPECIFICADOR,
+  ORIGEM_OUTRO,
   timeAgo,
   formatDate,
   formatDateTime,
@@ -108,6 +109,7 @@ export type LeadItem = {
   cidade: string | null
   estado: string | null
   origem: string
+  origemDescricao: string | null
   campanha: string | null
   statusFunil: string
   qualificado: boolean
@@ -618,7 +620,10 @@ const CRMIndex: React.FC<PageProps> = ({
                         </td>
                         <td className="py-3 px-3 text-stone-600">{l.cidade || '—'}</td>
                         <td className="py-3 px-3">
-                          <span className="badge badge-neutro text-[10px]">
+                          <span
+                            className="badge badge-neutro text-[10px]"
+                            title={l.origemDescricao || undefined}
+                          >
                             {origensMap[l.origem] || l.origem}
                           </span>
                         </td>
@@ -829,7 +834,10 @@ function LeadCard({
 
       {/* Rodapé do Card */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-100 text-[10px]">
-        <span className="badge badge-neutro text-[9px] py-0 px-1.5">
+        <span
+          className="badge badge-neutro text-[9px] py-0 px-1.5"
+          title={lead.origemDescricao || undefined}
+        >
           {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
         </span>
 
@@ -1012,6 +1020,9 @@ function LeadDrawer({
           <p className="font-medium text-stone-700 mt-0.5">
             {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
           </p>
+          {lead.origemDescricao && (
+            <p className="text-[11px] text-stone-500 mt-0.5">{lead.origemDescricao}</p>
+          )}
         </div>
 
         <div>
@@ -1469,6 +1480,7 @@ function NovoLeadModal({
     campanha: '',
     vendedorId: '',
     arquitetoId: '',
+    origemDescricao: '',
   })
 
   // Lista local de especificadores para incluir o recém-cadastrado sem recarregar a tela
@@ -1476,6 +1488,7 @@ function NovoLeadModal({
   const [showNovoParceiro, setShowNovoParceiro] = useState(false)
   const [nomeNovoParceiro, setNomeNovoParceiro] = useState('')
   const origemEspecificador = data.origem === ORIGEM_ESPECIFICADOR
+  const origemOutro = data.origem === ORIGEM_OUTRO
 
   const abrirNovoParceiro = (nomeDigitado: string) => {
     setNomeNovoParceiro(nomeDigitado)
@@ -1487,6 +1500,7 @@ function NovoLeadModal({
       ...prev,
       origem,
       arquitetoId: origem === ORIGEM_ESPECIFICADOR ? prev.arquitetoId : '',
+      origemDescricao: origem === ORIGEM_OUTRO ? prev.origemDescricao : '',
     }))
   }
 
@@ -1623,6 +1637,28 @@ function NovoLeadModal({
                     ))}
               </select>
             </div>
+
+            {origemOutro && (
+              <div className="col-span-2 animate-fade-in">
+                <label className="label">Qual é a origem? *</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={200}
+                  value={data.origemDescricao}
+                  onChange={(e) => setData('origemDescricao', e.target.value)}
+                  placeholder="Ex: Feira de decoração, panfleto, indicação do síndico..."
+                  className="input text-xs"
+                />
+                {errors.origemDescricao ? (
+                  <p className="text-red-500 text-[11px] mt-1">{errors.origemDescricao}</p>
+                ) : (
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Ajuda a avaliar se vale criar uma nova origem no catálogo.
+                  </p>
+                )}
+              </div>
+            )}
 
             {origemEspecificador && (
               <div className="col-span-2 animate-fade-in">
