@@ -43,7 +43,7 @@ export default class extends BaseSeeder {
 
     const b1Score = calcularScoreBriefing({
       cidadeObra: 'São Paulo',
-      ambientes: ['cozinha', 'sala'],
+      ambientes: ['Cozinha', 'Living'],
       // Sem faixa de investimento, sem ambientes detalhados, sem referências
       scoreMinimo: 70,
     })
@@ -53,7 +53,7 @@ export default class extends BaseSeeder {
       cidadeObra: 'São Paulo',
       estadoObra: 'SP',
       enderecoObra: 'Rua Bela Cintra, 1420 - Jardins',
-      ambientes: ['cozinha', 'sala'],
+      ambientes: ['Cozinha', 'Living'],
       status: StatusBriefing.RASCUNHO,
       score: String(b1Score.score),
       scoreMinimo: '70',
@@ -78,13 +78,13 @@ export default class extends BaseSeeder {
 
     const b2AmbientesDetalhados = [
       {
-        tipo: 'cozinha',
+        tipo: 'Cozinha',
         descricao: 'Cozinha gourmet com ilha central em lâmina de carvalho e bancada em granito São Gabriel escovado.',
         medidasPreliminares: '4.80m x 3.20m, pé direito 2.70m',
         observacoesEspecificas: 'Prever nicho para forno elétrico de embutir 90cm e cooktop indução.',
       },
       {
-        tipo: 'closet',
+        tipo: 'Closet',
         descricao: 'Closet master com iluminação LED embutida nas prateleiras e portas em vidro reflecta bronze.',
         medidasPreliminares: '3.60m x 2.40m, pé direito 2.70m',
         observacoesEspecificas: 'Gaveteiros com divisores aveludados para relógios e joias.',
@@ -93,7 +93,7 @@ export default class extends BaseSeeder {
 
     const b2Score = calcularScoreBriefing({
       cidadeObra: 'Campinas',
-      ambientes: ['cozinha', 'closet', 'dormitorio'],
+      ambientes: ['Cozinha', 'Closet', 'Suíte Master'],
       prazoDesejado: '2026-11-30',
       faixaInvestimentoMin: 80000,
       faixaInvestimentoMax: 140000,
@@ -110,7 +110,7 @@ export default class extends BaseSeeder {
       cidadeObra: 'Campinas',
       estadoObra: 'SP',
       enderecoObra: 'Condomínio Alphaville Campinas, Lote 45',
-      ambientes: ['cozinha', 'closet', 'dormitorio'],
+      ambientes: ['Cozinha', 'Closet', 'Suíte Master'],
       prazoDesejado: '2026-11-30',
       faixaInvestimentoMin: '80000',
       faixaInvestimentoMax: '140000',
@@ -151,13 +151,13 @@ export default class extends BaseSeeder {
 
     const b3Ambientes = [
       {
-        tipo: 'gourmet',
+        tipo: 'Espaço Gourmet',
         descricao: 'Varanda gourmet integrada à sala com cristaleira iluminada e churrasqueira revestida.',
         medidasPreliminares: '5.20m x 2.80m',
         observacoesEspecificas: 'Portas ripadas em tauari natural.',
       },
       {
-        tipo: 'home_office',
+        tipo: 'Home Office',
         descricao: 'Escritório executivo para duas pessoas com estante piso-teto e painel ripado acústico.',
         medidasPreliminares: '3.10m x 2.90m',
         observacoesEspecificas: 'Passagem oculta de cabos elétricos e rede.',
@@ -166,7 +166,7 @@ export default class extends BaseSeeder {
 
     const b3Score = calcularScoreBriefing({
       cidadeObra: 'São Paulo',
-      ambientes: ['gourmet', 'home_office'],
+      ambientes: ['Espaço Gourmet', 'Home Office'],
       prazoDesejado: '2026-10-15',
       faixaInvestimentoMin: 120000,
       faixaInvestimentoMax: 180000,
@@ -183,7 +183,7 @@ export default class extends BaseSeeder {
       cidadeObra: 'São Paulo',
       estadoObra: 'SP',
       enderecoObra: 'Av. República do Líbano, 890 - Ibirapuera',
-      ambientes: ['gourmet', 'home_office'],
+      ambientes: ['Espaço Gourmet', 'Home Office'],
       prazoDesejado: '2026-10-15',
       faixaInvestimentoMin: '120000',
       faixaInvestimentoMax: '180000',

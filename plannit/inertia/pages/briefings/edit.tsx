@@ -19,12 +19,15 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { toast } from 'sonner'
 import ModalNovoParceiroRapido, {
   type EspecificadorItem,
   type ConsultorItem,
 } from '../../components/especificadores/ModalNovoParceiroRapido'
 import {
-  TIPO_AMBIENTE_OPTIONS,
+  normalizarAmbiente,
+  ehAmbienteOutro,
+  descricaoAmbienteOutro,
   ESTILOS_PREFERIDOS_OPTIONS,
   CRITERIOS_SCORE,
   STATUS_BRIEFING_MAP,
@@ -92,13 +95,19 @@ type PageProps = {
   }
   especificadores?: EspecificadorItem[]
   consultores?: ConsultorItem[]
+  ambientesCatalogo?: string[]
 }
 
 const BriefingEdit: React.FC<PageProps> = ({
   briefing,
   especificadores = [],
   consultores = [],
+  ambientesCatalogo = [],
 }) => {
+  // Ambientes vindos da qualificação do lead (nomes do catálogo); valores antigos são traduzidos
+  const ambientesIniciais = (briefing.ambientes || []).map(normalizarAmbiente)
+  const outroInicial = ambientesIniciais.find(ehAmbienteOutro)
+
   // Lista local de especificadores (para permitir inclusão imediata ao cadastrar via modal sem recarregar tela)
   const [listaEspecificadores, setListaEspecificadores] = useState<EspecificadorItem[]>(especificadores)
   const [isModalNovoArquitetoOpen, setIsModalNovoArquitetoOpen] = useState(false)
@@ -108,7 +117,7 @@ const BriefingEdit: React.FC<PageProps> = ({
     cidadeObra: briefing.cidadeObra || '',
     estadoObra: briefing.estadoObra || '',
     enderecoObra: briefing.enderecoObra || '',
-    ambientes: briefing.ambientes || [],
+    ambientes: ambientesIniciais.filter((a) => !ehAmbienteOutro(a)),
     prazoDesejado: briefing.prazoDesejado || '',
     faixaInvestimentoMin: briefing.faixaInvestimentoMin ?? '',
     faixaInvestimentoMax: briefing.faixaInvestimentoMax ?? '',
@@ -119,8 +128,41 @@ const BriefingEdit: React.FC<PageProps> = ({
     arquitetoNome: briefing.arquitetoNome || '',
     arquitetoEmail: briefing.arquitetoEmail || '',
     arquitetoTelefone: briefing.arquitetoTelefone || '',
-    ambientesDetalhados: briefing.ambientesDetalhados || [],
+    ambientesDetalhados: (briefing.ambientesDetalhados || []).map((a) => ({
+      ...a,
+      tipo: normalizarAmbiente(a.tipo),
+    })),
   })
+
+  // Ambiente fora do catálogo ("Outro"), com descrição obrigatória como na qualificação do lead
+  const [isOutroSelected, setIsOutroSelected] = useState(Boolean(outroInicial))
+  const [outroDescricao, setOutroDescricao] = useState(
+    outroInicial ? descricaoAmbienteOutro(outroInicial) : ''
+  )
+
+  // Lista final gravada no briefing: ambientes do catálogo + "Outro: <descrição>"
+  const ambientesFinais = useMemo(
+    () =>
+      isOutroSelected && outroDescricao.trim()
+        ? [...formData.ambientes, `Outro: ${outroDescricao.trim()}`]
+        : formData.ambientes,
+    [formData.ambientes, isOutroSelected, outroDescricao]
+  )
+
+  // Detalhamento técnico: ambientes do catálogo que não foram solicitados
+  const restoCatalogo = useMemo(
+    () => ambientesCatalogo.filter((a) => !ambientesFinais.includes(a)),
+    [ambientesCatalogo, ambientesFinais]
+  )
+
+  // Chips: catálogo ativo + ambientes já escolhidos que não estão no catálogo (inativos ou antigos)
+  const opcoesAmbientes = useMemo(
+    () => [
+      ...ambientesCatalogo,
+      ...formData.ambientes.filter((a) => !ambientesCatalogo.includes(a)),
+    ],
+    [ambientesCatalogo, formData.ambientes]
+  )
 
   // Selecionar arquiteto parceiro existente com auto-preenchimento
   const handleSelectArquiteto = (arquitetoIdVal: string) => {
@@ -165,7 +207,7 @@ const BriefingEdit: React.FC<PageProps> = ({
   const liveScore = useMemo(() => {
     return calcularScoreBriefingClient({
       cidadeObra: formData.cidadeObra,
-      ambientes: formData.ambientes,
+      ambientes: ambientesFinais,
       prazoDesejado: formData.prazoDesejado,
       faixaInvestimentoMin: formData.faixaInvestimentoMin,
       faixaInvestimentoMax: formData.faixaInvestimentoMax,
@@ -176,7 +218,7 @@ const BriefingEdit: React.FC<PageProps> = ({
       observacoes: formData.observacoes,
       scoreMinimo: briefing.scoreMinimo || 70,
     })
-  }, [formData, briefing.scoreMinimo])
+  }, [formData, ambientesFinais, briefing.scoreMinimo])
 
   // Alterna ambiente no escopo geral
   const toggleAmbiente = (val: string) => {
@@ -191,7 +233,13 @@ const BriefingEdit: React.FC<PageProps> = ({
 
   // Gerenciamento de Ambientes Detalhados
   const addAmbienteDetalhado = () => {
-    const defaultTipo = formData.ambientes.length > 0 ? formData.ambientes[0] : 'cozinha'
+    // Sugere o primeiro ambiente solicitado que ainda não foi detalhado
+    const detalhados = formData.ambientesDetalhados.map((a) => a.tipo)
+    const defaultTipo =
+      ambientesFinais.find((a) => !detalhados.includes(a)) ??
+      ambientesFinais[0] ??
+      ambientesCatalogo[0] ??
+      ''
     setFormData((prev) => ({
       ...prev,
       ambientesDetalhados: [
@@ -238,9 +286,19 @@ const BriefingEdit: React.FC<PageProps> = ({
     }))
   }
 
+  // "Outro" marcado exige descrição (mesma regra da qualificação do lead)
+  const outroSemDescricao = () => {
+    if (isOutroSelected && outroDescricao.trim().length < 2) {
+      toast.error('Descreva o ambiente "Outro" com no mínimo 2 caracteres.')
+      return true
+    }
+    return false
+  }
+
   // Salvar Rascunho
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
+    if (outroSemDescricao()) return
     setIsSaving(true)
 
     router.put(
@@ -249,7 +307,7 @@ const BriefingEdit: React.FC<PageProps> = ({
         cidadeObra: formData.cidadeObra || null,
         estadoObra: formData.estadoObra || null,
         enderecoObra: formData.enderecoObra || null,
-        ambientes: formData.ambientes,
+        ambientes: ambientesFinais,
         prazoDesejado: formData.prazoDesejado || null,
         faixaInvestimentoMin: formData.faixaInvestimentoMin ? Number(formData.faixaInvestimentoMin) : null,
         faixaInvestimentoMax: formData.faixaInvestimentoMax ? Number(formData.faixaInvestimentoMax) : null,
@@ -270,6 +328,7 @@ const BriefingEdit: React.FC<PageProps> = ({
 
   // Enviar para Fila de Projetos (RN002)
   const handleEnviarFila = () => {
+    if (outroSemDescricao()) return
     if (!liveScore.aprovado) {
       alert(
         `Bloqueio RN002: O score atual é de ${liveScore.score} pts (mínimo exigido: ${liveScore.scoreMinimo} pts).\n\nPontos pendentes:\n• ${liveScore.pontosFaltantes.join('\n• ')}`
@@ -290,7 +349,7 @@ const BriefingEdit: React.FC<PageProps> = ({
           cidadeObra: formData.cidadeObra || null,
           estadoObra: formData.estadoObra || null,
           enderecoObra: formData.enderecoObra || null,
-          ambientes: formData.ambientes,
+          ambientes: ambientesFinais,
           prazoDesejado: formData.prazoDesejado || null,
           faixaInvestimentoMin: formData.faixaInvestimentoMin ? Number(formData.faixaInvestimentoMin) : null,
           faixaInvestimentoMax: formData.faixaInvestimentoMax ? Number(formData.faixaInvestimentoMax) : null,
@@ -454,13 +513,13 @@ const BriefingEdit: React.FC<PageProps> = ({
                   Selecione os ambientes que farão parte do escopo contratual deste projeto:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {TIPO_AMBIENTE_OPTIONS.map((opt: { value: string; label: string }) => {
-                    const isSelected = formData.ambientes.includes(opt.value)
+                  {opcoesAmbientes.map((amb) => {
+                    const isSelected = formData.ambientes.includes(amb)
                     return (
                       <button
                         type="button"
-                        key={opt.value}
-                        onClick={() => toggleAmbiente(opt.value)}
+                        key={amb}
+                        onClick={() => toggleAmbiente(amb)}
                         className={clsx(
                           'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border',
                           isSelected
@@ -469,11 +528,54 @@ const BriefingEdit: React.FC<PageProps> = ({
                         )}
                       >
                         {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-stone-900" />}
-                        {opt.label}
+                        {amb}
                       </button>
                     )
                   })}
+
+                  {/* Ambiente fora do catálogo */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !isOutroSelected
+                      setIsOutroSelected(next)
+                      if (!next) setOutroDescricao('')
+                    }}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border',
+                      isOutroSelected
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm font-semibold'
+                        : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                    )}
+                  >
+                    {isOutroSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                    Outro
+                  </button>
                 </div>
+
+                {opcoesAmbientes.length === 0 && (
+                  <p className="text-[11px] text-stone-400 mt-2">
+                    Nenhum ambiente ativo no catálogo. Cadastre em Configurações → Ambientes.
+                  </p>
+                )}
+
+                {isOutroSelected && (
+                  <div className="mt-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1 animate-fade-in">
+                    <label className="block text-[11px] font-semibold text-amber-950">
+                      Descrição do Ambiente “Outro” *
+                    </label>
+                    <input
+                      type="text"
+                      value={outroDescricao}
+                      onChange={(e) => setOutroDescricao(e.target.value)}
+                      placeholder="Ex: Adega Climatizada, Brinquedoteca, Academia, etc."
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-stone-800"
+                    />
+                    <p className="text-[10px] text-amber-700">
+                      Campo obrigatório para descrever o ambiente fora do catálogo.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -530,13 +632,32 @@ const BriefingEdit: React.FC<PageProps> = ({
                           <select
                             value={amb.tipo}
                             onChange={(e) => updateAmbienteDetalhado(index, 'tipo', e.target.value)}
-                            className="text-xs font-semibold text-stone-800 bg-white border border-stone-200 rounded-md px-2 py-1 capitalize focus:ring-2 focus:ring-primary-500"
+                            className="text-xs font-semibold text-stone-800 bg-white border border-stone-200 rounded-md px-2 py-1 focus:ring-2 focus:ring-primary-500"
                           >
-                            {TIPO_AMBIENTE_OPTIONS.map((o: { value: string; label: string }) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
+                            {!amb.tipo && <option value="">Selecione o ambiente...</option>}
+                            {ambientesFinais.length > 0 && (
+                              <optgroup label="Ambientes solicitados">
+                                {ambientesFinais.map((a) => (
+                                  <option key={a} value={a}>
+                                    {a}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {restoCatalogo.length > 0 && (
+                              <optgroup label="Demais ambientes do catálogo">
+                                {restoCatalogo.map((a) => (
+                                  <option key={a} value={a}>
+                                    {a}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {amb.tipo &&
+                              !ambientesFinais.includes(amb.tipo) &&
+                              !restoCatalogo.includes(amb.tipo) && (
+                                <option value={amb.tipo}>{amb.tipo}</option>
+                              )}
                           </select>
                         </div>
                         <button

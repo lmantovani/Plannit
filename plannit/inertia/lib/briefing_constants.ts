@@ -23,18 +23,26 @@ export const CRITERIOS_SCORE: CriterioDef[] = [
   { key: 'observacoes', peso: 10, descricao: 'Observações e contexto do cliente (mín. 50 caracteres)', categoria: 'comercial' },
 ]
 
-export const TIPO_AMBIENTE_OPTIONS = [
-  { value: 'cozinha', label: 'Cozinha' },
-  { value: 'closet', label: 'Closet' },
-  { value: 'dormitorio', label: 'Dormitório' },
-  { value: 'sala', label: 'Sala de Estar / Jantar' },
-  { value: 'banheiro', label: 'Banheiro' },
-  { value: 'lavabo', label: 'Lavabo' },
-  { value: 'home_office', label: 'Home Office' },
-  { value: 'gourmet', label: 'Espaço Gourmet / Varanda' },
-  { value: 'area_servico', label: 'Área de Serviço' },
-  { value: 'outro', label: 'Outro Ambiente' },
-]
+// Os ambientes do briefing usam os nomes do catálogo (Configurações → Ambientes), os mesmos gravados
+// na qualificação do lead. Valores antigos da lista fixa do briefing são traduzidos ao abrir.
+const AMBIENTES_LEGADO: Record<string, string> = {
+  cozinha: 'Cozinha',
+  closet: 'Closet',
+  dormitorio: 'Dormitório',
+  sala: 'Living',
+  banheiro: 'Banheiro',
+  lavabo: 'Lavabo',
+  home_office: 'Home Office',
+  gourmet: 'Espaço Gourmet',
+  area_servico: 'Área de Serviço',
+  outro: 'Outro',
+}
+
+export const normalizarAmbiente = (valor: string) => AMBIENTES_LEGADO[valor] ?? valor
+
+// Ambiente fora do catálogo, gravado como "Outro: <descrição>" (mesmo formato da qualificação do lead)
+export const ehAmbienteOutro = (valor: string) => /^outro(:|$)/i.test(valor.trim())
+export const descricaoAmbienteOutro = (valor: string) => valor.trim().replace(/^outro:?\s*/i, '')
 
 export const ESTILOS_PREFERIDOS_OPTIONS = [
   'Contemporâneo Minimalista',

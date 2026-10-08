@@ -9,6 +9,7 @@ import Lead, { StatusFunil } from '#models/lead'
 import FilaProjeto, { StatusFila } from '#models/fila_projeto'
 import HistoricoStatusProjeto from '#models/historico_status_projeto'
 import Arquiteto from '#models/arquiteto'
+import AmbienteCatalogo from '#models/ambiente_catalogo'
 import User, { PerfilUsuario } from '#models/user'
 import {
   calcularScoreBriefing,
@@ -194,6 +195,12 @@ export default class BriefingsController {
 
     const scoreResult = calcularScoreBriefing(scoreInput)
 
+    // Mesmo catálogo de ambientes usado na qualificação do lead (Configurações → Ambientes)
+    const ambientesCatalogo = await AmbienteCatalogo.query()
+      .where('isActive', true)
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
     return inertia.render('briefings/edit', {
       briefing: {
         id: briefing.id,
@@ -269,6 +276,7 @@ export default class BriefingsController {
         nome: c.nome,
         email: c.email,
       })),
+      ambientesCatalogo: ambientesCatalogo.map((a) => a.nome),
     })
   }
 
