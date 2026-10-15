@@ -38,6 +38,7 @@ interface UserProps {
 
 interface SharedProps extends Record<string, unknown> {
   user: UserProps
+  permissoes?: string[]
   flash?: {
     success?: string
     error?: string
@@ -67,7 +68,7 @@ interface NavGroup {
 }
 
 export default function AppLayout({ children, title, subtitle }: AppLayoutProps) {
-  const { user, flash } = usePage<SharedProps>().props
+  const { user, flash, permissoes } = usePage<SharedProps>().props
   const { url } = usePage()
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -136,7 +137,11 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
       section: 'Gestão',
       items: [
         { label: 'Colaboradores', href: '/colaboradores', icon: UserCog, badge: 'RH-RN009' },
-        ...(user?.isSuperuser || user?.perfil === 'diretoria' || user?.perfil === 'gerente_comercial'
+        ...(user?.isSuperuser ||
+        user?.perfil === 'diretoria' ||
+        user?.perfil === 'gerente_comercial' ||
+        permissoes?.includes('configuracoes.visualizar') ||
+        permissoes?.includes('configuracoes.gerenciar_permissoes')
           ? [{ label: 'Configurações', href: '/configuracoes', icon: Sliders }]
           : []),
       ],

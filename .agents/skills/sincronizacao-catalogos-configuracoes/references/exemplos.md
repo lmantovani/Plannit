@@ -88,8 +88,8 @@ Quando o registro grava o `id` do item, troque `column: 'nome'` por `column: 'id
 
 ## 4. Hook de sincronização (`inertia/lib/catalogos.ts`)
 
-Ainda não existe no código: hoje o efeito está copiado em três componentes. Crie este arquivo
-quando for adicionar o próximo consumidor. O código abaixo passou no typecheck e no lint do projeto.
+Já existe no projeto, com este conteúdo; importe dele em vez de copiar o efeito. Três componentes
+mais antigos ainda têm cópias do efeito (ver item 7 do checklist A no `SKILL.md`).
 
 ```ts
 import { useEffect } from 'react'

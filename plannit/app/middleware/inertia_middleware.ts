@@ -4,7 +4,7 @@ import UserTransformer from '#transformers/user_transformer'
 import BaseInertiaMiddleware from '@adonisjs/inertia/inertia_middleware'
 
 export default class InertiaMiddleware extends BaseInertiaMiddleware {
-  share(ctx: HttpContext) {
+  async share(ctx: HttpContext) {
     /**
      * The share method is called everytime an Inertia page is rendered. In
      * certain cases, a page may get rendered before the session middleware
@@ -14,6 +14,8 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
      * with all the properties
      */
     const { auth } = ctx as Partial<HttpContext>
+    const user = auth?.user
+    const permissoes = user ? await user.getPermissoes() : []
 
     /**
      * Data shared with all Inertia pages. Make sure you are using
@@ -22,6 +24,7 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
     return {
       errors: ctx.inertia.always(this.getValidationErrors(ctx)),
       user: ctx.inertia.always(auth?.user ? UserTransformer.transform(auth.user) : undefined),
+      permissoes: ctx.inertia.always(permissoes),
     }
   }
 
@@ -41,6 +44,7 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
     return {
       error: session?.flashMessages.get('error') as string | undefined,
       success: session?.flashMessages.get('success') as string | undefined,
+      info: session?.flashMessages.get('info') as string | undefined,
     }
   }
 

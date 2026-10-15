@@ -10,6 +10,7 @@ import FilaProjeto, { StatusFila } from '#models/fila_projeto'
 import HistoricoStatusProjeto from '#models/historico_status_projeto'
 import Arquiteto from '#models/arquiteto'
 import AmbienteCatalogo from '#models/ambiente_catalogo'
+import RoteiroBriefing from '#models/roteiro_briefing'
 import User, { PerfilUsuario } from '#models/user'
 import {
   calcularScoreBriefing,
@@ -205,6 +206,13 @@ export default class BriefingsController {
       .orderBy('ordem', 'asc')
       .orderBy('nome', 'asc')
 
+    // Roteiros de apoio do banco com ambientes vinculados
+    const roteirosBriefing = await RoteiroBriefing.query()
+      .where('isActive', true)
+      .preload('ambientes')
+      .orderBy('ordem', 'asc')
+      .orderBy('titulo', 'asc')
+
     return inertia.render('briefings/edit', {
       briefing: {
         id: briefing.id,
@@ -281,6 +289,14 @@ export default class BriefingsController {
         email: c.email,
       })),
       ambientesCatalogo: ambientesCatalogo.map((a) => a.nome),
+      roteirosCatalogo: roteirosBriefing.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        titulo: r.titulo,
+        subtitulo: r.subtitulo,
+        secoes: r.secoes || [],
+        ambientes: r.ambientes.map((a) => a.ambienteNome),
+      })),
     })
   }
 

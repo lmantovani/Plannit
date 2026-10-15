@@ -12,16 +12,19 @@ export const CRITERIOS_SCORE: CriterioDef[] = [
   { key: 'prazo_desejado', peso: 8, descricao: 'Prazo desejado informado', categoria: 'obrigatorio' },
   { key: 'faixa_investimento', peso: 14, descricao: 'Faixa de investimento (mín. e máx.) definida', categoria: 'obrigatorio' },
 
-  // Qualidade do levantamento (peso total: 35 pontos)
+  // Qualidade do levantamento (peso total: 33 pontos)
   { key: 'ambientes_detalhados', peso: 15, descricao: 'Ambientes com descrição detalhada', categoria: 'levantamento' },
-  { key: 'referencias_visuais', peso: 12, descricao: 'Referências visuais enviadas', categoria: 'levantamento' },
+  { key: 'referencias_visuais', peso: 10, descricao: 'Referências visuais enviadas', categoria: 'levantamento' },
   { key: 'medidas_preliminares', peso: 8, descricao: 'Medidas preliminares informadas', categoria: 'levantamento' },
 
-  // Informações comerciais (peso total: 25 pontos)
-  { key: 'estilo_preferido', peso: 8, descricao: 'Estilo preferido informado', categoria: 'comercial' },
+  // Informações comerciais (peso total: 17 pontos)
   { key: 'arquiteto_vinculado', peso: 7, descricao: 'Arquiteto/especificador vinculado', categoria: 'comercial' },
   { key: 'observacoes', peso: 10, descricao: 'Observações e contexto do cliente (mín. 50 caracteres)', categoria: 'comercial' },
 ]
+
+// Pontuação máxima do briefing (soma dos pesos): 90 desde que o estilo preferido saiu do briefing.
+// O mínimo para a fila (RN002) continua 70; use esta constante em barras e textos, não o número 100.
+export const SCORE_MAXIMO_BRIEFING = CRITERIOS_SCORE.reduce((total, c) => total + c.peso, 0)
 
 // Os ambientes do briefing usam os nomes do catálogo (Configurações → Ambientes), os mesmos gravados
 // na qualificação do lead. Valores antigos da lista fixa do briefing são traduzidos ao abrir.
@@ -43,18 +46,6 @@ export const normalizarAmbiente = (valor: string) => AMBIENTES_LEGADO[valor] ?? 
 // Ambiente fora do catálogo, gravado como "Outro: <descrição>" (mesmo formato da qualificação do lead)
 export const ehAmbienteOutro = (valor: string) => /^outro(:|$)/i.test(valor.trim())
 export const descricaoAmbienteOutro = (valor: string) => valor.trim().replace(/^outro:?\s*/i, '')
-
-export const ESTILOS_PREFERIDOS_OPTIONS = [
-  'Contemporâneo Minimalista',
-  'Moderno Nobre',
-  'Clássico Elegante',
-  'Industrial Chic',
-  'Escandinavo Aconchegante',
-  'Rústico Sofisticado',
-  'Neoclássico',
-  'Orgânico / Biofílico',
-  'Outro',
-]
 
 export const STATUS_BRIEFING_MAP: Record<string, { label: string; color: string; badge: string }> = {
   rascunho: {
@@ -92,7 +83,6 @@ export interface LiveScoreCalculationInput {
     observacoesEspecificas?: string
   }>
   referenciasUrl?: string[]
-  estiloPreferido?: string
   arquitetoNome?: string
   observacoes?: string
   scoreMinimo?: number
@@ -148,11 +138,11 @@ export function calcularScoreBriefingClient(dados: LiveScoreCalculationInput) {
     pontosFaltantes.push('Detalhamento dos ambientes')
   }
 
-  // 6. Referências visuais (12 pts)
+  // 6. Referências visuais (10 pts)
   const refs = Array.isArray(dados.referenciasUrl) ? dados.referenciasUrl.filter((r) => Boolean(r && r.trim())) : []
   detalhes.referencias_visuais = refs.length > 0
   if (detalhes.referencias_visuais) {
-    pontosObtidos += 12
+    pontosObtidos += 10
   } else {
     pontosFaltantes.push('Referências visuais')
   }
@@ -166,20 +156,14 @@ export function calcularScoreBriefingClient(dados: LiveScoreCalculationInput) {
     pontosObtidos += 8
   }
 
-  // 8. Estilo preferido (8 pts)
-  detalhes.estilo_preferido = Boolean(dados.estiloPreferido && dados.estiloPreferido.trim().length > 0)
-  if (detalhes.estilo_preferido) {
-    pontosObtidos += 8
-  }
-
-  // 9. Arquiteto vinculado (7 pts)
+  // 8. Arquiteto vinculado (7 pts)
   const temArquiteto = Boolean(dados.arquitetoNome && dados.arquitetoNome.trim().length > 0)
   detalhes.arquiteto_vinculado = temArquiteto
   if (temArquiteto) {
     pontosObtidos += 7
   }
 
-  // 10. Observações (10 pts)
+  // 9. Observações (10 pts)
   const obs = (dados.observacoes || '').trim()
   detalhes.observacoes = obs.length >= 50
   if (detalhes.observacoes) {

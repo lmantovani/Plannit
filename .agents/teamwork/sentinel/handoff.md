@@ -1,64 +1,34 @@
-# Relatório de Handoff — Sentinel
-
-**Projeto**: Implementação do Módulo de Agenda no Monólito Plannit (AdonisJS v7 + Lucid ORM + Inertia React 19 + TypeScript)  
-**Data**: 2026-10-08  
-**Autor**: Project Sentinel  
-**Status**: **VICTORY CONFIRMED**  
-
----
+# Relatório de Handoff — Sentinel (Supervisão do Guia Técnico de Briefings)
 
 ## 1. Observation
-
-1. **Demanda e Escopo**:
-   - O usuário solicitou a implementação completa do módulo de Agenda no monólito Plannit com 4 macro-requisitos (R1: Catálogo parametrizável em Configurações; R2: Modelagem e backend da Agenda com controle RBAC; R3: Tela central `/agenda` na barra lateral com visões Grade e Lista; R4: Integração bidirecional com o Kanban de Leads no CRM com badges de urgência e timeline).
-   - Houve uma interrupção temporária por reinício do ambiente durante a execução, prontamente retomada a partir do estado preservado em `progress.md`.
-
-2. **Execução pelo Swarm**:
-   - Rota decidida: **General** (`teamwork_preview_orchestrator`).
-   - O Project Orchestrator coordenou 13 subagentes ao longo do ciclo (Explorers de Survey, Workers de implementação para M1 a M4, Reviewers de código e segurança, Challengers para testes adversariais e Auditor Forense).
-   - O Orchestrator reivindicou conclusão com 75/75 testes aprovados e veredito forense **CLEAN**.
-
-3. **Auditoria Independente (Victory Audit)**:
-   - O Sentinel despachou de forma bloqueante o `teamwork_preview_victory_auditor` (`16f6c374-fd58-4c9a-993b-427c7e14f721`), com zero contexto compartilhado da implementação e acesso apenas a `ORIGINAL_REQUEST.md`.
-   - O Victory Auditor realizou checagem cronológica (Fase A), varredura forense contra dados estáticos ou atalhos (Fase B) e execução independente de compilação e suíte de testes no PostgreSQL 16 (Fase C).
-   - Veredito emitido: **VICTORY CONFIRMED**.
-
----
+- A solicitação do usuário demandava a implementação de um Sidebar lateral direito (Drawer) de apoio ao vendedor/atendente na tela de edição de Briefing (`inertia/pages/briefings/edit.tsx`), consumindo o conteúdo técnico de 18 manuais em PDF localizados em `docs/briefings/` com mapeamento inteligente para os ambientes do catálogo.
+- Por se tratar de uma funcionalidade autocontida com sinal explícito de foco e escopo fechado ("This is a single self-contained feature; keep it focused."), a execução foi roteada para o caminho SWE Light (`teamwork_preview_swe`).
+- O time executou a implementação inicial (`implementer_r1_1`), seguida por 3 rodadas adversárias de revisão (`reviewer_r1_1`, `reviewer_r2_1`, `reviewer_r3_1`) que corrigiram um total de 21 apontamentos de casos de borda, usabilidade e acessibilidade.
+- Ao término, o orquestrador submeteu reivindicação de vitória. O Sentinel despachou de forma independente e bloqueante o `teamwork_preview_victory_auditor` (`victory_auditor_2`), que emitiu o veredito oficial **VICTORY CONFIRMED**.
 
 ## 2. Logic Chain
-
-1. A separação dos papéis de gestão e operação foi rigorosamente validada em todos os níveis da pilha: no banco de dados (chaves estrangeiras e índices), nas rotas (middlewares de autenticação e papel), nos controllers (helpers `isGestor` e restrições por `user.id`), e nas interfaces React (renderização condicional de controles de equipe).
-2. O catálogo de tipos de compromissos respeitou as diretrizes de AGENTS.md e da skill `parametrizacao-campos-configuracoes`, garantindo que novos tipos ou alterações de cor/status reflitam imediatamente nos formulários via eventos cross-tab (`plannit_catalogo_updated`).
-3. A integração no CRM evitou qualquer risco de degradação de performance eliminando consultas N+1 via pré-carregamento otimizado com sub-consultas ordenadas no Lucid ORM.
-4. O encerramento de compromissos opera de forma atômica sob transação ACID (`db.transaction`), persistindo o desfecho e alimentando a linha do tempo do lead sem perda de integridade relacional.
-
----
+1. **Registro e Roteamento**: Solicitação registrada verbatim em `ORIGINAL_REQUEST.md`. Identificado o sinal de SWE Light sem necessidade de pre-flight audit.
+2. **Monitoramento por Crons**: Inicializados Cron 1 (Progresso a cada 8 minutos) e Cron 2 (Liveness a cada 10 minutos), enviando relatórios periódicos estruturados ao chamador.
+3. **Auditoria de Vitória Bloqueante**: Diante da reivindicação de conclusão do time, o auditor independente avaliou a proveniência dos commits, integridade dos dados e executou todos os comandos de validação em ambiente limpo:
+   - Extração autêntica dos 18 PDFs sem stubs ou facades (base `roteiros_briefings.ts` com 611 KB e 334 seções).
+   - Componente `RoteiroAmbienteDrawer.tsx` atendendo a todos os requisitos de design system, busca, seleção, cópia com fallback e confinamento de scroll.
+   - Integração na Seção 3 de `edit.tsx` com botões no cabeçalho e em cada card, auto-redirecionamento dinâmico e inserção contextual sem perda de rascunhos.
+   - 13/13 testes em `tests/functional/roteiros_briefings.spec.ts` aprovados.
+   - 103/103 testes da suíte funcional completa aprovados (0 regressões).
+   - `npm run typecheck` com 0 erros de tipagem.
+   - `npm run build` gerado com sucesso em 4.16s.
 
 ## 3. Caveats
-
-1. O ambiente atual de execução é de desenvolvimento no Docker (`plannit-postgres`). Quando o projeto for migrado para produção (AWS EC2 / RDS), as migrações deverão ser executadas na esteira de CI/CD.
-2. Como estabelecido no AGENTS.md, os testes Japa rodam contra o mesmo banco de desenvolvimento com `SESSION_DRIVER=memory`. Os dados criados pelas suítes automatizadas foram limpos pelas rotinas de tearDown ou preservados com identificadores isolados.
-
----
+- O monólito Plannit roda localmente em ambiente de desenvolvimento (`localhost:3333` com PostgreSQL via Docker `plannit-postgres`). Não há dependências externas adicionadas (`pdftotext` foi utilizado para a geração estática da base de conhecimento).
+- O catálogo de ambientes do Plannit possui 20 ambientes padrão; qualquer ambiente futuro cadastrado em `/configuracoes` que não possua mapeamento semântico direto cairá de forma segura no guia genérico mais próximo ou no seletor manual do Drawer.
 
 ## 4. Conclusion
-
-Todos os critérios de aceitação foram plenamente atendidos e validados de maneira independente:
-- `npm run typecheck`: 0 erros de compilação TypeScript.
-- `npm run build`: empacotamento do Vite concluído sem erros em 7.31s.
-- Suíte funcional Japa: 75/75 testes aprovados (15 em `agenda.spec.ts`, 9 em `crm_agenda_challenger_2.spec.ts`, 20 em `agenda_stress_adversarial.spec.ts`, 18 em `configuracoes_and_qualificacao.spec.ts`, etc.).
-- Limpeza mandatória de background tasks e subagentes executada com sucesso.
-
----
+- Todos os requisitos R1, R2 e R3 e os critérios de aceitação foram 100% cumpridos.
+- A auditoria independente confirmou formalmente a vitória com **VICTORY CONFIRMED**.
+- O rollout está concluído e pronto para homologação e uso operacional.
 
 ## 5. Verification Method
-
-- **Laudo Forense do Victory Auditor**: `/home/porto/codespace/Plannit/.agents/teamwork/victory_auditor_1/handoff.md`
-- **Comandos de Auditoria Executados**:
-  ```bash
-  npm run typecheck
-  npm run build
-  node ace test functional --files=tests/functional/agenda.spec.ts
-  node ace test functional --files=tests/functional/crm_agenda_challenger_2.spec.ts
-  node ace test functional
-  ```
+- Compilação estrita: `cd plannit && npm run typecheck` (0 erros)
+- Build de produção: `cd plannit && npm run build` (sucesso absoluto)
+- Testes específicos do módulo: `cd plannit && node ace test functional --files=tests/functional/roteiros_briefings.spec.ts` (13/13 testes aprovados)
+- Suíte completa de testes de regressão: `cd plannit && node ace test functional` (103/103 testes aprovados)

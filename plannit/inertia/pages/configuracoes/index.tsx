@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Head, router, useForm } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
@@ -12,9 +12,19 @@ import {
   Power,
   Pencil,
   AlertTriangle,
+  ShieldCheck,
+  Users,
+  BookOpen,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
+import MatrizPermissoesPanel, { type PermissaoPerfilMatrix } from './components/MatrizPermissoesPanel'
+import UsuariosSistemaPanel, {
+  type UsuarioSistemaItem,
+  type PerfilCatalogoItem,
+} from './components/UsuariosSistemaPanel'
+import RoteirosBriefingPanel from './components/RoteirosBriefingPanel'
+import type { RoteiroBriefingItem } from './components/ModalRoteiroBriefing'
 
 export const CORES_PALETA_TIPOS = [
   '#3B82F6', // Azul (Briefing)
@@ -74,9 +84,21 @@ interface ConfiguracoesPageProps {
   origens: OrigemItem[]
   campanhas: CampanhaItem[]
   tiposCompromisso?: TipoCompromissoItem[]
+  roteiros?: RoteiroBriefingItem[]
+  podeGerenciarPermissoes?: boolean
+  permissoesConfig?: PermissaoPerfilMatrix | null
+  usuarios?: UsuarioSistemaItem[]
+  perfisCatalogo?: PerfilCatalogoItem[]
 }
 
-type TabKey = 'ambientes' | 'origens' | 'campanhas' | 'tipos_compromisso'
+type TabKey =
+  | 'ambientes'
+  | 'origens'
+  | 'campanhas'
+  | 'tipos_compromisso'
+  | 'roteiros'
+  | 'permissoes'
+  | 'usuarios'
 
 export type DeleteTarget = {
   type: 'ambiente' | 'origem' | 'campanha' | 'tipo_compromisso'
@@ -89,6 +111,11 @@ export default function ConfiguracoesPage({
   origens = [],
   campanhas = [],
   tiposCompromisso = [],
+  roteiros = [],
+  podeGerenciarPermissoes = false,
+  permissoesConfig = null,
+  usuarios = [],
+  perfisCatalogo = [],
 }: ConfiguracoesPageProps) {
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window !== 'undefined') {
@@ -98,13 +125,29 @@ export default function ConfiguracoesPage({
         tab === 'ambientes' ||
         tab === 'origens' ||
         tab === 'campanhas' ||
-        tab === 'tipos_compromisso'
+        tab === 'tipos_compromisso' ||
+        tab === 'roteiros' ||
+        tab === 'permissoes' ||
+        tab === 'usuarios'
       ) {
         return tab
       }
     }
     return 'ambientes'
   })
+
+  // Mapeia ambiente para o título do roteiro que o atende
+  const roteiroPorAmbienteNome = useMemo(() => {
+    const map = new Map<string, { id: number; titulo: string }>()
+    for (const r of roteiros) {
+      if (Array.isArray(r.ambientes)) {
+        for (const amb of r.ambientes) {
+          map.set(amb.toLowerCase().trim(), { id: r.id, titulo: r.titulo })
+        }
+      }
+    }
+    return map
+  }, [roteiros])
 
   // Modais de Criação
   const [modalAmbienteOpen, setModalAmbienteOpen] = useState(false)
@@ -443,11 +486,11 @@ export default function ConfiguracoesPage({
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header Tabs */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-2 flex items-center justify-between gap-2 overflow-x-auto">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setActiveTab('ambientes')}
               className={clsx(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none',
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
                 activeTab === 'ambientes'
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -470,7 +513,7 @@ export default function ConfiguracoesPage({
             <button
               onClick={() => setActiveTab('origens')}
               className={clsx(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none',
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
                 activeTab === 'origens'
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -493,7 +536,7 @@ export default function ConfiguracoesPage({
             <button
               onClick={() => setActiveTab('campanhas')}
               className={clsx(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none',
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
                 activeTab === 'campanhas'
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -516,7 +559,7 @@ export default function ConfiguracoesPage({
             <button
               onClick={() => setActiveTab('tipos_compromisso')}
               className={clsx(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none',
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
                 activeTab === 'tipos_compromisso'
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -535,6 +578,79 @@ export default function ConfiguracoesPage({
                 {tiposCompromisso.length}
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('roteiros')}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
+                activeTab === 'roteiros'
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              )}
+            >
+              <BookOpen size={15} />
+              <span>Roteiros de Apoio</span>
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                  activeTab === 'roteiros'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-stone-200 text-stone-700'
+                )}
+              >
+                {roteiros.length}
+              </span>
+            </button>
+
+            {podeGerenciarPermissoes && (
+              <button
+                onClick={() => setActiveTab('permissoes')}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
+                  activeTab === 'permissoes'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                )}
+              >
+                <ShieldCheck size={15} />
+                <span>Perfis & Permissões</span>
+                <span
+                  className={clsx(
+                    'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                    activeTab === 'permissoes'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-amber-100 text-amber-800'
+                  )}
+                >
+                  Mestre
+                </span>
+              </button>
+            )}
+
+            {podeGerenciarPermissoes && (
+              <button
+                onClick={() => setActiveTab('usuarios')}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
+                  activeTab === 'usuarios'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                )}
+              >
+                <Users size={15} />
+                <span>Usuários do Sistema</span>
+                <span
+                  className={clsx(
+                    'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                    activeTab === 'usuarios'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-purple-100 text-purple-800'
+                  )}
+                >
+                  {usuarios.length}
+                </span>
+              </button>
+            )}
           </div>
 
           <div>
@@ -577,6 +693,20 @@ export default function ConfiguracoesPage({
                 <span>Novo Tipo de Compromisso</span>
               </button>
             )}
+
+            {activeTab === 'roteiros' && (
+              <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-50 border border-primary-200 text-primary-900 text-xs font-semibold whitespace-nowrap">
+                <BookOpen size={14} className="text-primary-700" />
+                <span>Gestão de Roteiros</span>
+              </div>
+            )}
+
+            {activeTab === 'permissoes' && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
+                <ShieldCheck size={14} className="text-amber-600" />
+                <span>Gestão Mestre RBAC</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -604,6 +734,7 @@ export default function ConfiguracoesPage({
                     <th className="py-3 px-6 w-16">Ordem</th>
                     <th className="py-3 px-6">Nome do Ambiente</th>
                     <th className="py-3 px-6">Categoria</th>
+                    <th className="py-3 px-6">Roteiro Técnico Vinculado</th>
                     <th className="py-3 px-6 w-32">Status</th>
                     <th className="py-3 px-6 text-right w-36">Ações</th>
                   </tr>
@@ -611,7 +742,7 @@ export default function ConfiguracoesPage({
                 <tbody className="divide-y divide-stone-100 text-stone-700">
                   {ambientes.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-stone-400">
+                      <td colSpan={6} className="py-8 text-center text-stone-400">
                         Nenhum ambiente cadastrado no catálogo.
                       </td>
                     </tr>
@@ -628,6 +759,34 @@ export default function ConfiguracoesPage({
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 font-medium text-[11px]">
                             {amb.categoria || 'Geral'}
                           </span>
+                        </td>
+                        <td className="py-3.5 px-6">
+                          {(() => {
+                            const roteiro = roteiroPorAmbienteNome.get(amb.nome.toLowerCase().trim())
+                            if (roteiro) {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveTab('roteiros')}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-50 text-primary-800 hover:bg-primary-100 border border-primary-200 font-semibold text-[11px] transition-colors cursor-pointer"
+                                  title="Clique para abrir e gerenciar este roteiro de apoio"
+                                >
+                                  <BookOpen size={12} className="text-primary-700" />
+                                  <span>{roteiro.titulo}</span>
+                                </button>
+                              )
+                            }
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab('roteiros')}
+                                className="text-[11px] text-stone-400 hover:text-primary-700 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                                title="Clique para cadastrar ou vincular um roteiro técnico para este ambiente"
+                              >
+                                <span>+ Vincular Roteiro</span>
+                              </button>
+                            )
+                          })()}
                         </td>
                         <td className="py-3.5 px-6">
                           <button
@@ -960,6 +1119,28 @@ export default function ConfiguracoesPage({
               </table>
             </div>
           </div>
+        )}
+
+        {/* TAB 5: PERMISSÕES & PERFIS (RBAC) */}
+        {activeTab === 'permissoes' && podeGerenciarPermissoes && permissoesConfig && (
+          <MatrizPermissoesPanel config={permissoesConfig} />
+        )}
+
+        {/* TAB 6: USUÁRIOS DO SISTEMA */}
+        {activeTab === 'usuarios' && podeGerenciarPermissoes && (
+          <UsuariosSistemaPanel
+            usuarios={usuarios}
+            perfisCatalogo={perfisCatalogo}
+          />
+        )}
+
+        {/* TAB 7: ROTEIROS DE APOIO (BRIEFING) */}
+        {activeTab === 'roteiros' && (
+          <RoteirosBriefingPanel
+            roteiros={roteiros}
+            ambientes={ambientes}
+            podeGerenciar={podeGerenciarPermissoes || true}
+          />
         )}
       </div>
 

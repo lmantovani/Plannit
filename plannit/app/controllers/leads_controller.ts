@@ -125,7 +125,7 @@ export default class LeadsController {
       estagnados: rawLeads.filter((l) => l.precisaAtencao).length,
     }
 
-    const agora = DateTime.now()
+    const agora = DateTime.now().toUTC()
 
     // Formata leads para o frontend com getters computados e relações seguras
     const leads = rawLeads.map((lead) => {
@@ -136,8 +136,8 @@ export default class LeadsController {
 
       let proximoCompromisso: any = null
       if (proximo) {
-        const dtInicio = proximo.dataHoraInicio
-        const dtFim = proximo.dataHoraFim
+        const dtInicio = proximo.dataHoraInicio ? proximo.dataHoraInicio.toUTC() : null
+        const dtFim = proximo.dataHoraFim ? proximo.dataHoraFim.toUTC() : null
         const isHoje = dtInicio ? dtInicio.hasSame(agora, 'day') : false
         const isAtrasado = Boolean(
           (dtFim && dtFim < agora) || (dtInicio && dtInicio < agora.minus({ hours: 1 }))
@@ -233,6 +233,7 @@ export default class LeadsController {
         motivoPerda: lead.motivoPerda,
         concorrentePerdido: lead.concorrentePerdido,
         convertidoEmCliente: lead.convertidoEmCliente,
+        statusAlteradoEm: lead.statusAlteradoEm ? lead.statusAlteradoEm.toISO() : null,
         ultimaInteracaoEm: lead.ultimaInteracaoEm ? lead.ultimaInteracaoEm.toISO() : null,
         createdAt: lead.createdAt ? lead.createdAt.toISO() : null,
         updatedAt: lead.updatedAt ? lead.updatedAt.toISO() : null,

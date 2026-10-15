@@ -834,6 +834,50 @@ export class ParcelaSchema extends BaseModel {
   declare vencimento: DateTime
 }
 
+export class PerfilPermissoeSchema extends BaseModel {
+  static $columns = ['concedido', 'createdAt', 'descricao', 'id', 'modulo', 'perfil', 'permissaoCodigo', 'updatedAt'] as const
+  $columns = PerfilPermissoeSchema.$columns
+  @column()
+  declare concedido: boolean
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare descricao: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare modulo: string
+  @column()
+  declare perfil: string
+  @column()
+  declare permissaoCodigo: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class PerfisCatalogoSchema extends BaseModel {
+  static $columns = ['createdAt', 'descricao', 'id', 'isActive', 'isSistema', 'nome', 'ordem', 'slug', 'updatedAt'] as const
+  $columns = PerfisCatalogoSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare descricao: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare isSistema: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column()
+  declare slug: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ProjetoSchema extends BaseModel {
   static $columns = ['alertaParado', 'arquitetoId', 'arquitetoNome', 'arquivado', 'arquivadoMotivo', 'clienteId', 'clienteNome', 'codigo', 'conferenteId', 'createdAt', 'id', 'leadId', 'prazoEntregaEstimado', 'projetistaId', 'status', 'statusAlteradoEm', 'updatedAt', 'valorContrato', 'vendedorId'] as const
   $columns = ProjetoSchema.$columns
@@ -912,6 +956,44 @@ export class ProjetosComerciaiSchema extends BaseModel {
   declare versao: number
 }
 
+export class RoteiroBriefingAmbienteSchema extends BaseModel {
+  static $columns = ['ambienteNome', 'createdAt', 'id', 'roteiroId', 'updatedAt'] as const
+  $columns = RoteiroBriefingAmbienteSchema.$columns
+  @column()
+  declare ambienteNome: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare roteiroId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class RoteirosBriefingSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'isActive', 'ordem', 'secoes', 'slug', 'subtitulo', 'titulo', 'updatedAt'] as const
+  $columns = RoteirosBriefingSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare ordem: number
+  @column()
+  declare secoes: any
+  @column()
+  declare slug: string
+  @column()
+  declare subtitulo: string | null
+  @column()
+  declare titulo: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class TiposCompromissoCatalogoSchema extends BaseModel {
   static $columns = ['cor', 'createdAt', 'id', 'isActive', 'nome', 'ordem', 'slug', 'updatedAt'] as const
   $columns = TiposCompromissoCatalogoSchema.$columns
@@ -951,7 +1033,7 @@ export class UserSchema extends BaseModel {
   @column({ serializeAs: null })
   declare password: string
   @column()
-  declare perfil: any
+  declare perfil: string
   @column()
   declare telefone: string | null
   @column.dateTime()

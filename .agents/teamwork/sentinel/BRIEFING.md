@@ -1,13 +1,13 @@
-# BRIEFING — 2026-10-08T17:37:30Z
+# BRIEFING — 2026-10-14T23:44:00Z
 
 ## Mission
-Supervisionar e monitorar a implementação do módulo completo de Agenda no monólito Plannit (AdonisJS v7 + Inertia React 19), incluindo catálogo parametrizável em Configurações, modelagem com RBAC, tela central /agenda, integração bidirecional com Kanban de CRM e testes automatizados, garantindo validação independente via Victory Auditor.
+Supervisionar a implementação da funcionalidade de Roteiro Técnico dos Ambientes (Drawer lateral direito) na tela de edição de Briefing (`inertia/pages/briefings/edit.tsx`), integrando os 18 roteiros extraídos de PDFs (`docs/briefings/`), com monitoramento contínuo e auditoria de vitória independente.
 
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: /home/porto/codespace/Plannit/.agents/teamwork/sentinel
-- Orchestrator: a8c91f27-599c-4180-947d-139e34820fa8
-- Victory Auditor: 16f6c374-fd58-4c9a-993b-427c7e14f721
+- Orchestrator: 4d8ec161-87b4-4b1a-bcd4-07ea23d5b5bf (teamwork_preview_swe)
+- Victory Auditor: 99332c9d-dd1f-44e9-8212-163dcafdb9e9 (teamwork_preview_victory_auditor)
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
@@ -17,15 +17,19 @@ Supervisionar e monitorar a implementação do módulo completo de Agenda no mon
 - Cleanup obrigatório de tarefas e subagentes ao finalizar
 
 ## User Context
-- **Last user request**: Implementação do módulo completo de Agenda no monólito Plannit (AdonisJS v7 + Inertia React 19) com integração operacional bidirecional ao Kanban de Leads, catálogo de tipos de compromissos gerenciável em Configurações, controle de visualização por perfil (RBAC) e sincronização cross-tab em tempo real.
+- **Last user request**: Implementar Sidebar lateral direito (Drawer) na tela de edição de Briefing com roteiro de perguntas e diretrizes técnicas extraído dos 18 PDFs em `docs/briefings/`.
 - **Pending clarifications**: none
-- **Delivered results**: Módulo completo de Agenda implementado e homologado com sucesso (R1 a R4), incluindo banco de dados, backend RBAC, interface web Inertia/React e integração CRM, com aprovação forense independente (VICTORY CONFIRMED) e 75/75 testes aprovados.
+- **Delivered results**:
+  - R1: Extração completa e estruturação dos 18 PDFs em `inertia/lib/roteiros_briefings.ts` (611 KB, 334 seções, 0 seções vazias, 295 perguntas estratégicas, 307 tópicos de checklist e normalização de 20 ambientes do catálogo).
+  - R2: Componente `RoteiroAmbienteDrawer.tsx` criado com animação slide-in-right, backdrop com blur, busca em tempo real com auto-foco, dropdown com os 18 ambientes, cards callout âmbar, cópia com fallback seguro e body scroll lock.
+  - R3: Integração na Seção 3 da tela de Briefing (`edit.tsx`) com botão geral "Consultar Guia Técnico", botão "Guia do Ambiente" por card, auto-direcionamento ao mudar o tipo de ambiente e inserção direta no card correto sem recarregar ou perder rascunho.
+  - Testes: 13/13 testes em `tests/functional/roteiros_briefings.spec.ts` e 103/103 na suíte funcional completa Japa, 0 erros typecheck e build gerado com sucesso.
 
 ## Project Status
 - **Phase**: complete
-- **Routing Decision**: General -> teamwork_preview_orchestrator
-- **Active Subagents**: none (cleanup concluído)
-- **Scheduled Tasks**: none (cleanup concluído)
+- **Routing Decision**: SWE Light -> `teamwork_preview_swe`
+- **Active Subagents**: [cleanup in progress]
+- **Scheduled Tasks**: [cleanup in progress]
 
 ## Victory Audit Status
 - **Triggered**: yes
@@ -33,10 +37,8 @@ Supervisionar e monitorar a implementação do módulo completo de Agenda no mon
 - **Retry count**: 0
 
 ## Artifact Index
-- /home/porto/codespace/Plannit/.agents/ORIGINAL_REQUEST.md — Registro verbatim da solicitação do usuário e follow-ups
-- /home/porto/codespace/Plannit/.agents/teamwork/ORIGINAL_REQUEST.md — Cópia verbatim da solicitação do usuário
-- /home/porto/codespace/Plannit/.agents/sentinel/BRIEFING.md — Memória de trabalho do Sentinel
-- /home/porto/codespace/Plannit/.agents/sentinel/handoff.md — Relatório de handoff do Sentinel
-- /home/porto/codespace/Plannit/.agents/teamwork/sentinel/BRIEFING.md — Cópia sincronizada
-- /home/porto/codespace/Plannit/.agents/teamwork/orchestrator/handoff.md — Relatório de conclusão do Project Orchestrator
-- /home/porto/codespace/Plannit/.agents/teamwork/victory_auditor_1/handoff.md — Laudo formal da Victory Audit (VICTORY CONFIRMED)
+- /home/porto/codespace/Plannit/.agents/teamwork/ORIGINAL_REQUEST.md — Registro verbatim da solicitação do usuário
+- /home/porto/codespace/Plannit/.agents/teamwork/sentinel/BRIEFING.md — Memória de trabalho do Sentinel
+- /home/porto/codespace/Plannit/.agents/teamwork/sentinel/handoff.md — Relatório de handoff do Sentinel
+- /home/porto/codespace/Plannit/.agents/teamwork/swe_1/handoff.md — Relatório do orquestrador SWE Light
+- /home/porto/codespace/Plannit/.agents/teamwork/victory_auditor_2/handoff.md — Relatório da Auditoria Independente de Vitória

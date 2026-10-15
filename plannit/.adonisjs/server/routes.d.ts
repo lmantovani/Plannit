@@ -109,6 +109,14 @@ export type ScannedRoutes = {
     'configuracoes.tipos_compromisso.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.permissoes.toggle': { paramsTuple?: []; params?: {} }
+    'configuracoes.perfis.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.perfis.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.perfis.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'session.create': { paramsTuple?: []; params?: {} }
@@ -211,6 +219,8 @@ export type ScannedRoutes = {
     'configuracoes.origens.store': { paramsTuple?: []; params?: {} }
     'configuracoes.campanhas.store': { paramsTuple?: []; params?: {} }
     'configuracoes.tipos_compromisso.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.perfis.store': { paramsTuple?: []; params?: {} }
   }
   PATCH: {
     'crm.leads.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -228,6 +238,8 @@ export type ScannedRoutes = {
     'configuracoes.origens.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.permissoes.toggle': { paramsTuple?: []; params?: {} }
   }
   PUT: {
     'briefings.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -241,6 +253,8 @@ export type ScannedRoutes = {
     'configuracoes.origens.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.perfis.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   DELETE: {
     'especificadores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -253,6 +267,8 @@ export type ScannedRoutes = {
     'configuracoes.origens.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.roteiros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.perfis.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

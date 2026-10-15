@@ -96,11 +96,13 @@ test.group('Challenger 2 — Integração CRM, Linha do Tempo e Ausência de N+1
     })
     leadsCriados.push(leadHoje.id)
 
+    const agoraUtc = DateTime.now().toUTC()
+    const inicioHoje = agoraUtc.hour >= 23 ? agoraUtc.plus({ minutes: 5 }) : agoraUtc.plus({ hours: 1 })
     const compHoje = await CompromissoAgenda.create({
       titulo: 'Visita Técnica Hoje',
       tipoId: tipoPadraoId,
-      dataHoraInicio: DateTime.now().plus({ hours: 1 }).toUTC(),
-      dataHoraFim: DateTime.now().plus({ hours: 2 }).toUTC(),
+      dataHoraInicio: inicioHoje,
+      dataHoraFim: inicioHoje.plus({ minutes: 20 }),
       status: StatusCompromisso.AGENDADO,
       responsavelId: vendedor.id,
       criadoPorId: vendedor.id,
@@ -579,12 +581,16 @@ test.group('Challenger 2 — Integração CRM, Linha do Tempo e Ausência de N+1
     })
     leadsCriados.push(lead.id)
 
-    // Compromisso 1: Hoje às 17h
+    // Compromisso 1: Hoje às 17h (ou mais tarde hoje)
+    const agoraUtc2 = DateTime.now().toUTC()
+    const inicioCedo = agoraUtc2.hour >= 23 ? agoraUtc2.plus({ minutes: 5 }) : agoraUtc2.plus({ minutes: 30 })
+    const inicioTarde = agoraUtc2.hour >= 23 ? agoraUtc2.plus({ minutes: 20 }) : agoraUtc2.plus({ hours: 2 })
+
     const cTarde = await CompromissoAgenda.create({
       titulo: 'Reunião Tarde',
       tipoId: tipoPadraoId,
-      dataHoraInicio: DateTime.now().plus({ hours: 4 }).toUTC(),
-      dataHoraFim: DateTime.now().plus({ hours: 5 }).toUTC(),
+      dataHoraInicio: inicioTarde,
+      dataHoraFim: inicioTarde.plus({ minutes: 15 }),
       status: StatusCompromisso.AGENDADO,
       responsavelId: vendedor.id,
       criadoPorId: vendedor.id,
@@ -596,8 +602,8 @@ test.group('Challenger 2 — Integração CRM, Linha do Tempo e Ausência de N+1
     const cCedo = await CompromissoAgenda.create({
       titulo: 'Reunião Cedo',
       tipoId: tipoPadraoId,
-      dataHoraInicio: DateTime.now().plus({ hours: 1 }).toUTC(),
-      dataHoraFim: DateTime.now().plus({ hours: 2 }).toUTC(),
+      dataHoraInicio: inicioCedo,
+      dataHoraFim: inicioCedo.plus({ minutes: 10 }),
       status: StatusCompromisso.AGENDADO,
       responsavelId: vendedor.id,
       criadoPorId: vendedor.id,

@@ -5,7 +5,12 @@ import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
 import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
-import User, { PerfilUsuario } from '#models/user'
+import PerfilCatalogo from '#models/perfil_catalogo'
+import RoteiroBriefing from '#models/roteiro_briefing'
+import RoteiroBriefingAmbiente from '#models/roteiro_briefing_ambiente'
+import User, { PerfilUsuario, PERFIL_LABELS } from '#models/user'
+import PerfilPermissao, { DEFINICOES_PERMISSOES, MODULOS_SISTEMA } from '#models/perfil_permissao'
+import PermissionService from '#services/permission_service'
 import {
   createAmbienteValidator,
   updateAmbienteValidator,
@@ -15,6 +20,11 @@ import {
   updateCampanhaValidator,
   createTipoCompromissoValidator,
   updateTipoCompromissoValidator,
+  togglePermissaoValidator,
+  createPerfilValidator,
+  updatePerfilValidator,
+  createRoteiroValidator,
+  updateRoteiroValidator,
 } from '#validators/configuracao'
 
 function slugify(text: string): string {
@@ -33,21 +43,76 @@ export default class ConfiguracoesController {
     const isInertia = request.header('x-inertia') === 'true'
     if (isInertia) return false
     const accept = request.header('accept') || ''
-    return accept.includes('application/json') || request.qs().format === 'json'
+    const contentType = request.header('content-type') || ''
+    return (
+      accept.includes('application/json') ||
+      contentType.includes('application/json') ||
+      request.qs().format === 'json'
+    )
   }
 
-  private isAuthorized(user: User): boolean {
-    if (user.isSuperuser) return true
-    return user.hasRole([PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL])
+  private async isAuthorized(user: User): Promise<boolean> {
+    if (user.isSuperuser || user.perfil === PerfilUsuario.DIRETORIA) return true
+    return PermissionService.hasPermission(user, 'configuracoes.visualizar')
   }
 
   /**
-   * Painel de parametrização administrativa de tabelas de apoio
+   * Painel de parametrização administrativa de tabelas de apoio e permissões
    */
   async index({ inertia, auth, response, request }: HttpContext) {
     const user = auth.user!
-    if (!this.isAuthorized(user)) {
+    if (!(await this.isAuthorized(user))) {
       return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const podeGerenciarPermissoes = await PermissionService.podeGerenciarPermissoes(user)
+
+    let permissoesConfig = null
+    if (podeGerenciarPermissoes) {
+      const permissoesDb = await PerfilPermissao.query()
+      const perfisDb = await PerfilCatalogo.query().orderBy('ordem', 'asc').orderBy('nome', 'asc')
+
+      const perfis =
+        perfisDb.length > 0
+          ? perfisDb.map((p) => ({
+              id: p.id,
+              key: p.slug,
+              label: p.nome,
+              descricao: p.descricao,
+              isSistema: p.isSistema,
+              isActive: p.isActive,
+              ordem: p.ordem,
+              isDiretoria: p.slug === 'diretoria',
+            }))
+          : Object.values(PerfilUsuario).map((p, idx) => ({
+              id: idx + 1,
+              key: p,
+              label: PERFIL_LABELS[p] || p,
+              descricao: null,
+              isSistema: p === PerfilUsuario.DIRETORIA,
+              isActive: true,
+              ordem: (idx + 1) * 10,
+              isDiretoria: p === PerfilUsuario.DIRETORIA,
+            }))
+
+      const matrix: Record<string, Record<string, boolean>> = {}
+      for (const p of perfis) {
+        matrix[p.key] = {}
+      }
+
+      for (const row of permissoesDb) {
+        if (!matrix[row.perfil]) {
+          matrix[row.perfil] = {}
+        }
+        matrix[row.perfil][row.permissaoCodigo] = row.concedido
+      }
+
+      permissoesConfig = {
+        modulos: MODULOS_SISTEMA,
+        definicoes: DEFINICOES_PERMISSOES,
+        perfis,
+        matrix,
+      }
     }
 
     const ambientes = await AmbienteCatalogo.query()
@@ -64,7 +129,45 @@ export default class ConfiguracoesController {
       .orderBy('ordem', 'asc')
       .orderBy('nome', 'asc')
 
+    const roteiros = await RoteiroBriefing.query()
+      .preload('ambientes')
+      .orderBy('ordem', 'asc')
+      .orderBy('titulo', 'asc')
+
+    // Carrega usuários do sistema com perfis mapeados
+    const todosPerfis = await PerfilCatalogo.query().orderBy('ordem', 'asc')
+    const perfisMap = new Map(todosPerfis.map((p) => [p.slug, p.nome]))
+
+    const usuarios = await User.query().orderBy('nome', 'asc')
+    const usuariosFormatados = usuarios.map((u) => {
+      const perfilNome =
+        perfisMap.get(u.perfil) ||
+        (PERFIL_LABELS as Record<string, string>)[u.perfil] ||
+        u.perfil
+      return {
+        id: u.id,
+        nome: u.nome,
+        email: u.email,
+        telefone: u.telefone || null,
+        perfil: u.perfil,
+        perfilLabel: perfilNome,
+        isActive: u.isActive,
+        isSuperuser: u.isSuperuser,
+        ultimoLogin: u.ultimoLogin ? u.ultimoLogin.toISO() : null,
+        createdAt: u.createdAt ? u.createdAt.toISO() : null,
+      }
+    })
+
     const payload = {
+      podeGerenciarPermissoes,
+      permissoesConfig,
+      usuarios: usuariosFormatados,
+      perfisCatalogo: todosPerfis.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        nome: p.nome,
+        isActive: p.isActive,
+      })),
       ambientes: ambientes.map((a) => ({
         id: a.id,
         nome: a.nome,
@@ -100,6 +203,19 @@ export default class ConfiguracoesController {
         isActive: t.isActive,
         createdAt: t.createdAt?.toISO() || null,
         updatedAt: t.updatedAt?.toISO() || null,
+      })),
+      roteiros: roteiros.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        titulo: r.titulo,
+        subtitulo: r.subtitulo,
+        secoes: r.secoes || [],
+        isActive: r.isActive,
+        ordem: r.ordem,
+        ambientes: r.ambientes.map((a) => a.ambienteNome),
+        totalSecoes: Array.isArray(r.secoes) ? r.secoes.length : 0,
+        createdAt: r.createdAt?.toISO() || null,
+        updatedAt: r.updatedAt?.toISO() || null,
       })),
     }
 
@@ -646,5 +762,432 @@ export default class ConfiguracoesController {
     session.flash('success', `Tipo de compromisso "${tipo.nome}" removido do catálogo.`)
     return response.redirect().back()
   }
+
+  // ==========================================
+  // PERMISSÕES & PERFIS
+  // ==========================================
+
+  async togglePermissao({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    const podeGerenciar = await PermissionService.podeGerenciarPermissoes(user)
+    if (!podeGerenciar) {
+      if (this.wantsJson(request)) {
+        return response.status(403).json({
+          message: 'Acesso restrito ao perfil de Diretoria e gestores autorizados.',
+        })
+      }
+      session.flash('error', 'Acesso restrito ao perfil de Diretoria e gestores autorizados.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(togglePermissaoValidator)
+
+    const resultado = await PermissionService.togglePermission(
+      user,
+      payload.perfil,
+      payload.permissaoCodigo,
+      payload.concedido
+    )
+
+    if (!resultado.success) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: resultado.message })
+      }
+      session.flash('error', resultado.message || 'Erro ao alterar permissão.')
+      return response.redirect().back()
+    }
+
+    if (this.wantsJson(request)) {
+      return response.json({ success: true, message: 'Permissão atualizada com sucesso.' })
+    }
+
+    session.flash('success', 'Permissão atualizada com sucesso.')
+    return response.redirect().back()
+  }
+
+  // ==========================================
+  // GESTÃO DE PERFIS DE USUÁRIO (CATÁLOGO)
+  // ==========================================
+
+  async storePerfil({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    const podeGerenciar = await PermissionService.podeGerenciarPermissoes(user)
+    if (!podeGerenciar) {
+      if (this.wantsJson(request)) {
+        return response.status(403).json({
+          message: 'Acesso restrito ao perfil de Diretoria e gestores autorizados.',
+        })
+      }
+      session.flash('error', 'Acesso restrito ao perfil de Diretoria e gestores autorizados.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(createPerfilValidator)
+
+    const finalSlug = slugify(payload.slug || payload.nome)
+    if (!finalSlug) {
+      if (this.wantsJson(request)) {
+        return response.status(422).json({ message: 'Não foi possível gerar um slug válido para o perfil.' })
+      }
+      session.flash('error', 'Identificador (slug) do perfil inválido.')
+      return response.redirect().back()
+    }
+
+    const existe = await PerfilCatalogo.findBy('slug', finalSlug)
+    if (existe) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: `Já existe um perfil com o identificador "${finalSlug}".` })
+      }
+      session.flash('error', `Já existe um perfil com o identificador "${finalSlug}".`)
+      return response.redirect().back()
+    }
+
+    const perfil = await PerfilCatalogo.create({
+      nome: payload.nome,
+      slug: finalSlug,
+      descricao: payload.descricao || null,
+      isSistema: false,
+      isActive: payload.isActive !== undefined ? payload.isActive : true,
+      ordem: payload.ordem !== undefined ? payload.ordem : 0,
+    })
+
+    // Inicializa as permissões do novo perfil
+    const now = new Date()
+    let permsModel: Array<{ permissaoCodigo: string; concedido: boolean }> = []
+
+    if (payload.copiarDePerfil) {
+      const permsCopiar = await PerfilPermissao.query().where('perfil', payload.copiarDePerfil)
+      permsModel = permsCopiar.map((p) => ({
+        permissaoCodigo: p.permissaoCodigo,
+        concedido: p.concedido,
+      }))
+    }
+
+    const rowsParaInserir = DEFINICOES_PERMISSOES.map((def) => {
+      const encontrada = permsModel.find((p) => p.permissaoCodigo === def.codigo)
+      return {
+        perfil: finalSlug,
+        modulo: def.modulo,
+        permissao_codigo: def.codigo,
+        descricao: def.descricao,
+        concedido: encontrada ? encontrada.concedido : false,
+        created_at: now,
+        updated_at: now,
+      }
+    })
+
+    await db.table('perfil_permissoes').multiInsert(rowsParaInserir)
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Perfil "${perfil.nome}" criado com sucesso!`,
+        perfil,
+      })
+    }
+
+    session.flash('success', `Perfil "${perfil.nome}" criado com sucesso!`)
+    return response.redirect().back()
+  }
+
+  async updatePerfil({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    const podeGerenciar = await PermissionService.podeGerenciarPermissoes(user)
+    if (!podeGerenciar) {
+      if (this.wantsJson(request)) {
+        return response.status(403).json({
+          message: 'Acesso restrito ao perfil de Diretoria e gestores autorizados.',
+        })
+      }
+      session.flash('error', 'Acesso restrito ao perfil de Diretoria e gestores autorizados.')
+      return response.redirect().back()
+    }
+
+    const perfil = await PerfilCatalogo.find(params.id)
+    if (!perfil) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Perfil não encontrado.' })
+      }
+      session.flash('error', 'Perfil não encontrado.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(updatePerfilValidator)
+
+    if (perfil.isSistema && payload.isActive === false) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: 'Perfis nativos do sistema não podem ser desativados.' })
+      }
+      session.flash('error', 'Perfis nativos do sistema não podem ser desativados.')
+      return response.redirect().back()
+    }
+
+    if (payload.nome) perfil.nome = payload.nome
+    if (payload.descricao !== undefined) perfil.descricao = payload.descricao || null
+    if (payload.ordem !== undefined) perfil.ordem = payload.ordem
+    if (payload.isActive !== undefined && !perfil.isSistema) perfil.isActive = payload.isActive
+
+    await perfil.save()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Perfil "${perfil.nome}" atualizado com sucesso!`,
+        perfil,
+      })
+    }
+
+    session.flash('success', `Perfil "${perfil.nome}" atualizado com sucesso!`)
+    return response.redirect().back()
+  }
+
+  async destroyPerfil({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    const podeGerenciar = await PermissionService.podeGerenciarPermissoes(user)
+    if (!podeGerenciar) {
+      if (this.wantsJson(request)) {
+        return response.status(403).json({
+          message: 'Acesso restrito ao perfil de Diretoria e gestores autorizados.',
+        })
+      }
+      session.flash('error', 'Acesso restrito ao perfil de Diretoria e gestores autorizados.')
+      return response.redirect().back()
+    }
+
+    const perfil = await PerfilCatalogo.find(params.id)
+    if (!perfil) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Perfil não encontrado.' })
+      }
+      session.flash('error', 'Perfil não encontrado.')
+      return response.redirect().back()
+    }
+
+    if (perfil.isSistema) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: 'Perfis nativos do sistema não podem ser excluídos.' })
+      }
+      session.flash('error', 'Perfis nativos do sistema não podem ser excluídos.')
+      return response.redirect().back()
+    }
+
+    const checkUsers = await db.from('users').where('perfil', perfil.slug).count('* as total')
+    const totalUsers = Number(checkUsers[0]?.total || 0)
+    if (totalUsers > 0) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({
+          message: `Não é possível excluir o perfil "${perfil.nome}" pois existem ${totalUsers} usuário(s) com este perfil atribuído. Recomendamos desativá-lo.`,
+        })
+      }
+      session.flash(
+        'error',
+        `Não é possível excluir o perfil "${perfil.nome}" pois existem ${totalUsers} usuário(s) com este perfil atribuído. Recomendamos desativá-lo.`
+      )
+      return response.redirect().back()
+    }
+
+    // Exclui permissões e perfil
+    await PerfilPermissao.query().where('perfil', perfil.slug).delete()
+    await perfil.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({ success: true, message: `Perfil "${perfil.nome}" excluído com sucesso.` })
+    }
+
+    session.flash('success', `Perfil "${perfil.nome}" excluído com sucesso.`)
+    return response.redirect().back()
+  }
+
+  // ==========================================
+  // ROTEIROS DE BRIEFING
+  // ==========================================
+
+  async storeRoteiro({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createRoteiroValidator)
+    const slugBase = slugify(payload.slug || payload.titulo)
+    let finalSlug = slugBase
+    let counter = 1
+    while (await RoteiroBriefing.findBy('slug', finalSlug)) {
+      finalSlug = `${slugBase}_${counter}`
+      counter++
+    }
+
+    const maxOrdemRow = await db.from('roteiros_briefings').max('ordem as max_ordem')
+    const proximaOrdem = payload.ordem ?? (Number(maxOrdemRow[0]?.max_ordem || 0) + 10)
+
+    const roteiro = await db.transaction(async (trx) => {
+      const novoRoteiro = await RoteiroBriefing.create(
+        {
+          titulo: payload.titulo,
+          subtitulo: payload.subtitulo || null,
+          slug: finalSlug,
+          secoes: payload.secoes || [],
+          ordem: proximaOrdem,
+          isActive: payload.isActive ?? true,
+        },
+        { client: trx }
+      )
+
+      if (payload.ambientes && Array.isArray(payload.ambientes)) {
+        for (const ambNome of payload.ambientes) {
+          if (ambNome.trim()) {
+            await RoteiroBriefingAmbiente.create(
+              {
+                roteiroId: novoRoteiro.id,
+                ambienteNome: ambNome.trim(),
+              },
+              { client: trx }
+            )
+          }
+        }
+      }
+
+      return novoRoteiro
+    })
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: 'Roteiro de apoio cadastrado com sucesso.',
+        roteiro: {
+          id: roteiro.id,
+          titulo: roteiro.titulo,
+          slug: roteiro.slug,
+        },
+      })
+    }
+
+    session.flash('success', 'Roteiro de apoio cadastrado com sucesso.')
+    return response.redirect().back()
+  }
+
+  async updateRoteiro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const roteiro = await RoteiroBriefing.find(params.id)
+    if (!roteiro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Roteiro não encontrado.' })
+      }
+      session.flash('error', 'Roteiro não encontrado.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(updateRoteiroValidator)
+
+    await db.transaction(async (trx) => {
+      roteiro.useTransaction(trx)
+
+      if (payload.titulo !== undefined) roteiro.titulo = payload.titulo
+      if (payload.subtitulo !== undefined) roteiro.subtitulo = payload.subtitulo
+      if (payload.secoes !== undefined) roteiro.secoes = payload.secoes
+      if (payload.ordem !== undefined) roteiro.ordem = payload.ordem
+      if (payload.isActive !== undefined) roteiro.isActive = payload.isActive
+
+      await roteiro.save()
+
+      if (payload.ambientes !== undefined && Array.isArray(payload.ambientes)) {
+        await RoteiroBriefingAmbiente.query({ client: trx })
+          .where('roteiro_id', roteiro.id)
+          .delete()
+
+        for (const ambNome of payload.ambientes) {
+          if (ambNome.trim()) {
+            await RoteiroBriefingAmbiente.create(
+              {
+                roteiroId: roteiro.id,
+                ambienteNome: ambNome.trim(),
+              },
+              { client: trx }
+            )
+          }
+        }
+      }
+    })
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: 'Roteiro de apoio atualizado com sucesso.',
+        roteiro: {
+          id: roteiro.id,
+          titulo: roteiro.titulo,
+          slug: roteiro.slug,
+        },
+      })
+    }
+
+    session.flash('success', 'Roteiro de apoio atualizado com sucesso.')
+    return response.redirect().back()
+  }
+
+  async toggleRoteiro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const roteiro = await RoteiroBriefing.find(params.id)
+    if (!roteiro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Roteiro não encontrado.' })
+      }
+      session.flash('error', 'Roteiro não encontrado.')
+      return response.redirect().back()
+    }
+
+    roteiro.isActive = !roteiro.isActive
+    await roteiro.save()
+
+    const statusMsg = roteiro.isActive ? 'ativado' : 'desativado'
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Roteiro "${roteiro.titulo}" ${statusMsg} com sucesso.`,
+        isActive: roteiro.isActive,
+      })
+    }
+
+    session.flash('success', `Roteiro "${roteiro.titulo}" ${statusMsg} com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async destroyRoteiro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const roteiro = await RoteiroBriefing.find(params.id)
+    if (!roteiro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Roteiro não encontrado.' })
+      }
+      session.flash('error', 'Roteiro não encontrado.')
+      return response.redirect().back()
+    }
+
+    const titulo = roteiro.titulo
+    await roteiro.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Roteiro "${titulo}" excluído com sucesso.`,
+      })
+    }
+
+    session.flash('success', `Roteiro "${titulo}" excluído com sucesso.`)
+    return response.redirect().back()
+  }
 }
+
 

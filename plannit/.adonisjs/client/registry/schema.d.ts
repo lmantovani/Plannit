@@ -1267,4 +1267,100 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
     }
   }
+  'configuracoes.roteiros.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/roteiros'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createRoteiroValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createRoteiroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeRoteiro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeRoteiro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.roteiros.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/roteiros/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateRoteiroValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateRoteiroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateRoteiro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateRoteiro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.roteiros.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/roteiros/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleRoteiro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleRoteiro']>>>
+    }
+  }
+  'configuracoes.roteiros.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/roteiros/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyRoteiro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyRoteiro']>>>
+    }
+  }
+  'configuracoes.permissoes.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/permissoes/toggle'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').togglePermissaoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').togglePermissaoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['togglePermissao']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['togglePermissao']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.perfis.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/perfis'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createPerfilValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createPerfilValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storePerfil']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storePerfil']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.perfis.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/perfis/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updatePerfilValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updatePerfilValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updatePerfil']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updatePerfil']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.perfis.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/perfis/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyPerfil']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyPerfil']>>>
+    }
+  }
 }

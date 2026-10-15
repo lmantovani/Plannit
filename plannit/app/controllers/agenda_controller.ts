@@ -197,8 +197,15 @@ export default class AgendaController {
       responsavelId = payload.responsavelId
     }
 
+    // Se o título não foi informado, assume o nome do tipo selecionado
+    let titulo = payload.titulo?.trim()
+    if (!titulo) {
+      const tipo = await TipoCompromissoCatalogo.find(payload.tipoId)
+      titulo = tipo ? tipo.nome : 'Compromisso'
+    }
+
     const compromisso = await CompromissoAgenda.create({
-      titulo: payload.titulo,
+      titulo,
       tipoId: payload.tipoId,
       dataHoraInicio: inicio,
       dataHoraFim: fim,

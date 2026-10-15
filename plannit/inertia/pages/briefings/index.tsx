@@ -17,7 +17,11 @@ import {
   Sparkles,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { STATUS_BRIEFING_MAP } from '../../lib/briefing_constants'
+import {
+  CRITERIOS_SCORE,
+  SCORE_MAXIMO_BRIEFING,
+  STATUS_BRIEFING_MAP,
+} from '../../lib/briefing_constants'
 
 type BriefingItem = {
   id: number
@@ -152,8 +156,9 @@ const BriefingsIndex: React.FC<PageProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-stone-600 mt-0.5">
-                Projetos só podem ingressar na fila de desenvolvimento após atingir pelo menos 70 pontos nos 10 critérios
-                de qualidade (dados da obra, escopo, detalhes executivos e referências).
+                Projetos só podem ingressar na fila de desenvolvimento após atingir pelo menos 70 dos{' '}
+                {SCORE_MAXIMO_BRIEFING} pontos nos {CRITERIOS_SCORE.length} critérios de qualidade (dados da
+                obra, escopo, detalhes executivos e referências).
               </p>
             </div>
           </div>
@@ -332,7 +337,7 @@ const BriefingsIndex: React.FC<PageProps> = ({
                 <thead>
                   <tr className="border-b border-stone-200/80 bg-stone-50/75 text-[11px] uppercase tracking-wider font-semibold text-stone-500">
                     <th className="py-3 px-4">Projeto & Cliente</th>
-                    <th className="py-3 px-4">Localização & Estilo</th>
+                    <th className="py-3 px-4">Localização</th>
                     <th className="py-3 px-4">Ambientes</th>
                     <th className="py-3 px-4">Score de Qualidade</th>
                     <th className="py-3 px-4">Status</th>
@@ -374,9 +379,10 @@ const BriefingsIndex: React.FC<PageProps> = ({
                             <Building className="w-3.5 h-3.5 text-stone-400 shrink-0" />
                             {b.cidadeObra ? `${b.cidadeObra}${b.estadoObra ? ` - ${b.estadoObra}` : ''}` : 'Não informada'}
                           </div>
-                          <div className="text-[11px] text-stone-500 mt-0.5">
-                            {b.estiloPreferido || 'Estilo não definido'}
-                          </div>
+                          {/* Estilo saiu do briefing; aparece só em briefings antigos que já o tinham */}
+                          {b.estiloPreferido && (
+                            <div className="text-[11px] text-stone-500 mt-0.5">{b.estiloPreferido}</div>
+                          )}
                         </td>
 
                         {/* Ambientes */}
@@ -420,7 +426,9 @@ const BriefingsIndex: React.FC<PageProps> = ({
                                       ? 'bg-amber-500'
                                       : 'bg-rose-500'
                                 )}
-                                style={{ width: `${Math.min(100, Math.max(0, b.score))}%` }}
+                                style={{
+                                  width: `${Math.min(100, Math.max(0, (b.score / SCORE_MAXIMO_BRIEFING) * 100))}%`,
+                                }}
                               />
                             </div>
                             <span

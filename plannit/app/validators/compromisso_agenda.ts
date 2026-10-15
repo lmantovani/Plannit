@@ -15,7 +15,7 @@ const isoDateTimeRule = vine.createRule((value: unknown, _options, field: FieldC
 })
 
 export const createCompromissoValidator = vine.create({
-  titulo: vine.string().trim().minLength(2).maxLength(150),
+  titulo: vine.string().trim().minLength(1).maxLength(150).optional(),
   tipoId: vine
     .number()
     .positive()

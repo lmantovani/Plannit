@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Head, Link, router } from '@inertiajs/react'
+import { Head, Link, router, usePage } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
   ArrowLeft,
@@ -17,19 +17,24 @@ import {
   FileCheck,
   Sparkles,
   ExternalLink,
+  RotateCw,
+  BookOpen,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
+import { recarregarCatalogos, useSincronizarCatalogos } from '../../lib/catalogos'
 import ModalNovoParceiroRapido, {
   type EspecificadorItem,
   type ConsultorItem,
 } from '../../components/especificadores/ModalNovoParceiroRapido'
+import RoteiroAmbienteDrawer, { type RoteiroCatalogoItem } from './components/RoteiroAmbienteDrawer'
+import { resolverSlugAmbiente } from '../../lib/roteiros_briefings'
 import {
   normalizarAmbiente,
   ehAmbienteOutro,
   descricaoAmbienteOutro,
-  ESTILOS_PREFERIDOS_OPTIONS,
   CRITERIOS_SCORE,
+  SCORE_MAXIMO_BRIEFING,
   STATUS_BRIEFING_MAP,
   calcularScoreBriefingClient,
   type CriterioDef,
@@ -96,6 +101,7 @@ type PageProps = {
   especificadores?: EspecificadorItem[]
   consultores?: ConsultorItem[]
   ambientesCatalogo?: string[]
+  roteirosCatalogo?: RoteiroCatalogoItem[]
 }
 
 const BriefingEdit: React.FC<PageProps> = ({
@@ -103,7 +109,26 @@ const BriefingEdit: React.FC<PageProps> = ({
   especificadores = [],
   consultores = [],
   ambientesCatalogo = [],
+  roteirosCatalogo = [],
 }) => {
+  // Mudanças no catálogo de ambientes (Configurações) aparecem aqui sem recarregar a página
+  useSincronizarCatalogos(['ambientesCatalogo'])
+
+  const usuario = usePage<{ user?: { perfil?: string; isSuperuser?: boolean } }>().props.user
+  const canManageConfig = Boolean(
+    usuario?.isSuperuser ||
+      usuario?.perfil === 'diretoria' ||
+      usuario?.perfil === 'gerente_comercial'
+  )
+  const [sincronizandoAmbientes, setSincronizandoAmbientes] = useState(false)
+  const sincronizarAmbientes = () => {
+    setSincronizandoAmbientes(true)
+    recarregarCatalogos(['ambientesCatalogo'], () => {
+      setSincronizandoAmbientes(false)
+      toast.success('Lista de ambientes sincronizada!')
+    })
+  }
+
   // Ambientes vindos da qualificação do lead (nomes do catálogo); valores antigos são traduzidos
   const ambientesIniciais = (briefing.ambientes || []).map(normalizarAmbiente)
   const outroInicial = ambientesIniciais.find(ehAmbienteOutro)
@@ -213,7 +238,6 @@ const BriefingEdit: React.FC<PageProps> = ({
       faixaInvestimentoMax: formData.faixaInvestimentoMax,
       ambientesDetalhados: formData.ambientesDetalhados,
       referenciasUrl: formData.referenciasUrl,
-      estiloPreferido: formData.estiloPreferido,
       arquitetoNome: formData.arquitetoNome,
       observacoes: formData.observacoes,
       scoreMinimo: briefing.scoreMinimo || 70,
@@ -254,12 +278,191 @@ const BriefingEdit: React.FC<PageProps> = ({
     }))
   }
 
+  // Estado do Drawer do Guia Técnico de Apoio aos Ambientes (R1, R2, R3)
+  const [isGuiaDrawerOpen, setIsGuiaDrawerOpen] = useState(false)
+  const [guiaAmbienteSelecionado, setGuiaAmbienteSelecionado] = useState<string | null>(null)
+  const [guiaCardIndexAtivo, setGuiaCardIndexAtivo] = useState<number | null>(null)
+  const [guiaDrawerTrigger, setGuiaDrawerTrigger] = useState<number>(0)
+
+  // Resolve o nome canônico do ambiente mais limpo/oficial para atribuição ao card
+  const resolverNomeCanonicoAmbiente = (slug: string, tituloFallback?: string): string => {
+    // 1. Se nos ambientes solicitados do briefing houver correspondência exata de slug, usa esse nome
+    const matchBriefing = ambientesFinais.find((nome) => resolverSlugAmbiente(nome) === slug)
+    if (matchBriefing) return matchBriefing
+
+    // 2. Se no catálogo oficial houver correspondência exata de slug, usa o nome do catálogo
+    const matchCatalogo = ambientesCatalogo.find((catNome) => resolverSlugAmbiente(catNome) === slug)
+    if (matchCatalogo) return matchCatalogo
+
+    // 3. Se guiaAmbienteSelecionado mapear para o mesmo slug e não contiver barra '/'
+    if (
+      guiaAmbienteSelecionado &&
+      resolverSlugAmbiente(guiaAmbienteSelecionado) === slug &&
+      !guiaAmbienteSelecionado.includes('/')
+    ) {
+      return guiaAmbienteSelecionado
+    }
+
+    // 4. Limpeza de títulos compostos com barra (ex.: "Espaço Gourmet / Área Gourmet" -> "Espaço Gourmet")
+    if (tituloFallback && tituloFallback.includes('/')) {
+      const parteLimpa = tituloFallback.split('/')[0].trim()
+      if (parteLimpa) return parteLimpa
+    }
+
+    return tituloFallback || 'Living'
+  }
+
+  const abrirGuiaGeral = () => {
+    const cardComTipoIdx = formData.ambientesDetalhados.findIndex((a) => Boolean(a.tipo))
+    const primeiro =
+      (cardComTipoIdx !== -1 ? formData.ambientesDetalhados[cardComTipoIdx].tipo : null) ||
+      ambientesFinais[0] ||
+      'Living'
+    const indexAlvo =
+      cardComTipoIdx !== -1 ? cardComTipoIdx : formData.ambientesDetalhados.length > 0 ? 0 : null
+    setGuiaCardIndexAtivo(indexAlvo)
+    setGuiaAmbienteSelecionado(primeiro)
+    setGuiaDrawerTrigger(Date.now())
+    setIsGuiaDrawerOpen(true)
+  }
+
+  const abrirGuiaCard = (index: number, tipo: string) => {
+    setGuiaCardIndexAtivo(index)
+    setGuiaAmbienteSelecionado(tipo || ambientesFinais[0] || 'Living')
+    setGuiaDrawerTrigger(Date.now())
+    setIsGuiaDrawerOpen(true)
+  }
+
+  const handleInserirTextoNoCard = (
+    texto: string,
+    ambienteAtivo?: { slug: string; titulo: string; isTituloSecao?: boolean }
+  ) => {
+    const slugDesejado = ambienteAtivo?.slug || resolverSlugAmbiente(guiaAmbienteSelecionado)
+    const tituloBruto = ambienteAtivo?.titulo || guiaAmbienteSelecionado || 'Living'
+    const tituloCanonico = resolverNomeCanonicoAmbiente(slugDesejado, tituloBruto)
+
+    let targetIdx: number | null = null
+
+    if (formData.ambientesDetalhados.length > 0) {
+      // 1. Se o card atualmente ativo corresponde ao ambiente desejado, insere nele
+      if (
+        guiaCardIndexAtivo !== null &&
+        formData.ambientesDetalhados[guiaCardIndexAtivo] &&
+        resolverSlugAmbiente(formData.ambientesDetalhados[guiaCardIndexAtivo].tipo) === slugDesejado
+      ) {
+        targetIdx = guiaCardIndexAtivo
+      } else if (
+        // 2. Se o card atualmente ativo NÃO tem tipo definido (recém-adicionado e em foco),
+        // ele tem prioridade máxima para adotar o ambiente do guia e receber o item
+        guiaCardIndexAtivo !== null &&
+        formData.ambientesDetalhados[guiaCardIndexAtivo] &&
+        !formData.ambientesDetalhados[guiaCardIndexAtivo].tipo
+      ) {
+        targetIdx = guiaCardIndexAtivo
+      } else {
+        // 3. Procura outro card cujo tipo mapeie para o mesmo ambiente
+        const matchingIdx = formData.ambientesDetalhados.findIndex(
+          (a) => a.tipo && resolverSlugAmbiente(a.tipo) === slugDesejado
+        )
+        if (matchingIdx !== -1) {
+          targetIdx = matchingIdx
+        } else if (
+          guiaCardIndexAtivo !== null &&
+          formData.ambientesDetalhados[guiaCardIndexAtivo]
+        ) {
+          // Se o usuário selecionou explicitamente um card no formulário, respeita a escolha do usuário
+          targetIdx = guiaCardIndexAtivo
+        }
+      }
+    }
+
+    const textoLimpo = texto.trim()
+    const isTitulo = Boolean(ambienteAtivo?.isTituloSecao || /^\d+\.\s/.test(textoLimpo))
+    const itemFormatado = isTitulo
+      ? textoLimpo
+      : textoLimpo.startsWith('•')
+        ? textoLimpo
+        : `• ${textoLimpo}`
+
+    if (targetIdx !== null && formData.ambientesDetalhados[targetIdx]) {
+      const amb = formData.ambientesDetalhados[targetIdx]
+      let novaDescricao = amb.descricao ? amb.descricao.trimEnd() : ''
+      if (novaDescricao) {
+        if (isTitulo) {
+          novaDescricao = `${novaDescricao}\n\n${itemFormatado}`
+        } else {
+          novaDescricao = `${novaDescricao}\n${itemFormatado}`
+        }
+      } else {
+        novaDescricao = itemFormatado
+      }
+
+      const novoTipo = amb.tipo || tituloCanonico
+      setFormData((prev) => {
+        const copy = [...prev.ambientesDetalhados]
+        copy[targetIdx!] = { ...copy[targetIdx!], tipo: novoTipo, descricao: novaDescricao }
+        return { ...prev, ambientesDetalhados: copy }
+      })
+      setGuiaCardIndexAtivo(targetIdx)
+      setGuiaAmbienteSelecionado(novoTipo)
+      toast.success(isTitulo ? `Título da seção inserido!` : `"${textoLimpo}" adicionado!`)
+
+      // Mantém foco e seleção no textarea do ambiente selecionado
+      setTimeout(() => {
+        const elTextarea = document.getElementById(
+          `textarea_descricao_ambiente_${targetIdx}`
+        ) as HTMLTextAreaElement | null
+        if (elTextarea) {
+          elTextarea.focus()
+          elTextarea.selectionStart = elTextarea.value.length
+          elTextarea.selectionEnd = elTextarea.value.length
+        }
+      }, 50)
+    } else {
+      // Nenhum card existente para este ambiente: cria novo card direcionado para o ambiente ativo
+      const novoAmbiente: AmbienteItem = {
+        tipo: tituloCanonico,
+        descricao: itemFormatado,
+        medidasPreliminares: '',
+        observacoesEspecificas: '',
+      }
+      setFormData((prev) => ({
+        ...prev,
+        ambientesDetalhados: [...prev.ambientesDetalhados, novoAmbiente],
+      }))
+      const novoIdx = formData.ambientesDetalhados.length
+      setGuiaCardIndexAtivo(novoIdx)
+      setGuiaAmbienteSelecionado(tituloCanonico)
+      toast.success(`Card ${tituloCanonico} adicionado com o item!`)
+
+      setTimeout(() => {
+        const elTextarea = document.getElementById(
+          `textarea_descricao_ambiente_${novoIdx}`
+        ) as HTMLTextAreaElement | null
+        if (elTextarea) {
+          elTextarea.focus()
+          elTextarea.selectionStart = elTextarea.value.length
+          elTextarea.selectionEnd = elTextarea.value.length
+        }
+      }, 50)
+    }
+  }
+
   const updateAmbienteDetalhado = (index: number, field: keyof AmbienteItem, value: string) => {
     setFormData((prev) => {
       const copy = [...prev.ambientesDetalhados]
       copy[index] = { ...copy[index], [field]: value }
       return { ...prev, ambientesDetalhados: copy }
     })
+
+    // Se o ambiente no card for alterado (ex.: de "Living" para "Quarto da Filha"),
+    // abre/direciona o guia automaticamente para o novo ambiente selecionado (R3)
+    if (field === 'tipo' && value) {
+      setGuiaCardIndexAtivo(index)
+      setGuiaAmbienteSelecionado(value)
+      setGuiaDrawerTrigger(Date.now())
+      setIsGuiaDrawerOpen(true)
+    }
   }
 
   const removeAmbienteDetalhado = (index: number) => {
@@ -503,9 +706,38 @@ const BriefingEdit: React.FC<PageProps> = ({
               <div className="flex items-center gap-2 pb-3 border-b border-stone-100">
                 <FileCheck className="w-4 h-4 text-primary-600" />
                 <h3 className="font-semibold text-sm text-stone-900">2. Ambientes Solicitados</h3>
-                <span className="ml-auto text-[11px] font-bold text-stone-400 font-mono">
-                  {liveScore.detalhes.ambientes ? '+10 pts' : '0/10 pts'}
-                </span>
+                <div className="ml-auto flex items-center gap-3">
+                  {canManageConfig && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={sincronizarAmbientes}
+                        disabled={sincronizandoAmbientes}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-stone-500 hover:text-stone-700"
+                        title="Sincronizar com o catálogo de ambientes"
+                      >
+                        <RotateCw
+                          size={9}
+                          className={sincronizandoAmbientes ? 'animate-spin' : ''}
+                        />
+                        <span>Sincronizar</span>
+                      </button>
+                      <a
+                        href="/configuracoes?tab=ambientes"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+                        title="Configurar ambientes em nova aba"
+                      >
+                        <span>Configurar</span>
+                        <ExternalLink size={9} />
+                      </a>
+                    </div>
+                  )}
+                  <span className="text-[11px] font-bold text-stone-400 font-mono">
+                    {liveScore.detalhes.ambientes ? '+10 pts' : '0/10 pts'}
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -581,7 +813,7 @@ const BriefingEdit: React.FC<PageProps> = ({
 
             {/* Seção 3: Detalhamento dos Ambientes (15 pts + 8 pts medidas) */}
             <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-100">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary-600" />
                   <h3 className="font-semibold text-sm text-stone-900">
@@ -589,13 +821,22 @@ const BriefingEdit: React.FC<PageProps> = ({
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono font-bold text-stone-500">
+                  <span className="text-[11px] font-mono font-bold text-stone-500 hidden sm:inline">
                     Desc.: {liveScore.detalhes.ambientes_detalhados ? '+15' : '0'}/15 | Medidas: {liveScore.detalhes.medidas_preliminares ? '+8' : '0'}/8
                   </span>
                   <button
                     type="button"
+                    onClick={abrirGuiaGeral}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                    title="Consultar Guia Técnico com roteiros de perguntas e diretrizes dos 18 ambientes"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Consultar Guia Técnico</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={addAmbienteDetalhado}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-medium transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5 text-primary-400" />
                     Adicionar Ambiente
@@ -604,114 +845,193 @@ const BriefingEdit: React.FC<PageProps> = ({
               </div>
 
               {formData.ambientesDetalhados.length === 0 ? (
-                <div className="p-6 border border-dashed border-stone-200 rounded-xl text-center bg-stone-50/50">
+                <div className="p-6 border border-dashed border-stone-200 rounded-xl text-center bg-stone-50/50 space-y-3">
                   <p className="text-xs text-stone-500">
                     Nenhum ambiente detalhado adicionado ainda. Adicione pelo menos um ambiente com medidas para pontuar 23 pontos no score!
                   </p>
-                  <button
-                    type="button"
-                    onClick={addAmbienteDetalhado}
-                    className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-400 text-stone-900 font-semibold text-xs rounded-lg shadow-sm transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Adicionar Primeiro Ambiente
-                  </button>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={addAmbienteDetalhado}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-500 hover:bg-primary-400 text-stone-900 font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Adicionar Primeiro Ambiente
+                    </button>
+                    <button
+                      type="button"
+                      onClick={abrirGuiaGeral}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-50 text-stone-700 hover:text-amber-800 border border-stone-200 rounded-lg text-xs font-medium transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                      Consultar Guia Técnico
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {formData.ambientesDetalhados.map((amb, index) => (
-                    <div
-                      key={index}
-                      className="border border-stone-200 rounded-xl p-4 bg-stone-50/40 relative space-y-3"
-                    >
-                      <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-700 text-[10px] font-bold flex items-center justify-center">
-                            {index + 1}
-                          </span>
-                          <select
-                            value={amb.tipo}
-                            onChange={(e) => updateAmbienteDetalhado(index, 'tipo', e.target.value)}
-                            className="text-xs font-semibold text-stone-800 bg-white border border-stone-200 rounded-md px-2 py-1 focus:ring-2 focus:ring-primary-500"
-                          >
-                            {!amb.tipo && <option value="">Selecione o ambiente...</option>}
-                            {ambientesFinais.length > 0 && (
-                              <optgroup label="Ambientes solicitados">
-                                {ambientesFinais.map((a) => (
-                                  <option key={a} value={a}>
-                                    {a}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            )}
-                            {restoCatalogo.length > 0 && (
-                              <optgroup label="Demais ambientes do catálogo">
-                                {restoCatalogo.map((a) => (
-                                  <option key={a} value={a}>
-                                    {a}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            )}
-                            {amb.tipo &&
-                              !ambientesFinais.includes(amb.tipo) &&
-                              !restoCatalogo.includes(amb.tipo) && (
-                                <option value={amb.tipo}>{amb.tipo}</option>
+                  {formData.ambientesDetalhados.map((amb, index) => {
+                    const isCardConectado = isGuiaDrawerOpen && guiaCardIndexAtivo === index
+                    return (
+                      <div
+                        key={index}
+                        className={clsx(
+                          'border rounded-xl p-4 relative space-y-3 transition-all',
+                          isCardConectado
+                            ? 'border-amber-400 bg-amber-50/20 ring-2 ring-amber-400/30 shadow-sm'
+                            : 'border-stone-200 bg-stone-50/40'
+                        )}
+                      >
+                        <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={clsx(
+                                'w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-colors',
+                                isCardConectado
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-stone-200 text-stone-700'
                               )}
-                          </select>
+                            >
+                              {index + 1}
+                            </span>
+                            <select
+                              value={amb.tipo}
+                              onChange={(e) => updateAmbienteDetalhado(index, 'tipo', e.target.value)}
+                              className="text-xs font-semibold text-stone-800 bg-white border border-stone-200 rounded-md px-2 py-1 focus:ring-2 focus:ring-primary-500 cursor-pointer"
+                            >
+                              {!amb.tipo && <option value="">Selecione o ambiente...</option>}
+                              {ambientesFinais.length > 0 && (
+                                <optgroup label="Ambientes solicitados">
+                                  {ambientesFinais.map((a) => (
+                                    <option key={a} value={a}>
+                                      {a}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {restoCatalogo.length > 0 && (
+                                <optgroup label="Demais ambientes do catálogo">
+                                  {restoCatalogo.map((a) => (
+                                    <option key={a} value={a}>
+                                      {a}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {amb.tipo &&
+                                !ambientesFinais.includes(amb.tipo) &&
+                                !restoCatalogo.includes(amb.tipo) && (
+                                  <option value={amb.tipo}>{amb.tipo}</option>
+                                )}
+                            </select>
+
+                            {/* Botão Guia do Ambiente (R3) */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                abrirGuiaCard(index, amb.tipo)
+                                setTimeout(() => {
+                                  const ta = document.getElementById(
+                                    `textarea_descricao_ambiente_${index}`
+                                  ) as HTMLTextAreaElement | null
+                                  ta?.focus()
+                                }, 50)
+                              }}
+                              className={clsx(
+                                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors shadow-2xs cursor-pointer border',
+                                isCardConectado
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold shadow-xs'
+                                  : 'bg-white hover:bg-amber-50 text-stone-700 hover:text-amber-900 border-stone-200 hover:border-amber-300'
+                              )}
+                              title={`Abrir Guia Técnico com roteiro de perguntas para ${amb.tipo || 'este ambiente'}`}
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Guia do Ambiente</span>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAmbienteDetalhado(index)}
+                            className="text-stone-400 hover:text-rose-600 p-1 rounded-md transition-colors cursor-pointer"
+                            title="Remover este ambiente"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAmbienteDetalhado(index)}
-                          className="text-stone-400 hover:text-rose-600 p-1 rounded-md transition-colors"
-                          title="Remover este ambiente"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="sm:col-span-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-medium text-stone-700">
+                                Descrição Detalhada do Ambiente (+15 pts):
+                              </label>
+                              {isCardConectado && (
+                                <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+                                  Conectado ao Guia Técnico
+                                </span>
+                              )}
+                            </div>
+                            <textarea
+                              id={`textarea_descricao_ambiente_${index}`}
+                              rows={9}
+                              placeholder="Ex: Cozinha gourmet com ilha central, gavetas com amortecimento, torre quente para micro e forno..."
+                              value={amb.descricao}
+                              onFocus={() => {
+                                setGuiaCardIndexAtivo(index)
+                                if (amb.tipo) {
+                                  setGuiaAmbienteSelecionado(amb.tipo)
+                                }
+                              }}
+                              onChange={(e) =>
+                                updateAmbienteDetalhado(index, 'descricao', e.target.value)
+                              }
+                              className={clsx(
+                                'w-full min-h-[200px] text-xs leading-relaxed border rounded-lg p-3 focus:ring-2 focus:ring-primary-500 transition-colors resize-y font-sans',
+                                isCardConectado
+                                  ? 'border-amber-400 bg-white ring-1 ring-amber-400/30'
+                                  : 'border-stone-300'
+                              )}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-stone-700 mb-1">
+                              Medidas Preliminares (+8 pts):
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Ex: 4.50m x 3.20m, pé direito 2.65m"
+                              value={amb.medidasPreliminares}
+                              onChange={(e) =>
+                                updateAmbienteDetalhado(index, 'medidasPreliminares', e.target.value)
+                              }
+                              className="w-full text-xs border border-stone-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-stone-700 mb-1">
+                              Observações Específicas / Elétrica / Hidráulica:
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Ex: Ponto de gás na ilha, tomada 220v cooktop"
+                              value={amb.observacoesEspecificas}
+                              onChange={(e) =>
+                                updateAmbienteDetalhado(
+                                  index,
+                                  'observacoesEspecificas',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full text-xs border border-stone-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+                        </div>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                            Descrição Detalhada do Ambiente (+15 pts):
-                          </label>
-                          <textarea
-                            rows={2}
-                            placeholder="Ex: Cozinha gourmet com ilha central, gavetas com amortecimento, torre quente para micro e forno..."
-                            value={amb.descricao}
-                            onChange={(e) => updateAmbienteDetalhado(index, 'descricao', e.target.value)}
-                            className="w-full text-xs border border-stone-300 rounded-lg p-2 focus:ring-2 focus:ring-primary-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                            Medidas Preliminares (+8 pts):
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ex: 4.50m x 3.20m, pé direito 2.65m"
-                            value={amb.medidasPreliminares}
-                            onChange={(e) => updateAmbienteDetalhado(index, 'medidasPreliminares', e.target.value)}
-                            className="w-full text-xs border border-stone-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-medium text-stone-700 mb-1">
-                            Observações Específicas / Elétrica / Hidráulica:
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ex: Ponto de gás na ilha, tomada 220v cooktop"
-                            value={amb.observacoesEspecificas}
-                            onChange={(e) => updateAmbienteDetalhado(index, 'observacoesEspecificas', e.target.value)}
-                            className="w-full text-xs border border-stone-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -772,33 +1092,18 @@ const BriefingEdit: React.FC<PageProps> = ({
               </div>
             </div>
 
-            {/* Seção 5: Estilo, Referências & Observações */}
+            {/* Seção 5: Referências & Observações (o estilo preferido saiu do briefing) */}
             <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 pb-3 border-b border-stone-100">
                 <Palette className="w-4 h-4 text-primary-600" />
-                <h3 className="font-semibold text-sm text-stone-900">5. Estilo, Referências & Contexto</h3>
+                <h3 className="font-semibold text-sm text-stone-900">5. Referências & Contexto</h3>
                 <span className="ml-auto text-[11px] font-bold text-stone-400 font-mono">
-                  Estilo: {liveScore.detalhes.estilo_preferido ? '+8' : '0'}/8 | Refs: {liveScore.detalhes.referencias_visuais ? '+12' : '0'}/12 | Obs: {liveScore.detalhes.observacoes ? '+10' : '0'}/10
+                  Refs: {liveScore.detalhes.referencias_visuais ? '+10' : '0'}/10 | Obs:{' '}
+                  {liveScore.detalhes.observacoes ? '+10' : '0'}/10
                 </span>
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-stone-700 mb-1">Estilo Preferido:</label>
-                  <select
-                    value={formData.estiloPreferido}
-                    onChange={(e) => setFormData({ ...formData, estiloPreferido: e.target.value })}
-                    className="w-full text-xs border border-stone-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Selecione um estilo...</option>
-                    {ESTILOS_PREFERIDOS_OPTIONS.map((est: string) => (
-                      <option key={est} value={est}>
-                        {est}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Referências Visuais (URLs) */}
                 <div>
                   <label className="block text-xs font-medium text-stone-700 mb-1">
@@ -999,7 +1304,9 @@ const BriefingEdit: React.FC<PageProps> = ({
                   )}
                 >
                   {liveScore.score.toFixed(0)}
-                  <span className="text-sm font-medium text-stone-400 ml-1">/ 100 pts</span>
+                  <span className="text-sm font-medium text-stone-400 ml-1">
+                    / {SCORE_MAXIMO_BRIEFING} pts
+                  </span>
                 </div>
 
                 <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
@@ -1012,7 +1319,9 @@ const BriefingEdit: React.FC<PageProps> = ({
                           ? 'bg-amber-500'
                           : 'bg-rose-500'
                     )}
-                    style={{ width: `${Math.min(100, Math.max(0, liveScore.score))}%` }}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (liveScore.score / SCORE_MAXIMO_BRIEFING) * 100))}%`,
+                    }}
                   />
                 </div>
 
@@ -1049,10 +1358,10 @@ const BriefingEdit: React.FC<PageProps> = ({
                 </button>
               )}
 
-              {/* Checklist dos 10 Critérios com Pontuação */}
+              {/* Checklist dos critérios com pontuação */}
               <div className="pt-3 border-t border-stone-100 space-y-2">
                 <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">
-                  Checklist dos 10 Critérios:
+                  Checklist dos {CRITERIOS_SCORE.length} Critérios:
                 </h4>
                 <div className="space-y-1.5 text-xs">
                   {CRITERIOS_SCORE.map((crit: CriterioDef) => {
@@ -1103,6 +1412,18 @@ const BriefingEdit: React.FC<PageProps> = ({
         onClose={() => setIsModalNovoArquitetoOpen(false)}
         onSuccess={handleArquitetoCriado}
         consultores={consultores}
+      />
+
+      {/* Drawer Lateral Direito do Guia Técnico de Apoio aos Ambientes (R1, R2, R3) */}
+      <RoteiroAmbienteDrawer
+        isOpen={isGuiaDrawerOpen}
+        onClose={() => setIsGuiaDrawerOpen(false)}
+        ambienteInicial={guiaAmbienteSelecionado}
+        ambientesBriefing={ambientesFinais}
+        roteirosCatalogo={roteirosCatalogo}
+        onInserirTexto={handleInserirTextoNoCard}
+        onAmbienteChange={(_slug, titulo) => setGuiaAmbienteSelecionado(titulo)}
+        triggerKey={guiaDrawerTrigger}
       />
     </AppLayout>
   )

@@ -636,6 +636,54 @@ const routes = {
     tokens: [{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"tipos-compromisso","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['configuracoes.tipos_compromisso.destroy']['types'],
   },
+  'configuracoes.roteiros.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/roteiros',
+    tokens: [{"old":"/configuracoes/roteiros","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/roteiros","type":0,"val":"roteiros","end":""}],
+    types: placeholder as Registry['configuracoes.roteiros.store']['types'],
+  },
+  'configuracoes.roteiros.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/roteiros/:id',
+    tokens: [{"old":"/configuracoes/roteiros/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/roteiros/:id","type":0,"val":"roteiros","end":""},{"old":"/configuracoes/roteiros/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.roteiros.update']['types'],
+  },
+  'configuracoes.roteiros.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/roteiros/:id/toggle',
+    tokens: [{"old":"/configuracoes/roteiros/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/roteiros/:id/toggle","type":0,"val":"roteiros","end":""},{"old":"/configuracoes/roteiros/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/roteiros/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.roteiros.toggle']['types'],
+  },
+  'configuracoes.roteiros.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/roteiros/:id',
+    tokens: [{"old":"/configuracoes/roteiros/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/roteiros/:id","type":0,"val":"roteiros","end":""},{"old":"/configuracoes/roteiros/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.roteiros.destroy']['types'],
+  },
+  'configuracoes.permissoes.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/permissoes/toggle',
+    tokens: [{"old":"/configuracoes/permissoes/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/permissoes/toggle","type":0,"val":"permissoes","end":""},{"old":"/configuracoes/permissoes/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.permissoes.toggle']['types'],
+  },
+  'configuracoes.perfis.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/perfis',
+    tokens: [{"old":"/configuracoes/perfis","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/perfis","type":0,"val":"perfis","end":""}],
+    types: placeholder as Registry['configuracoes.perfis.store']['types'],
+  },
+  'configuracoes.perfis.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/perfis/:id',
+    tokens: [{"old":"/configuracoes/perfis/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/perfis/:id","type":0,"val":"perfis","end":""},{"old":"/configuracoes/perfis/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.perfis.update']['types'],
+  },
+  'configuracoes.perfis.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/perfis/:id',
+    tokens: [{"old":"/configuracoes/perfis/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/perfis/:id","type":0,"val":"perfis","end":""},{"old":"/configuracoes/perfis/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.perfis.destroy']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

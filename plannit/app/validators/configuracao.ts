@@ -87,4 +87,48 @@ export const updateTipoCompromissoValidator = vine.create({
   isActive: vine.boolean().optional(),
 })
 
+export const togglePermissaoValidator = vine.create({
+  perfil: vine.string().trim().minLength(2).maxLength(50),
+  permissaoCodigo: vine.string().trim().minLength(2).maxLength(100),
+  concedido: vine.boolean(),
+})
+
+export const createPerfilValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  descricao: vine.string().trim().maxLength(255).nullable().optional(),
+  copiarDePerfil: vine.string().trim().optional(),
+  isActive: vine.boolean().optional(),
+  ordem: vine.number().min(0).optional(),
+})
+
+export const updatePerfilValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100).optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  descricao: vine.string().trim().maxLength(255).nullable().optional(),
+  isActive: vine.boolean().optional(),
+  ordem: vine.number().min(0).optional(),
+})
+
+export const createRoteiroValidator = vine.create({
+  titulo: vine.string().trim().minLength(2).maxLength(150),
+  subtitulo: vine.string().trim().maxLength(255).nullable().optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  ambientes: vine.array(vine.string().trim()).optional(),
+  secoes: vine.array(vine.any()).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const updateRoteiroValidator = vine.create({
+  titulo: vine.string().trim().minLength(2).maxLength(150).optional(),
+  subtitulo: vine.string().trim().maxLength(255).nullable().optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  ambientes: vine.array(vine.string().trim()).optional(),
+  secoes: vine.array(vine.any()).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+
 

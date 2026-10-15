@@ -21,7 +21,6 @@ export default function ModalEditarCompromisso({
   colaboradores = [],
   podeVerEquipe = false,
 }: ModalEditarCompromissoProps) {
-  const [titulo, setTitulo] = useState('')
   const [tipoId, setTipoId] = useState<number>(0)
   const [dataHoraInicio, setDataHoraInicio] = useState('')
   const [dataHoraFim, setDataHoraFim] = useState('')
@@ -33,7 +32,6 @@ export default function ModalEditarCompromisso({
 
   useEffect(() => {
     if (isOpen && compromisso) {
-      setTitulo(compromisso.titulo || '')
       setTipoId(compromisso.tipoId || tipos[0]?.id || 0)
       const dtInicio = DateTime.fromISO(compromisso.dataHoraInicio)
       const dtFim = DateTime.fromISO(compromisso.dataHoraFim)
@@ -52,10 +50,6 @@ export default function ModalEditarCompromisso({
     e.preventDefault()
     setErroForm(null)
 
-    if (!titulo.trim()) {
-      setErroForm('Informe o título do compromisso.')
-      return
-    }
     if (!dataHoraInicio || !dataHoraFim) {
       setErroForm('Informe a data e horário de início e término.')
       return
@@ -71,8 +65,11 @@ export default function ModalEditarCompromisso({
 
     setIsSubmitting(true)
 
+    const tipoObj = tipos.find((t) => t.id === Number(tipoId))
+    const tituloFinal = tipoObj ? tipoObj.nome : compromisso.titulo || 'Compromisso'
+
     const payload: any = {
-      titulo: titulo.trim(),
+      titulo: tituloFinal,
       tipoId: Number(tipoId),
       dataHoraInicio: dtInicio.toUTC().toISO(),
       dataHoraFim: dtFim.toUTC().toISO(),
@@ -136,19 +133,6 @@ export default function ModalEditarCompromisso({
             </div>
           )}
 
-          {/* Título */}
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Título do Compromisso <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="input w-full text-xs"
-              required
-            />
-          </div>
 
           {/* Tipo de Compromisso */}
           <div>

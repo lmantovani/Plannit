@@ -10,7 +10,6 @@
 import { middleware } from '#start/kernel'
 import { controllers } from '#generated/controllers'
 import router from '@adonisjs/core/services/router'
-import { PerfilUsuario } from '#models/user'
 
 router
   .group(() => {
@@ -186,8 +185,22 @@ router
         router.put('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'updateTipoCompromisso']).as('configuracoes.tipos_compromisso.update')
         router.patch('configuracoes/tipos-compromisso/:id/toggle', [controllers.Configuracoes, 'toggleTipoCompromisso']).as('configuracoes.tipos_compromisso.toggle')
         router.delete('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'destroyTipoCompromisso']).as('configuracoes.tipos_compromisso.destroy')
+
+        // Roteiros de Apoio (Briefing)
+        router.post('configuracoes/roteiros', [controllers.Configuracoes, 'storeRoteiro']).as('configuracoes.roteiros.store')
+        router.put('configuracoes/roteiros/:id', [controllers.Configuracoes, 'updateRoteiro']).as('configuracoes.roteiros.update')
+        router.patch('configuracoes/roteiros/:id/toggle', [controllers.Configuracoes, 'toggleRoteiro']).as('configuracoes.roteiros.toggle')
+        router.delete('configuracoes/roteiros/:id', [controllers.Configuracoes, 'destroyRoteiro']).as('configuracoes.roteiros.destroy')
+
+        // Matriz de Permissões & Perfis
+        router.patch('configuracoes/permissoes/toggle', [controllers.Configuracoes, 'togglePermissao']).as('configuracoes.permissoes.toggle')
+
+        // Gestão de Perfis de Usuário
+        router.post('configuracoes/perfis', [controllers.Configuracoes, 'storePerfil']).as('configuracoes.perfis.store')
+        router.put('configuracoes/perfis/:id', [controllers.Configuracoes, 'updatePerfil']).as('configuracoes.perfis.update')
+        router.delete('configuracoes/perfis/:id', [controllers.Configuracoes, 'destroyPerfil']).as('configuracoes.perfis.destroy')
       })
-      .use(middleware.role([PerfilUsuario.DIRETORIA, PerfilUsuario.GERENTE_COMERCIAL]))
+      .use(middleware.permission(['configuracoes.visualizar', 'configuracoes.gerenciar_permissoes']))
   })
   .use(middleware.auth())
 

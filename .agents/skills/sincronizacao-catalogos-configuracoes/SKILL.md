@@ -71,12 +71,13 @@ Siga na ordem. Cada item evita um defeito que já aconteceu no projeto.
 6. **Mostre o que já está gravado, mesmo inativo.** Monte a lista como catálogo ativo + valores já
    selecionados que não estão nele (item desativado ou valor antigo). Sem isso, o registro "perde"
    o valor na tela e o próximo salvamento apaga o dado.
-7. **Ligue a sincronização.** Ouça `storage` (chave `plannit_catalogo_updated`) e `focus`, chame
-   `router.reload({ only: [...] })` e remova os listeners no cleanup. Já existem três cópias desse
-   efeito (`NovoLeadModal` em `pages/crm/index.tsx`, `components/crm/QualificarLeadModal.tsx` e
-   `pages/agenda/components/ModalNovoCompromisso.tsx`). Ao criar o próximo consumidor, crie o hook
-   `useSincronizarCatalogos` de `references/exemplos.md` em `inertia/lib/catalogos.ts`, use-o e, se
-   estiver mexendo nesses arquivos, troque as cópias por ele.
+7. **Ligue a sincronização.** Use o hook `useSincronizarCatalogos(['<prop>'])` de
+   `inertia/lib/catalogos.ts`: ele ouve `storage` (chave `plannit_catalogo_updated`) e `focus`, chama
+   `router.reload({ only: [...] })` e remove os listeners no cleanup. O botão "Sincronizar" usa
+   `recarregarCatalogos` do mesmo arquivo. Exemplo de uso: `pages/briefings/edit.tsx`. Ainda há três
+   cópias antigas do efeito, escritas antes do hook (`NovoLeadModal` em `pages/crm/index.tsx`,
+   `components/crm/QualificarLeadModal.tsx` e `pages/agenda/components/ModalNovoCompromisso.tsx`);
+   se estiver mexendo em um desses arquivos, troque a cópia pelo hook.
 8. **Atalhos para gestores.** Para Diretoria/Gerente (`canManageConfig`), mostre ao lado do rótulo
    o link "Configurar ↗" para `/configuracoes?tab=<chave>` em nova aba e, se útil, o botão
    "Sincronizar". O vendedor não vê esses atalhos: as rotas de Configurações dariam 403 para ele.
@@ -122,8 +123,8 @@ Complementa a skill `parametrizacao-campos-configuracoes`, que cobre tabela, CRU
 
 ## Pendências conhecidas (corrija quando mexer nesses pontos)
 
-- `inertia/pages/briefings/edit.tsx` recebe `ambientesCatalogo`, mas não tem a sincronização do
-  item 7 do checklist A.
+- Três consumidores ainda usam cópias do efeito de sincronização em vez do hook (ver item 7 do
+  checklist A).
 - A `origem` do lead não é validada contra o catálogo no backend; só a campanha é.
 - `CampanhaAutocomplete` e algumas chamadas de `notifyCatalogoUpdate()` gravam o sinal sem a chave.
 - A Agenda usa a prop `tipos` em vez de `tiposCompromissoCatalogo`. Funciona, mas foge do item 2

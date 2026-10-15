@@ -1,26 +1,12 @@
-## 2026-10-08T14:22:02Z
+## 2026-10-14T23:31:28Z
+Você é o auditor independente de pós-vitória (teamwork_preview_victory_auditor).
+Seu diretório de trabalho exclusivo para relatórios e metadados é: `/home/porto/codespace/Plannit/.agents/teamwork/auditor_1`
+O diretório da aplicação é: `/home/porto/codespace/Plannit/plannit` (PDFs em `/home/porto/codespace/Plannit/docs/briefings/`).
+Seu agente chamador/parent é: `4d8ec161-87b4-4b1a-bcd4-07ea23d5b5bf`
 
-Você é o Forensic Auditor (Auditor Forense de Integridade) encarregado da auditoria estrita e independente de integridade da implementação do Módulo de Agenda no Plannit (R1, R2, R3, R4).
+Você deve conduzir uma auditoria rigorosa e independente em 3 fases:
+1. Linha do tempo / histórico de alterações.
+2. Detecção de cheating / testes adulterados / atalhos indevidos.
+3. Execução independente da suíte de testes (`tests/functional/roteiros_briefings.spec.ts`, `node ace test functional`, `npm run typecheck`, `npm run build`), verificação dos critérios de aceitação e integridade da extração dos 18 PDFs.
 
-Diretório de trabalho exclusivo: /home/porto/codespace/Plannit/.agents/teamwork/auditor_1
-Pedido original obrigatório: /home/porto/codespace/Plannit/.agents/teamwork/ORIGINAL_REQUEST.md
-Plano mestre: /home/porto/codespace/Plannit/.agents/teamwork/orchestrator/PROJECT.md
-Diretrizes do projeto: /home/porto/codespace/Plannit/AGENTS.md
-
-SEU VEREDITO É UM VETO BINÁRIO:
-Se houver qualquer violação de integridade (mock enganoso, hardcoded test strings, facades simulando respostas sem lógica real, bypasses indevidos), o veredito DEVE ser INTEGRITY VIOLATION. Se a implementação for genuína, completa e robusta, o veredito será CLEAN.
-
-Tarefas de Auditoria Forense:
-1. Análise estática de código:
-   - Verificar se as migrações existem e foram aplicadas no PostgreSQL real.
-   - Inspecionar a tabela tipos_compromisso_catalogo e compromissos_agenda no banco PostgreSQL.
-   - Verificar se os models TipoCompromissoCatalogo e CompromissoAgenda são genuínos.
-   - Verificar se o controller agenda_controller.ts possui lógica real e consultas Lucid legítimas.
-   - Verificar se a integração com CRM e Configurações é autêntica e sem simulações.
-2. Execução de comandos de verificação:
-   - Rodar npm run typecheck em plannit/ e auditar saída.
-   - Rodar npm run build em plannit/ e auditar saída.
-   - Rodar node ace test functional em plannit/ e auditar testes reais.
-3. Emitir relatório forense detalhado com evidências.
-4. Concluir com veredito final em destaque: CLEAN ou INTEGRITY VIOLATION.
-5. Escrever relatório e handoff.md em /home/porto/codespace/Plannit/.agents/teamwork/auditor_1/handoff.md e enviar mensagem de conclusão.
+Ao finalizar, você DEVE escrever seu relatório estruturado em `/home/porto/codespace/Plannit/.agents/teamwork/auditor_1/handoff.md` contendo o veredito final (CONFIRMED ou REJECTED) e enviar mensagem ao parent via `send_message`.

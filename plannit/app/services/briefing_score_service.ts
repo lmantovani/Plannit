@@ -1,6 +1,7 @@
 /**
  * Serviço de cálculo de Score do Briefing — RF009, RN002
  * O score bloqueia envio para fila de projetos se < score_minimo (padrão: 70)
+ * Pontuação máxima: 90 (o estilo preferido saiu do briefing e as referências visuais valem 10)
  */
 
 export interface CriterioScore {
@@ -15,13 +16,12 @@ export const CRITERIOS_SCORE: Record<string, CriterioScore> = {
   prazo_desejado: { peso: 8, descricao: 'Prazo desejado informado' },
   faixa_investimento: { peso: 14, descricao: 'Faixa de investimento definida' },
 
-  // Qualidade do levantamento (peso total: 35 pontos)
+  // Qualidade do levantamento (peso total: 33 pontos)
   ambientes_detalhados: { peso: 15, descricao: 'Ambientes com descrição detalhada' },
-  referencias_visuais: { peso: 12, descricao: 'Referências visuais enviadas' },
+  referencias_visuais: { peso: 10, descricao: 'Referências visuais enviadas' },
   medidas_preliminares: { peso: 8, descricao: 'Medidas preliminares informadas' },
 
-  // Informações comerciais (peso total: 25 pontos)
-  estilo_preferido: { peso: 8, descricao: 'Estilo preferido informado' },
+  // Informações comerciais (peso total: 17 pontos)
   arquiteto_vinculado: { peso: 7, descricao: 'Arquiteto/especificador vinculado' },
   observacoes: { peso: 10, descricao: 'Observações e contexto do cliente (mín. 50 caracteres)' },
 }
@@ -41,9 +41,9 @@ export interface BriefingScoreInput {
   faixaInvestimentoMax?: number | string | null
   ambientesDetalhados?: AmbienteScoreInput[] | null
   referenciasUrl?: string[] | null
-  estiloPreferido?: string | null
   arquitetoNome?: string | null
   observacoes?: string | null
+  estiloPreferido?: string | null
   scoreMinimo?: number
 }
 
@@ -123,20 +123,14 @@ export function calcularScoreBriefing(dados: BriefingScoreInput): BriefingScoreR
     pontosObtidos += CRITERIOS_SCORE.medidas_preliminares.peso
   }
 
-  // 8. Estilo preferido
-  detalhes.estilo_preferido = Boolean(dados.estiloPreferido && dados.estiloPreferido.trim().length > 0)
-  if (detalhes.estilo_preferido) {
-    pontosObtidos += CRITERIOS_SCORE.estilo_preferido.peso
-  }
-
-  // 9. Arquiteto vinculado
+  // 8. Arquiteto vinculado
   const temArquiteto = Boolean(dados.arquitetoNome && dados.arquitetoNome.trim().length > 0)
   detalhes.arquiteto_vinculado = temArquiteto
   if (temArquiteto) {
     pontosObtidos += CRITERIOS_SCORE.arquiteto_vinculado.peso
   }
 
-  // 10. Observações (mínimo 50 caracteres)
+  // 9. Observações (mínimo 50 caracteres)
   const obs = (dados.observacoes || '').trim()
   detalhes.observacoes = obs.length >= 50
   if (detalhes.observacoes) {

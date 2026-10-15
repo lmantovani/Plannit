@@ -70,7 +70,7 @@ export const PERFIS_EXTERNOS: PerfilUsuario[] = [
 ]
 
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
-  declare perfil: PerfilUsuario
+  declare perfil: PerfilUsuario | string
 
   @hasMany(() => Arquiteto, { foreignKey: 'consultorId' })
   declare arquitetos: HasMany<typeof Arquiteto>
@@ -87,15 +87,15 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   }
 
   get perfilLabel(): string {
-    return PERFIL_LABELS[this.perfil] || this.perfil
+    return (PERFIL_LABELS as Record<string, string>)[this.perfil] || this.perfil
   }
 
-  hasRole(roles: PerfilUsuario | PerfilUsuario[]): boolean {
+  hasRole(roles: (PerfilUsuario | string) | (PerfilUsuario | string)[]): boolean {
     if (this.isSuperuser || this.perfil === PerfilUsuario.DIRETORIA) {
       return true
     }
     const roleList = Array.isArray(roles) ? roles : [roles]
-    return roleList.includes(this.perfil)
+    return (roleList as string[]).includes(this.perfil)
   }
 
   get isGestor(): boolean {
@@ -104,5 +104,15 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
 
   get isInterno(): boolean {
     return this.hasRole(PERFIS_INTERNOS)
+  }
+
+  async can(permissaoCodigo: string): Promise<boolean> {
+    const { default: PermissionService } = await import('#services/permission_service')
+    return PermissionService.hasPermission(this, permissaoCodigo)
+  }
+
+  async getPermissoes(): Promise<string[]> {
+    const { default: PermissionService } = await import('#services/permission_service')
+    return PermissionService.getPermissions(this)
   }
 }

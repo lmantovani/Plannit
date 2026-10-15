@@ -43,7 +43,6 @@ export default function ModalNovoCompromisso({
   const currentUser = props.user
 
   // Form states
-  const [titulo, setTitulo] = useState('')
   const [tipoId, setTipoId] = useState<number>(tipos[0]?.id || 0)
   const [dataHoraInicio, setDataHoraInicio] = useState('')
   const [dataHoraFim, setDataHoraFim] = useState('')
@@ -64,7 +63,6 @@ export default function ModalNovoCompromisso({
 
       setDataHoraInicio(inicioPadrao)
       setDataHoraFim(fimPadrao)
-      setTitulo('')
       setLocal('')
       setObservacoes('')
       setErroForm(null)
@@ -128,10 +126,6 @@ export default function ModalNovoCompromisso({
     e.preventDefault()
     setErroForm(null)
 
-    if (!titulo.trim()) {
-      setErroForm('Informe o título do compromisso.')
-      return
-    }
     if (!tipoId && !tipoSelecionado?.id) {
       setErroForm('Selecione um tipo de compromisso.')
       return
@@ -151,8 +145,10 @@ export default function ModalNovoCompromisso({
 
     setIsSubmitting(true)
 
+    const tipoNomeFinal = tipoSelecionado?.nome || 'Compromisso'
+
     const payload = {
-      titulo: titulo.trim(),
+      titulo: tipoNomeFinal,
       tipoId: tipoId || tipoSelecionado.id,
       dataHoraInicio: dtInicio.toUTC().toISO(),
       dataHoraFim: dtFim.toUTC().toISO(),
@@ -221,20 +217,6 @@ export default function ModalNovoCompromisso({
             </div>
           )}
 
-          {/* Título */}
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Título do Compromisso <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ex.: Visita e Medição no Local - Apto 402"
-              className="input w-full text-xs"
-              required
-            />
-          </div>
 
           {/* Tipo de Compromisso com Catálogo e Atalho */}
           <div>

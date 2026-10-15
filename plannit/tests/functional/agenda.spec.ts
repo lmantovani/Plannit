@@ -124,6 +124,40 @@ test.group('Módulo de Agenda — Backend & RBAC', (group) => {
     compromissosCriados.push(body.compromisso.id)
   })
 
+  test('criação de compromisso sem título assume automaticamente o nome do tipo do catálogo', async ({
+    client,
+    assert,
+  }) => {
+    const vendedor = await garantirUsuario({
+      nome: 'Vendedor 1 Agenda',
+      email: 'vendedor1.agenda.teste@lidermoveis.com.br',
+      perfil: PerfilUsuario.VENDEDOR,
+    })
+
+    const inicio = DateTime.now().plus({ days: 2, hours: 14 }).toUTC().toISO()
+    const fim = DateTime.now().plus({ days: 2, hours: 15 }).toUTC().toISO()
+
+    const response = await client
+      .post('/agenda/compromissos')
+      .loginAs(vendedor)
+      .withCsrfToken()
+      .header('accept', 'application/json')
+      .json({
+        tipoId: tipoPadraoId,
+        dataHoraInicio: inicio,
+        dataHoraFim: fim,
+        local: 'Showroom Principal',
+      })
+
+    response.assertStatus(201)
+    const body = response.body()
+    assert.isNotNull(body.compromisso)
+    assert.isNotEmpty(body.compromisso.titulo)
+    assert.equal(body.compromisso.titulo, body.compromisso.tipo.nome)
+
+    compromissosCriados.push(body.compromisso.id)
+  })
+
   test('vendedor não consegue forçar responsavelId de outro colaborador', async ({
     client,
     assert,
@@ -583,11 +617,12 @@ test.group('Módulo de Agenda — Backend & RBAC', (group) => {
     compromissosCriados.push(compFuturo.id)
 
     // 2. Compromisso para HOJE mais cedo que o futuro
+    const agoraUtc = DateTime.now().toUTC()
     const compHoje = await CompromissoAgenda.create({
       titulo: 'Visita Técnica Hoje',
       tipoId: tipoPadraoId,
-      dataHoraInicio: DateTime.now().plus({ minutes: 30 }).toUTC(),
-      dataHoraFim: DateTime.now().plus({ hours: 1, minutes: 30 }).toUTC(),
+      dataHoraInicio: agoraUtc.plus({ minutes: 5 }),
+      dataHoraFim: agoraUtc.plus({ minutes: 45 }),
       status: StatusCompromisso.AGENDADO,
       responsavelId: vendedor.id,
       criadoPorId: vendedor.id,

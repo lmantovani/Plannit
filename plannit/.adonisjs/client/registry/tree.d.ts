@@ -168,5 +168,19 @@ export interface ApiDefinition {
       toggle: typeof routes['configuracoes.tipos_compromisso.toggle']
       destroy: typeof routes['configuracoes.tipos_compromisso.destroy']
     }
+    roteiros: {
+      store: typeof routes['configuracoes.roteiros.store']
+      update: typeof routes['configuracoes.roteiros.update']
+      toggle: typeof routes['configuracoes.roteiros.toggle']
+      destroy: typeof routes['configuracoes.roteiros.destroy']
+    }
+    permissoes: {
+      toggle: typeof routes['configuracoes.permissoes.toggle']
+    }
+    perfis: {
+      store: typeof routes['configuracoes.perfis.store']
+      update: typeof routes['configuracoes.perfis.update']
+      destroy: typeof routes['configuracoes.perfis.destroy']
+    }
   }
 }
