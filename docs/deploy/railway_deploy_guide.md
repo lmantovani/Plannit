@@ -1,112 +1,82 @@
-# Guia de Deploy Passo a Passo — Railway App 🚂
+# Guia de Deploy & Migração — Railway App 🚂
 
-Este guia detalha o processo completo para subir a plataforma **Plannit** na nuvem através do **Railway App** com alta disponibilidade, banco de dados PostgreSQL integrado e migrações automáticas.
-
----
-
-## 📋 Pré-requisitos
-
-1. Uma conta ativa no [Railway](https://railway.app/).
-2. Acesso ao repositório GitHub (`feature/railway-deploy` ou `main`).
-3. Uma chave `APP_KEY` segura gerada para o AdonisJS (gerada via `node ace generate:key`).
+Este guia detalha o processo para atualizar um projeto **já existente no Railway** (que rodava o código legado em Python na branch `main`) para o novo monólito unificado **Plannit (AdonisJS v7 + Inertia React 19)**, além de cobrir o setup do zero se necessário.
 
 ---
 
-## 🚀 Passo a Passo no Painel do Railway
+## 🔄 Cenário 1: Atualizando o Projeto que Já Existe no Railway (Recomendado)
 
-### 1. Criar um Novo Projeto no Railway
-1. Acesse o painel do [Railway Dashboard](https://railway.app/dashboard).
-2. Clique no botão **`+ New Project`**.
-3. Selecione a opção **`Deploy from GitHub repo`**.
-4. Escolha o repositório **`Plannit`**.
-5. Se for solicitado a branch, selecione **`feature/railway-deploy`** (ou a branch que você desejar utilizar para produção).
+Se você já tem o projeto e o banco PostgreSQL rodando no Railway na branch `main` antiga:
 
----
-
-### 2. Adicionar o Banco de Dados PostgreSQL
-1. No canvas do seu projeto no Railway, clique em **`+ New`** (ou botão direito no canvas).
-2. Selecione **`Database`** ➔ **`Add PostgreSQL`**.
-3. O Railway irá provisionar um banco PostgreSQL dedicado em poucos segundos.
+### 1. Atualizar a Branch de Deploy no Railway
+1. Acesse o [Railway Dashboard](https://railway.app/dashboard) e clique no seu projeto existente.
+2. Clique no card do serviço da aplicação.
+3. Vá na aba **`Settings`**.
+4. Na seção **`Source`**, localize o campo **`Branch`**:
+   - Altere de `main` para **`feature/railway-deploy`** (ou para a branch nova onde está o monólito).
+   - *(Nota: Caso você decida fazer o merge/substituição da `main` no GitHub, basta manter `main`).*
 
 ---
 
-### 3. Conectar a Aplicação ao Banco de Dados & Configurar Variáveis
-1. Clique no card do serviço da sua aplicação (**Plannit**).
-2. Vá até a aba **`Variables`**.
-3. Adicione as seguintes variáveis de ambiente:
+### 2. Atualizar as Variáveis de Ambiente (De Python para AdonisJS)
+No código antigo em FastAPI eram usadas variáveis como `SECRET_KEY`, `POSTGRES_USER`, etc. Agora precisamos garantir que as variáveis do **AdonisJS v7** estejam configuradas:
 
-| Variável | Valor Recomendado | Descrição |
+1. No serviço da aplicação, vá na aba **`Variables`**.
+2. **Remova** variáveis obsoletas do Python (como `SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `ALGORITHM`).
+3. **Adicione / Ajuste** as variáveis necessárias do AdonisJS:
+
+| Variável | Valor | Finalidade |
 |:---|:---|:---|
-| **`DATABASE_URL`** | `${{Postgres.DATABASE_URL}}` | Vincula automaticamente à URL de conexão do PostgreSQL gerenciado pelo Railway. |
-| **`NODE_ENV`** | `production` | Define o ambiente como produção para otimização de performance. |
-| **`HOST`** | `0.0.0.0` | Permite que o container escute conexões de rede externas. |
-| **`APP_KEY`** | *(Sua chave gerada)* | Chave de 32 bytes gerada localmente com `node ace generate:key`. |
-| **`SESSION_DRIVER`** | `cookie` | Sessão baseada em cookies HTTP-only encriptados. |
-| **`LOG_LEVEL`** | `info` | Nível de logs da aplicação. |
-| **`APP_URL`** | *(URL gerada pelo Railway)* | Ex.: `https://plannit-production.up.railway.app` (pode preencher após gerar o domínio). |
+| **`DATABASE_URL`** | `${{Postgres.DATABASE_URL}}` | Vincula à conexão do PostgreSQL existente no Railway. |
+| **`NODE_ENV`** | `production` | Ativa o modo compilado e otimizações de performance. |
+| **`HOST`** | `0.0.0.0` | **Obrigatório:** permite que o container escute o tráfego externo. |
+| **`APP_KEY`** | *(sua chave gerada)* | Chave de segurança gerada localmente via `node ace generate:key`. |
+| **`SESSION_DRIVER`** | `cookie` | Sessão encriptada para login via cookies HTTP-only. |
+| **`LOG_LEVEL`** | `info` | Nível de logs da aplicação em produção. |
+| **`APP_URL`** | `https://sua-url.up.railway.app` | A URL pública que já está ativa no Railway. |
 
 > [!NOTE]
-> **Sobre a porta (`PORT`):** O Railway injeta a variável `PORT` automaticamente no container. O AdonisJS v7 lerá esse valor de forma nativa. Não é necessário fixar a porta `PORT` manualmente.
+> **Sobre o `PORT`:** O Railway injeta a variável `PORT` automaticamente. O AdonisJS v7 já está configurado para ler essa porta sem que você precise declará-la manualmente.
 
 ---
 
-### 4. Gerar o Domínio Público (URL de Acesso)
-1. No serviço da aplicação **Plannit**, acesse a aba **`Settings`**.
-2. Na seção **`Networking`**, clique em **`Generate Domain`**.
-3. O Railway criará uma URL pública (ex.: `seu-projeto.up.railway.app`).
-4. Copie essa URL e atualize a variável **`APP_URL`** na aba `Variables` com ela (incluindo `https://`).
-
----
-
-### 5. Deploy & Migrations Automáticas
-1. Quando você salva as variáveis ou envia novos commits, o Railway inicia o build automaticamente utilizando o [`Dockerfile`](file:///home/porto/codespace/Plannit/Dockerfile) e o [`railway.toml`](file:///home/porto/codespace/Plannit/railway.toml).
-2. O Dockerfile compila:
-   - Todo o backend em TypeScript (`node ace build`).
-   - Todo o frontend React 19 + Inertia via Vite (`public/assets`).
-3. Ao iniciar o container, o [`docker-entrypoint.sh`](file:///home/porto/codespace/Plannit/docker-entrypoint.sh) detecta o PostgreSQL e executa automaticamente:
+### 3. Deploy Automático & Execução das Migrations
+1. Assim que a branch e as variáveis forem salvas, o Railway disparará um novo deploy.
+2. O Railway detectará o [`Dockerfile`](file:///home/porto/codespace/Plannit/Dockerfile) e o [`railway.toml`](file:///home/porto/codespace/Plannit/railway.toml).
+3. O script [`docker-entrypoint.sh`](file:///home/porto/codespace/Plannit/docker-entrypoint.sh) iniciará o container rodando automaticamente:
    ```bash
    node ace.js migration:run --force
    ```
-   criando todas as tabelas necessárias no banco antes de subir o servidor web.
+   Isso criará e atualizará todas as tabelas no PostgreSQL do Railway antes de subir o servidor web.
 
 ---
 
-### 6. Executar o Seed Inicial (Usuários e Catálogos Padrão)
-Para popular o banco na primeira vez com os usuários de teste (Diretoria, Gerente, Vendedores, etc.) e os 18 roteiros de apoio e catálogos:
+### 4. Executar os Seeds Iniciais no Railway
+Para garantir que o banco de dados receba os usuários padrão (Diretoria, Gerente, Vendedores) e os 18 roteiros de apoio e catálogos:
 
-#### Opção A — Pelo Console do Railway (Navegador):
-1. No painel do Railway, clique no serviço da aplicação.
-2. Vá até a aba **`Deployments`** e clique no deployment ativo.
-3. Clique no botão **`Terminal`** (ou `View Logs` ➔ ícone de terminal).
-4. Digite e pressione Enter:
+1. No painel do Railway, clique no serviço da aplicação ➔ aba **`Deployments`** ➔ clique no deploy ativo.
+2. Clique na aba ou botão **`Terminal`** (console SSH do container).
+3. Digite e execute:
    ```bash
    node ace.js db:seed
    ```
-5. Você verá a saída com a confirmação de todos os seeders concluídos com sucesso.
-
-#### Opção B — Pela Railway CLI (Local):
-Caso utilize a CLI do Railway na sua máquina:
-```bash
-railway run node ace.js db:seed
-```
+4. Você verá a confirmação do seeder concluído com sucesso.
 
 ---
 
-## 🔑 Credenciais Padrão Provisionadas
-
-Após rodar o seed, você já poderá efetuar login com:
-
-| Perfil | E-mail | Senha Padrão |
-|:---|:---|:---|
-| 👑 **Diretoria (Admin)** | `admin@plannit.com.br` | `Admin@123456` |
-| 💼 **Gerente Comercial** | `gerente@lidermoveis.com.br` | `Teste@123` |
-| 🤝 **Vendedor** | `vendedor@lidermoveis.com.br` | `Teste@123` |
-| 🎨 **Projetista** | `projetista@lidermoveis.com.br` | `Teste@123` |
-| 📐 **Conferente** | `conferente@lidermoveis.com.br` | `Teste@123` |
+### 5. Login na Plataforma
+Acesse a URL do Railway e faça login com:
+- **Diretoria (Admin):** `admin@plannit.com.br` / `Admin@123456`
+- **Gerente Comercial:** `gerente@lidermoveis.com.br` / `Teste@123`
+- **Vendedor:** `vendedor@lidermoveis.com.br` / `Teste@123`
 
 ---
 
-## 🔍 Monitoramento e Logs
+## 🆕 Cenário 2: Criando um Novo Projeto do Zero no Railway
 
-- **Logs em Tempo Real:** Na aba **`Deployments`** ➔ clique no deploy atual ➔ **`Deploy Logs`** (durante o build) ou **`Runtime Logs`** (com a aplicação rodando).
-- **Healthcheck:** O Railway verifica periodicamente a rota `/` (definida no `railway.toml`) para garantir que o serviço esteja online e saudável.
+Caso queira criar um ambiente paralelo ou novo serviço:
+1. No [Railway](https://railway.app/dashboard), clique em **`+ New Project`** ➔ **`Deploy from GitHub repo`** ➔ Selecione `Plannit` e a branch `feature/railway-deploy`.
+2. Clique em **`+ New`** ➔ **`Database`** ➔ **`Add PostgreSQL`**.
+3. Configure as variáveis descritas na tabela acima (especialmente `DATABASE_URL: ${{Postgres.DATABASE_URL}}` e `HOST: 0.0.0.0`).
+4. Em **`Settings`** ➔ **`Networking`**, clique em **`Generate Domain`** para gerar a URL pública.
+5. Acesse o **`Terminal`** do deployment e execute `node ace.js db:seed`.
