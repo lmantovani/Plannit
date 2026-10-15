@@ -1,56 +1,56 @@
-# Líder Móveis — Comandos de Desenvolvimento
+# Plannit — Comandos de Desenvolvimento
 # Uso: make <comando>
 
-.PHONY: help setup backend frontend seed dev adonis-dev adonis-build adonis-start adonis-typecheck db-up db-down db-logs db-shell adonis-migrate adonis-seed
+.PHONY: help setup dev build start typecheck lint format test migrate seed db-up db-down db-logs db-shell
 
 help:
 	@echo "Comandos disponíveis:"
-	@echo "  make db-up            — Sobe o PostgreSQL no Docker em background"
-	@echo "  make db-down          — Para o container do PostgreSQL"
-	@echo "  make db-logs          — Visualiza logs do PostgreSQL no Docker"
-	@echo "  make db-shell         — Abre o terminal psql dentro do container"
-	@echo "  make adonis-dev       — Inicia o monolito AdonisJS v7 + Inertia (novo)"
-	@echo "  make adonis-build     — Compila o projeto AdonisJS + React/Vite para produção"
-	@echo "  make adonis-typecheck — Executa verificação de tipos TypeScript"
-	@echo "  make adonis-migrate   — Executa as migrations no PostgreSQL"
-	@echo "  make adonis-seed      — Popula os usuários padrão de teste no PostgreSQL"
-	@echo "  make setup            — Instala dependências do stack legado (backend + frontend)"
-	@echo "  make dev              — Inicia backend + frontend legados em paralelo"
-
+	@echo "  make setup        — Prepara o ambiente (.env e chaves)"
+	@echo "  make dev          — Inicia o servidor de desenvolvimento (HMR)"
+	@echo "  make build        — Compila o projeto AdonisJS + React/Vite para produção"
+	@echo "  make start        — Inicia o servidor de produção compilado"
+	@echo "  make typecheck    — Executa verificação de tipos TypeScript"
+	@echo "  make lint         — Executa o linter (ESLint)"
+	@echo "  make format       — Formata o código com Prettier"
+	@echo "  make test         — Executa a suíte de testes funcionais (Japa)"
+	@echo "  make migrate      — Aplica as migrations no banco de dados"
+	@echo "  make seed         — Executa os seeders de dados padrão"
+	@echo "  make db-up        — Sobe o PostgreSQL no Docker em background"
+	@echo "  make db-down      — Para o container do PostgreSQL"
+	@echo "  make db-logs      — Visualiza logs do PostgreSQL no Docker"
+	@echo "  make db-shell     — Abre o terminal psql dentro do container"
 
 setup:
-	@echo "→ Instalando backend..."
-	cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
-	@echo "→ Instalando frontend..."
-	cd frontend && npm install
-	@echo "→ Criando .env do backend..."
-	cd backend && cp -n .env.example .env || true
-	@echo "✅ Setup concluído. Configure backend/.env antes de rodar."
-
-backend:
-	cd backend && ./venv/bin/uvicorn app.main:app --reload --port 8000
-
-frontend:
-	cd frontend && npm run dev
-
-seed:
-	cd backend && ./venv/bin/python3 seed.py
+	cp -n .env.example .env || true
+	npm install
+	node ace generate:key
 
 dev:
-	@echo "Iniciando backend e frontend em paralelo..."
-	make -j2 backend frontend
+	npm run dev
 
-adonis-dev:
-	cd plannit && npm run dev
+build:
+	npm run build
 
-adonis-build:
-	cd plannit && npm run build
+start:
+	node --env-file=.env build/bin/server.js
 
-adonis-start:
-	cd plannit && node --env-file=.env build/bin/server.js
+typecheck:
+	npm run typecheck
 
-adonis-typecheck:
-	cd plannit && npm run typecheck
+lint:
+	npm run lint
+
+format:
+	npm run format
+
+test:
+	node ace test functional
+
+migrate:
+	node ace migration:run
+
+seed:
+	node ace db:seed
 
 db-up:
 	docker compose up -d postgres
@@ -63,12 +63,3 @@ db-logs:
 
 db-shell:
 	docker compose exec -it postgres psql -U postgres -d plannit
-
-adonis-migrate:
-	cd plannit && node ace migration:run
-
-adonis-seed:
-	cd plannit && node ace db:seed
-
-
-

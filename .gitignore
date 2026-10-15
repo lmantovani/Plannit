@@ -1,44 +1,39 @@
-# === Python / Backend ===
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.egg-info/
-dist/
-build/
-.eggs/
-*.egg
-.venv/
-venv/
-env/
-.env
-*.db
-*.sqlite
-
-# Alembic
-alembic/versions/*.pyc
-
-# === Node / Frontend ===
+# Dependencies and AdonisJS build
 node_modules/
-frontend/dist/
-frontend/.env
-frontend/.env.local
-*.log
+build/
+tmp/*
+!tmp/.gitkeep
 
-# === IDE ===
-.idea/
-.vscode/
+# Secrets
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Frontend assets compiled code
+public/assets/
+
+# Build tools & logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Databases & caches
+*.sqlite
+*.sqlite3
+*.db
+.cache/
+coverage/
+
+# Editors & OS
+.fleet
+.idea
+.vscode
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
 
-# === Build artifacts ===
-*.pyc
-*.pycache
-.cache/
-coverage/
-.nyc_output/
-
-# === Worktrees ===
+# Worktrees
 .worktrees/

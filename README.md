@@ -1,176 +1,170 @@
-# 🛋️ Lider Móveis — Plataforma Operacional
+# 🛋️ Plannit — Plataforma Operacional Líder Móveis
 
-Plataforma de Gestão Operacional para Móveis Planejados de Alto Padrão  
-Baseado no SRS v3.0 — 23 módulos · 74 RFs · 18 RNs
-
----
-
-## 🏗️ Estrutura do Projeto
-
-```
-lider-moveis/
-├── backend/                    # FastAPI + Python
-│   ├── app/
-│   │   ├── api/v1/endpoints/   # Rotas da API
-│   │   │   ├── auth.py         # Login / JWT
-│   │   │   ├── users.py        # Gestão de usuários (14 perfis)
-│   │   │   ├── leads.py        # CRM + Pipeline
-│   │   │   ├── briefings.py    # Formulário inteligente + score
-│   │   │   └── dashboard.py    # KPIs em tempo real
-│   │   ├── core/
-│   │   │   ├── config.py       # Configurações
-│   │   │   ├── database.py     # SQLAlchemy + PostgreSQL
-│   │   │   └── security.py     # JWT + controle de perfis
-│   │   ├── models/             # Entidades do banco
-│   │   │   ├── user.py         # 14 perfis do SRS
-│   │   │   ├── crm.py          # Lead, Cliente, Arquiteto
-│   │   │   ├── projeto.py      # Projeto, Briefing, Fila, WIP
-│   │   │   └── fechamento.py   # Contrato, Parcelas, Handoff
-│   │   ├── schemas/            # Validação Pydantic
-│   │   └── services/
-│   │       ├── briefing_score.py  # Cálculo de score (RF009)
-│   │       └── wip_service.py     # Controle WIP limit (RN003)
-│   ├── alembic/                # Migrations
-│   ├── seed.py                 # Dados iniciais + usuários de teste
-│   ├── requirements.txt
-│   └── .env.example
-└── frontend/                   # React + TailwindCSS (próxima etapa)
-```
+Plataforma unificada de Gestão Operacional para Móveis Planejados de Alto Padrão (Líder Móveis Planejados).  
+Construída como monólito moderno em **AdonisJS v7 + Inertia.js (React 19 + TypeScript + TailwindCSS)** e **PostgreSQL**, baseada no SRS v3.0 (23 módulos, 74 RFs, 18 RNs e 32 etapas de fluxo operacional).
 
 ---
 
-## 🚀 Setup — Passo a Passo
+## 🏗️ Estrutura do Monólito
+
+```
+/ (Raiz do Projeto)
+├── app/
+│   ├── controllers/            # Controladores HTTP (Inertia + JSON APIs)
+│   │   ├── auth_controller.ts          # Autenticação, sessão e RBAC
+│   │   ├── dashboard_controller.ts     # KPIs executivos e estagnação (RN016)
+│   │   ├── leads_controller.ts         # CRM, funil e qualificação (RN001)
+│   │   ├── briefings_controller.ts     # Briefings técnicos, score (RN002) e roteiros
+│   │   ├── fila_controller.ts          # Fila de projetos e controle WIP (RN003)
+│   │   ├── projetos_controller.ts      # Versões 3D, validação de render (RN004/RN005)
+│   │   ├── fechamentos_controller.ts   # Contratos, parcelas e handoff técnico
+│   │   ├── clientes_controller.ts      # Ficha 360°, endereços e aprovação cadastral
+│   │   ├── arquitetos_controller.ts    # Especificadores, score RFV e metas
+│   │   ├── colaboradores_controller.ts # RH, cargos, salários e desligamento
+│   │   ├── agenda_controller.ts        # Compromissos e integração com funil CRM
+│   │   └── configuracoes_controller.ts # Gestão de catálogos, roteiros e permissões
+│   ├── models/                 # Modelos Lucid ORM com PostgreSQL
+│   ├── services/               # Motores de cálculo (Score Briefing, WIP, Score RFV, RBAC)
+│   └── validators/             # Schemas de validação estrita VineJS
+├── database/
+│   ├── migrations/             # Migrações versionadas do PostgreSQL
+│   └── seeders/                # Dados padrão e usuários de teste
+├── inertia/
+│   ├── pages/                  # Telas em React 19 (Dashboard, CRM, Briefing, etc.)
+│   ├── components/             # Componentes reutilizáveis de UI
+│   └── layouts/                # Layout mestre com Sidebar e Header
+├── start/
+│   └── routes.ts               # Mapeamento central de rotas e middlewares
+├── build/                      # Build compilado para produção
+├── Dockerfile                  # Dockerfile multi-stage otimizado para deploy em nuvem (Railway)
+├── railway.toml                # Configuração do Railway App
+├── Makefile                    # Atalhos de desenvolvimento e banco
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## 🚀 Como Rodar o Projeto
 
 ### 1. Pré-requisitos
-
-```bash
-# Python 3.11+
-python --version
-
-# PostgreSQL rodando local
-# Criar banco:
-psql -U postgres -c "CREATE DATABASE lider_moveis;"
-```
-
-### 2. Backend
-
-```bash
-cd backend
-
-# Criar ambiente virtual
-python -m venv venv
-source venv/bin/activate        # Linux/Mac
-# venv\Scripts\activate         # Windows
-
-# Instalar dependências
-pip install -r requirements.txt
-
-# Configurar variáveis de ambiente
-cp .env.example .env
-# Edite o .env com sua senha do PostgreSQL e gere um SECRET_KEY
-
-# Criar tabelas e dados iniciais
-python seed.py
-
-# Rodar o servidor
-uvicorn app.main:app --reload --port 8000
-```
-
-### 3. Gerar SECRET_KEY segura
-
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Cole o resultado no campo `SECRET_KEY` do seu `.env`.
+* **Node.js:** versão 24+ (`node -v`)
+* **Docker & Docker Compose:** para o PostgreSQL local
+* **NPM:** versão 10+
 
 ---
 
-## 📖 Documentação da API
+### 2. Passo a Passo de Execução Local
 
-Com o servidor rodando, acesse:
-- **Swagger UI:** http://localhost:8000/docs
-- **ReDoc:** http://localhost:8000/redoc
-
----
-
-## 🔑 Credenciais de Teste (após seed)
-
-| Perfil | E-mail | Senha |
-|--------|--------|-------|
-| Diretoria (admin) | admin@lidermoveis.com.br | Admin@123456 |
-| Vendedor | vendedor@lidermoveis.com.br | Teste@123 |
-| Gerente Comercial | gerente@lidermoveis.com.br | Teste@123 |
-| Projetista | projetista@lidermoveis.com.br | Teste@123 |
-| Conferente | conferente@lidermoveis.com.br | Teste@123 |
-
----
-
-## 🔐 Autenticação
-
+#### Passo 1: Subir o Banco de Dados (PostgreSQL no Docker)
+Na raiz do repositório, execute:
 ```bash
-# Login
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "admin@lidermoveis.com.br", "password": "Admin@123456"}'
+make db-up
+# Ou via docker compose direto:
+docker compose up -d postgres
+```
+*(O container `plannit-postgres` iniciará na porta `5432` com usuário `postgres` e banco `plannit`).*
 
-# Usar token retornado:
-# Authorization: Bearer <token>
+#### Passo 2: Configurar Variáveis de Ambiente
+```bash
+cp -n .env.example .env && node ace generate:key
+```
+
+#### Passo 3: Executar Migrations e Seed Inicial
+```bash
+make migrate
+make seed
+# Ou via ace direto:
+node ace migration:run
+node ace db:seed
 ```
 
 ---
 
-## 📋 Endpoints do MVP (Fase 1)
+### 3. Modos de Execução da Aplicação
 
-### Auth
-- `POST /api/v1/auth/login` — Login
-- `GET /api/v1/auth/me` — Usuário logado
-
-### CRM / Leads
-- `GET /api/v1/leads/` — Pipeline de leads
-- `POST /api/v1/leads/` — Cadastrar lead
-- `POST /api/v1/leads/{id}/qualificar` — Qualificar lead (RN001)
-- `POST /api/v1/leads/{id}/perder` — Marcar perdido com motivo (RF004)
-- `GET /api/v1/leads/{id}/interacoes` — Histórico de interações
-- `POST /api/v1/leads/{id}/interacoes` — Registrar interação
-
-### Briefing
-- `POST /api/v1/briefings/calcular-score` — Score em tempo real (RF009)
-- `POST /api/v1/briefings/` — Salvar rascunho
-- `POST /api/v1/briefings/{id}/enviar-para-fila` — Enviar (bloqueia se score < 70)
-
-### Dashboard
-- `GET /api/v1/dashboard/gestor` — KPIs gerenciais (US001)
-- `GET /api/v1/dashboard/comercial` — KPIs comerciais
-- `GET /api/v1/dashboard/projetos-ativos` — Lista com alertas
-
-### Usuários
-- `GET /api/v1/users/` — Listar equipe
-- `POST /api/v1/users/` — Criar usuário
-- `GET /api/v1/users/projetistas/disponibilidade` — WIP por projetista
+#### 🔹 Modo Desenvolvimento (com Hot Reload, Vite e TypeScript)
+```bash
+make dev
+# Ou:
+npm run dev
+```
+Acesse no navegador: **[http://localhost:3333](http://localhost:3333)**
 
 ---
 
-## 🧠 Regras de Negócio Implementadas
-
-| RN | Descrição | Onde |
-|----|-----------|------|
-| RN001 | Lead não avança sem qualificação | `leads.py → qualificar()` |
-| RN002 | Briefing bloqueado se score < 70 | `briefings.py → enviar_para_fila()` |
-| RN003 | WIP limit por projetista | `wip_service.py` |
-| RN016 | Alerta projeto parado > 5 dias | `dashboard.py` |
-| RN017 | Projetos nunca deletados (só arquivados) | `models/projeto.py` |
+#### 🔹 Modo Produção (Compilado de Alta Performance)
+```bash
+make build
+make start
+# Ou:
+npm run build && node --env-file=.env build/bin/server.js
+```
 
 ---
 
-## 🗺️ Próximas Etapas
-
-- [ ] **Frontend React** — UI do dashboard + pipeline Kanban
-- [ ] **Projetos endpoint** — Fila com WIP, alocação, versionamento
-- [ ] **Fechamento + Handoff** — Checklist, contrato, bloqueios RN006
-- [ ] **Notificações** — Motor de alertas automáticos
-- [ ] **Migrations Alembic** — Versionamento do schema
+#### 🔹 Verificação de Tipos TypeScript
+```bash
+make typecheck
+# Ou:
+npm run typecheck
+```
 
 ---
 
-*SRS v3.0 · MVP Fase 1 · 2025*
+## 🚂 Deploy no Railway App
+
+O projeto está 100% preparado para deploy contínuo na plataforma **Railway**:
+1. Conecte o repositório GitHub ao projeto no Railway.
+2. Adicione o plugin **PostgreSQL** no Railway.
+3. Nas variáveis de ambiente do serviço principal, configure:
+   - `DATABASE_URL`: `${{Postgres.DATABASE_URL}}` (ou variáveis individuais `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`)
+   - `NODE_ENV`: `production`
+   - `HOST`: `0.0.0.0`
+   - `APP_KEY`: gerada via `node ace generate:key`
+   - `APP_URL`: URL pública gerada pelo Railway (ex.: `https://seu-app.up.railway.app`)
+   - `SESSION_DRIVER`: `cookie`
+4. O `Dockerfile` multi-stage com `docker-entrypoint.sh` executa automaticamente as migrations (`node ace.js migration:run --force`) antes de iniciar o servidor na porta `$PORT`.
+5. Para rodar o seed inicial no Railway, abra o console/terminal do serviço e execute:
+   ```bash
+   node ace.js db:seed
+   ```
+
+---
+
+## 🔑 Credenciais de Teste (Ambiente Local)
+
+Todos os usuários abaixo são provisionados pelo seeder (`node ace db:seed`):
+
+| Perfil | E-mail | Senha Padrão | Acesso e Responsabilidade |
+|:---|:---|:---|:---|
+| 👑 **Diretoria / Admin** | `admin@plannit.com.br` | `Admin@123456` | Acesso total, configurações gerenciais e purga |
+| 💼 **Gerente Comercial** | `gerente@lidermoveis.com.br` | `Teste@123` | Funil de vendas, metas, WIP e aprovações |
+| 🤝 **Vendedor** | `vendedor@lidermoveis.com.br` | `Teste@123` | CRM, briefings, validação de render e contratos |
+| 🎨 **Projetista** | `projetista@lidermoveis.com.br` | `Teste@123` | Fila de projetos, modelagem 3D e renderização |
+| 📐 **Conferente** | `conferente@lidermoveis.com.br` | `Teste@123` | Medição in loco, laudos e adequações técnicas |
+
+---
+
+## 🧠 Principais Regras de Negócio e Guardrails
+
+| Regra | Descrição | Onde está implementada |
+|:---|:---|:---|
+| **RN001** | Lead não avança no funil sem qualificação (orçamento, imóvel, prazo) | `leads_controller.ts` & `briefings_controller.ts` |
+| **RN002** | Briefing com score < 70 é bloqueado para a fila de desenho 3D | `briefings_controller.ts:enviarParaFila` |
+| **RN003** | Limite WIP por projetista (máximo de 3 projetos ativos simultâneos) | `wip_service.ts` & `fila_controller.ts:alocar` |
+| **RN004/RN005** | Render 3D exige validação do vendedor; apresentação requer render aprovado | `projetos_controller.ts:validarVersao3D` |
+| **RN016** | Alerta automático de estagnação para projetos parados > 5 dias | `dashboard_controller.ts` & `projetos_controller.ts` |
+| **RN017** | Histórico imutável de status (`HistoricoStatusProjeto`) e soft delete obrigatório | Em todas as transições de status e arquivamento |
+| **RH-RN009** | Desligamento formal e histórico salarial/cargos estritamente imutável | `colaboradores_controller.ts` |
+
+---
+
+## 📖 Manual Completo do Usuário
+
+O manual visual e operacional completo com o passo a passo de cada tela, perfis autorizados e regras de negócio está disponível em:
+* Arquivo HTML: `docs/manual/manual_do_usuario_plannit.html` (abrir no navegador para leitura interativa).
+
+---
+
+*Líder Móveis Planejados · Plannit v2.0 (AdonisJS v7 + Inertia)*

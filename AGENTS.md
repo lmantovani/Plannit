@@ -8,18 +8,16 @@ Desenvolvido por Leandro Mantovani em parceria comercial. Baseado no SRS v3.0 (2
 Projeto em desenvolvimento ativo, com agentes de IA como co-pilotos do desenvolvimento.
 
 ## Estado do repositório
-- **`plannit/` — sistema principal.** Monólito AdonisJS v7 + Inertia.js (React 19 + TypeScript). Todo código novo vai aqui.
-- **`backend/` + `frontend/` — legado** (FastAPI + React SPA), substituído pelo monólito. Só consulta ou correção pontual; ver a seção "Legado" no fim deste arquivo.
-- O monólito nasceu na branch `feature/adonis-migration` e ainda não tem deploy configurado (sem Dockerfile nem `railway.toml` em `plannit/`). Até isso existir e chegar à `main`, o que roda no Railway é o legado.
-- Rode o agente de IA na **raiz** do repositório. Os comandos do monólito rodam dentro de `plannit/`; o `Makefile` da raiz tem atalhos `make adonis-*` e `make db-*`.
+- **Monólito na raiz do repositório.** Sistema unificado AdonisJS v7 + Inertia.js (React 19 + TypeScript). Todo o código do sistema reside diretamente na raiz do projeto (a subpasta `plannit/` e o legado `backend/`/`frontend/` foram eliminados).
+- **Branch de Deploy:** `feature/railway-deploy` (preparada para substituir a `main`). O deploy do monólito no Railway App é gerenciado via `Dockerfile` multi-stage e `railway.toml`.
+- Comandos rodam diretamente na raiz do repositório (com suporte ao `Makefile`).
 
-## Stack (`plannit/`)
+## Stack
 AdonisJS v7 · Lucid ORM · VineJS · `@adonisjs/auth` (sessão) · Inertia.js + React 19 + TypeScript · Vite · TailwindCSS 3 · lucide-react · sonner (toasts) · Luxon · PostgreSQL 16 (Docker) · Japa (testes). Node >= 24.
 
 ## Comandos
 ```bash
-make db-up                      # (na raiz) PostgreSQL 16 no Docker: container plannit-postgres, postgres/postgres, banco plannit
-cd plannit
+make db-up                      # PostgreSQL 16 no Docker: container plannit-postgres, postgres/postgres, banco plannit
 cp -n .env.example .env && node ace generate:key   # primeira vez
 node ace migration:run          # aplica migrations E regenera database/schema.ts
 node ace db:seed                # todos os seeders (idempotentes; cada um garante os usuários de que precisa)
