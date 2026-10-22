@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   Users,
   BookOpen,
+  Check,
+  Palette,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -27,16 +29,18 @@ import RoteirosBriefingPanel from './components/RoteirosBriefingPanel'
 import type { RoteiroBriefingItem } from './components/ModalRoteiroBriefing'
 
 export const CORES_PALETA_TIPOS = [
-  '#3B82F6', // Azul (Briefing)
-  '#10B981', // Verde Esmeralda (Medição)
-  '#8B5CF6', // Roxo (Apresentação 3D)
-  '#F59E0B', // Âmbar (Obra)
-  '#EC4899', // Rosa (Reunião Loja)
-  '#6366F1', // Índigo (Especificador)
+  '#3B82F6', // Azul Pavão (Briefing)
+  '#10B981', // Verde Manjericão (Medição)
+  '#8B5CF6', // Roxo Uva (Apresentação 3D)
+  '#F59E0B', // Âmbar Tangerina (Obra)
+  '#EC4899', // Rosa Flamingo (Reunião Loja)
+  '#6366F1', // Índigo Mirtilo (Especificador)
   '#06B6D4', // Ciano
-  '#EF4444', // Vermelho
+  '#14B8A6', // Sálvia / Turquesa
+  '#84CC16', // Verde Abacate
+  '#EF4444', // Vermelho Tomate
   '#C8841A', // Ouro Líder
-  '#6B7280', // Cinza (Outro)
+  '#6B7280', // Grafite (Outro)
 ]
 
 export type AmbienteItem = {
@@ -1649,40 +1653,66 @@ export default function ConfiguracoesPage({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                  Cor de Identificação Visual
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-2">
+                  Cor de Identificação Visual (Paleta da Agenda)
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {CORES_PALETA_TIPOS.map((cor) => (
-                    <button
-                      key={cor}
-                      type="button"
-                      onClick={() => tipoCompromissoForm.setData('cor', cor)}
-                      className={clsx(
-                        'w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {CORES_PALETA_TIPOS.map((cor) => {
+                      const selecionada =
                         tipoCompromissoForm.data.cor.toLowerCase() === cor.toLowerCase()
-                          ? 'border-stone-900 scale-110 ring-2 ring-primary-500/30'
-                          : 'border-white'
-                      )}
-                      style={{ backgroundColor: cor }}
-                      title={cor}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={tipoCompromissoForm.data.cor}
-                    onChange={(e) => tipoCompromissoForm.setData('cor', e.target.value)}
-                    className="w-8 h-8 rounded-lg border border-stone-200 cursor-pointer bg-stone-50 p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={tipoCompromissoForm.data.cor}
-                    onChange={(e) => tipoCompromissoForm.setData('cor', e.target.value)}
-                    placeholder="#3B82F6"
-                    className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 uppercase"
-                  />
+                      return (
+                        <button
+                          key={cor}
+                          type="button"
+                          onClick={() => tipoCompromissoForm.setData('cor', cor)}
+                          className={clsx(
+                            'w-8 h-8 rounded-full border-2 transition-all hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                            selecionada
+                              ? 'border-stone-900 scale-110 ring-2 ring-primary-500/40'
+                              : 'border-white hover:border-stone-200'
+                          )}
+                          style={{ backgroundColor: cor }}
+                          title={`Selecionar cor ${cor}`}
+                        >
+                          {selecionada && <Check size={14} className="text-white drop-shadow-xs" />}
+                        </button>
+                      )
+                    })}
+
+                    {/* Botão Roda de Cores (Cor Personalizada) */}
+                    <label
+                      className="relative w-8 h-8 rounded-full border-2 border-dashed border-stone-300 hover:border-stone-500 bg-white flex items-center justify-center cursor-pointer transition-all hover:scale-110 shadow-2xs"
+                      title="Escolher outra cor na roda de cores"
+                    >
+                      <Palette size={14} className="text-stone-600" />
+                      <input
+                        type="color"
+                        value={tipoCompromissoForm.data.cor}
+                        onChange={(e) => tipoCompromissoForm.setData('cor', e.target.value)}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Preview em tempo real do Badge do Compromisso */}
+                  <div className="pt-2 border-t border-stone-200/70 flex items-center justify-between">
+                    <span className="text-[11px] text-stone-500">Prévia na Agenda e Kanban:</span>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-2xs"
+                      style={{
+                        backgroundColor: `${tipoCompromissoForm.data.cor}18`,
+                        borderColor: `${tipoCompromissoForm.data.cor}50`,
+                        color: '#1c1917',
+                      }}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: tipoCompromissoForm.data.cor }}
+                      />
+                      <span>{tipoCompromissoForm.data.nome.trim() || 'Novo Tipo de Compromisso'}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1771,40 +1801,66 @@ export default function ConfiguracoesPage({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
-                  Cor de Identificação Visual
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-2">
+                  Cor de Identificação Visual (Paleta da Agenda)
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {CORES_PALETA_TIPOS.map((cor) => (
-                    <button
-                      key={cor}
-                      type="button"
-                      onClick={() => tipoCompromissoEditForm.setData('cor', cor)}
-                      className={clsx(
-                        'w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {CORES_PALETA_TIPOS.map((cor) => {
+                      const selecionada =
                         tipoCompromissoEditForm.data.cor.toLowerCase() === cor.toLowerCase()
-                          ? 'border-stone-900 scale-110 ring-2 ring-primary-500/30'
-                          : 'border-white'
-                      )}
-                      style={{ backgroundColor: cor }}
-                      title={cor}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={tipoCompromissoEditForm.data.cor}
-                    onChange={(e) => tipoCompromissoEditForm.setData('cor', e.target.value)}
-                    className="w-8 h-8 rounded-lg border border-stone-200 cursor-pointer bg-stone-50 p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={tipoCompromissoEditForm.data.cor}
-                    onChange={(e) => tipoCompromissoEditForm.setData('cor', e.target.value)}
-                    placeholder="#3B82F6"
-                    className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 uppercase"
-                  />
+                      return (
+                        <button
+                          key={cor}
+                          type="button"
+                          onClick={() => tipoCompromissoEditForm.setData('cor', cor)}
+                          className={clsx(
+                            'w-8 h-8 rounded-full border-2 transition-all hover:scale-110 cursor-pointer shadow-2xs flex items-center justify-center',
+                            selecionada
+                              ? 'border-stone-900 scale-110 ring-2 ring-primary-500/40'
+                              : 'border-white hover:border-stone-200'
+                          )}
+                          style={{ backgroundColor: cor }}
+                          title={`Selecionar cor ${cor}`}
+                        >
+                          {selecionada && <Check size={14} className="text-white drop-shadow-xs" />}
+                        </button>
+                      )
+                    })}
+
+                    {/* Botão Roda de Cores (Cor Personalizada) */}
+                    <label
+                      className="relative w-8 h-8 rounded-full border-2 border-dashed border-stone-300 hover:border-stone-500 bg-white flex items-center justify-center cursor-pointer transition-all hover:scale-110 shadow-2xs"
+                      title="Escolher outra cor na roda de cores"
+                    >
+                      <Palette size={14} className="text-stone-600" />
+                      <input
+                        type="color"
+                        value={tipoCompromissoEditForm.data.cor}
+                        onChange={(e) => tipoCompromissoEditForm.setData('cor', e.target.value)}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Preview em tempo real do Badge do Compromisso */}
+                  <div className="pt-2 border-t border-stone-200/70 flex items-center justify-between">
+                    <span className="text-[11px] text-stone-500">Prévia na Agenda e Kanban:</span>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-2xs"
+                      style={{
+                        backgroundColor: `${tipoCompromissoEditForm.data.cor}18`,
+                        borderColor: `${tipoCompromissoEditForm.data.cor}50`,
+                        color: '#1c1917',
+                      }}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: tipoCompromissoEditForm.data.cor }}
+                      />
+                      <span>{tipoCompromissoEditForm.data.nome.trim() || 'Tipo de Compromisso'}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 

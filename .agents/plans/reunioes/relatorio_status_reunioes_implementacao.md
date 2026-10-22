@@ -32,8 +32,8 @@ Identificam-se, contudo, **pendências pontuais de usabilidade e fluxos de negó
 | **10** | **Preparação para Deploy Contínuo no Railway App** | 15/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | `Dockerfile` multi-stage, `docker-entrypoint.sh` (com migrations automáticas) e `railway.toml`. |
 | **11** | **Reset / Substituição do PostgreSQL no Railway** | 15/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Documentado com procedimentos passo a passo em `docs/deploy/railway_deploy_guide.md`. |
 | **12** | **Deploy Automático por Merge na Branch `main`** | 15/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Branch `main` sincronizada e configurada com webhooks do Railway. |
-| **13** | **Agenda: Data/Hora de Término ➔ Seletor de Duração (30m, 1h, 1h30, 2h)** | 08/10 | <span style="color:orange;font-weight:bold;">🟡 Parcial / Pendente</span> | O formulário `ModalNovoCompromisso.tsx` ainda possui dois campos de input manual `datetime-local` (`dataHoraInicio` e `dataHoraFim`). |
-| **14** | **Paleta de Cores Circular para Tipos de Compromisso** | 08/10 | <span style="color:orange;font-weight:bold;">🟡 Parcial / Pendente</span> | No modal de criação de tipos de compromisso, ainda é utilizado input textual de cor em vez de paleta circular clicável. |
+| **13** | **Agenda: Data/Hora de Término ➔ Seletor de Duração (Estilo Google Agenda)** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Criado `SeletorDataHoraDuracao.tsx` com data única, hora de início/fim sincronizadas com duração (`15m`, `30m`, `1h`, `1h30`, `2h`...), opção "Dia inteiro", chips de local e detector de conflitos de agenda em tempo real nos 3 modais (`ModalNovoCompromisso`, `ModalEditarCompromisso`, `ModalReagendarCompromisso`). |
+| **14** | **Paleta de Cores Circular para Tipos de Compromisso** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Paleta circular estilo Google Calendar (12 cores + roda de cor personalizada + preview ao vivo do badge) em `inertia/pages/configuracoes/index.tsx`. |
 | **15** | **Atalho no Card/Drawer do CRM para Abrir a Ficha do Cliente** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Não há botão ou link direto dentro do `LeadCard` ou `LeadDrawer` em `crm/index.tsx` apontando para `/clientes/:id`. |
 | **16** | **"Prontuário do Cliente": Observações Pessoais nas Interações** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | A ficha do cliente (`clientes/show.tsx`) possui apenas campo geral de observações, sem área dedicada a fatos pessoais de encantamento (hobbies, família, pets). |
 | **17** | **Associação de Múltiplos Projetos por Lead/Cliente (Cards Independentes)** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Iniciar briefing para lead existente atualmente reaproveita o mesmo projeto em aberto. Falta fluxo para criar novo projeto independente para o mesmo cliente. |
@@ -73,23 +73,18 @@ Identificam-se, contudo, **pendências pontuais de usabilidade e fluxos de negó
   - Criação do `Dockerfile` multi-stage em Node 24 Alpine, `railway.toml` e script `docker-entrypoint.sh` com migrations automáticas (`migration:run --force`).
   - Guia executivo de deploy e reset do banco em `docs/deploy/railway_deploy_guide.md`.
 
+### 5. Agenda estilo Google Agenda + Paleta Circular de Cores (Reunião 08/10)
+- **O que foi pedido:** Substituir o segundo campo manual de data/hora de término por seletor de duração estilo Google Agenda (`15m`, `30m`, `1h`, `1h30`, `2h`...), opção "Dia inteiro" e paleta circular de cores para Tipos de Compromisso.
+- **Como foi entregue:**
+  - Criação de `SeletorDataHoraDuracao.tsx` com seletor único de data, atalhos "Hoje"/"Amanhã", seletor de hora de início, seletor de hora de término com duração embutida (`13:00 (1 h)`), pílulas rápidas de duração, opção "Dia inteiro" (`08:00`–`18:00`) e verificador de conflito de agenda em tempo real.
+  - Integração nos modais `ModalNovoCompromisso.tsx`, `ModalEditarCompromisso.tsx` e `ModalReagendarCompromisso.tsx`, além de chips rápidos de Local (`Showroom / Loja`, `Obra / Imóvel`, `Escritório Especificador`, `Reunião Online`).
+  - Paleta circular de 12 cores + roda de cor personalizada e preview ao vivo do badge em `/configuracoes`.
+
 ---
 
 ## 📌 Detalhamento do que FALTA Implementar (Backlog Aberto)
 
-Abaixo estão os **5 itens técnicos e de produto** que foram solicitados nas reuniões e ainda precisam ser desenvolvidos no código:
-
----
-
-### Item 1: Agenda — Seletor de Duração em vez de Data/Hora de Término
-- **Origem:** Reunião 08/10 (Minutos [00:06:45](#00:06:45) e [00:11:04](#00:11:04)).
-- **Problema Atual:** O modal de agendamento (`ModalNovoCompromisso.tsx`) exige que o usuário preencha dois calendários completos (`dataHoraInicio` e `dataHoraFim`).
-- **O que precisa ser feito:**
-  1. Manter o input de **Data e Hora de Início**.
-  2. Substituir o input de Data e Hora de Término por um seletor visual de **Duração Estimada**:
-     - Botões rápidos ou select: `15 min`, `30 min`, `45 min`, `1 hora` (padrão), `1h30`, `2 horas`, `3 horas` ou `Personalizado`.
-  3. No frontend/backend, calcular automaticamente o `dataHoraFim = dataHoraInicio + duracaoMinutos`.
-  4. Substituir a seleção de cor em hexadecimal por uma paleta circular de cores no modal de tipos de compromisso em `/configuracoes`.
+Abaixo estão os **4 itens técnicos e de produto** que foram solicitados nas reuniões e ainda precisam ser desenvolvidos no código:
 
 ---
 
@@ -160,3 +155,4 @@ flowchart TD
 1. **Prioridade 1 (Imediata):** Implementar o **Seletor de Duração na Agenda** e o **Atalho para a Ficha do Cliente no CRM** (itens simples de alto impacto diário).
 2. **Prioridade 2:** Desenvolver o **Prontuário de Relacionamento do Cliente** integrado às interações.
 3. **Prioridade 3:** Estruturar o suporte a **Múltiplos Projetos por Cliente** com cards independentes no Kanban e a simulação de perfil no Header.
+

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { router } from '@inertiajs/react'
-import { X, Edit3, Clock, MapPin, User, FileText, AlertCircle } from 'lucide-react'
+import { X, Edit3, MapPin, User, FileText, AlertCircle } from 'lucide-react'
 import { DateTime } from 'luxon'
+import clsx from 'clsx'
+import SeletorDataHoraDuracao, { LOCAIS_SUGERIDOS } from './SeletorDataHoraDuracao'
 import type { Compromisso, TipoCompromisso, Colaborador } from '../types'
 
 interface ModalEditarCompromissoProps {
@@ -10,6 +12,7 @@ interface ModalEditarCompromissoProps {
   compromisso: Compromisso | null
   tipos: TipoCompromisso[]
   colaboradores: Colaborador[]
+  compromissosExistentes?: Compromisso[]
   podeVerEquipe: boolean
 }
 
@@ -19,6 +22,7 @@ export default function ModalEditarCompromisso({
   compromisso,
   tipos = [],
   colaboradores = [],
+  compromissosExistentes = [],
   podeVerEquipe = false,
 }: ModalEditarCompromissoProps) {
   const [tipoId, setTipoId] = useState<number>(0)
@@ -46,12 +50,15 @@ export default function ModalEditarCompromisso({
 
   if (!isOpen || !compromisso) return null
 
+  const tipoObj = tipos.find((t) => t.id === Number(tipoId))
+  const responsavelSelecionado = colaboradores.find((c) => c.id === Number(responsavelId))
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setErroForm(null)
 
     if (!dataHoraInicio || !dataHoraFim) {
-      setErroForm('Informe a data e horário de início e término.')
+      setErroForm('Informe a data, horário de início e duração.')
       return
     }
 
@@ -65,7 +72,6 @@ export default function ModalEditarCompromisso({
 
     setIsSubmitting(true)
 
-    const tipoObj = tipos.find((t) => t.id === Number(tipoId))
     const tituloFinal = tipoObj ? tipoObj.nome : compromisso.titulo || 'Compromisso'
 
     const payload: any = {
@@ -98,18 +104,25 @@ export default function ModalEditarCompromisso({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-xl w-full overflow-hidden animate-scale-up">
+        <div
+          className="h-1.5 w-full transition-colors"
+          style={{ backgroundColor: tipoObj?.cor || '#78716c' }}
+        />
         {/* Header do Modal */}
         <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-stone-100 text-stone-800 flex items-center justify-center">
-              <Edit3 size={18} />
+            <div
+              className="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-2xs transition-colors"
+              style={{ backgroundColor: tipoObj?.cor || '#78716c' }}
+            >
+              <Edit3 size={17} />
             </div>
             <div>
               <h2 className="text-base font-semibold text-stone-900 font-serif">
                 Editar Compromisso
               </h2>
               <p className="text-xs text-stone-500">
-                Altere informações, horários ou local
+                Altere tipo, data, duração ou local do encontro
               </p>
             </div>
           </div>
@@ -117,7 +130,7 @@ export default function ModalEditarCompromisso({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
             title="Fechar"
           >
             <X size={18} />
@@ -133,55 +146,50 @@ export default function ModalEditarCompromisso({
             </div>
           )}
 
-
           {/* Tipo de Compromisso */}
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
               Tipo de Compromisso
             </label>
-            <select
-              value={tipoId}
-              onChange={(e) => setTipoId(Number(e.target.value))}
-              className="input w-full text-xs"
-            >
-              {tipos.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Horários */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Clock size={13} className="text-stone-400" />
-                Data & Início <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={dataHoraInicio}
-                onChange={(e) => setDataHoraInicio(e.target.value)}
-                className="input w-full text-xs"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Clock size={13} className="text-stone-400" />
-                Data & Término <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={dataHoraFim}
-                onChange={(e) => setDataHoraFim(e.target.value)}
-                className="input w-full text-xs"
-                required
-              />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {tipos.map((t) => {
+                const isSelected = Number(tipoId) === t.id
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTipoId(t.id)}
+                    className={clsx(
+                      'flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all cursor-pointer',
+                      isSelected
+                        ? 'border-primary-600 bg-primary-50/50 shadow-2xs font-medium text-stone-900'
+                        : 'border-stone-200 hover:border-stone-300 bg-white text-stone-700'
+                    )}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
+                      style={{ backgroundColor: t.cor }}
+                    />
+                    <span className="truncate">{t.nome}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
+
+          {/* Seletor de Data, Horário e Duração Estilo Google Agenda */}
+          <SeletorDataHoraDuracao
+            dataHoraInicio={dataHoraInicio}
+            dataHoraFim={dataHoraFim}
+            onChange={(novoInicio, novoFim) => {
+              setDataHoraInicio(novoInicio)
+              setDataHoraFim(novoFim)
+            }}
+            compromissosExistentes={compromissosExistentes}
+            responsavelId={responsavelId}
+            responsavelNome={responsavelSelecionado?.nome || compromisso.responsavel?.nome}
+            ignorarCompromissoId={compromisso.id}
+          />
 
           {/* Local e Responsável */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -196,6 +204,26 @@ export default function ModalEditarCompromisso({
                 onChange={(e) => setLocal(e.target.value)}
                 className="input w-full text-xs"
               />
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {LOCAIS_SUGERIDOS.map((sug) => {
+                  const ativo = local === sug.valor
+                  return (
+                    <button
+                      key={sug.valor}
+                      type="button"
+                      onClick={() => setLocal(ativo ? '' : sug.valor)}
+                      className={clsx(
+                        'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                        ativo
+                          ? 'bg-stone-800 text-white border-stone-800'
+                          : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                      )}
+                    >
+                      {sug.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div>
@@ -207,7 +235,7 @@ export default function ModalEditarCompromisso({
                 <select
                   value={responsavelId}
                   onChange={(e) => setResponsavelId(Number(e.target.value))}
-                  className="input w-full text-xs"
+                  className="input w-full text-xs cursor-pointer"
                 >
                   {colaboradores.map((colab) => (
                     <option key={colab.id} value={colab.id}>
@@ -233,7 +261,7 @@ export default function ModalEditarCompromisso({
               Observações
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
               className="input w-full text-xs resize-none"
@@ -246,7 +274,7 @@ export default function ModalEditarCompromisso({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="btn btn-secondary text-xs"
+              className="btn btn-secondary text-xs cursor-pointer"
             >
               Cancelar
             </button>
@@ -254,7 +282,7 @@ export default function ModalEditarCompromisso({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn btn-primary text-xs flex items-center gap-1.5 shadow-sm"
+              className="btn btn-primary text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Edit3 size={14} />
               <span>{isSubmitting ? 'Salvando...' : 'Salvar Alterações'}</span>

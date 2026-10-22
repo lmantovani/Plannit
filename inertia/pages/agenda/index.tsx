@@ -247,6 +247,7 @@ export default function AgendaIndexPage({
         tipos={tipos}
         colaboradores={colaboradores}
         leads={leads}
+        compromissosExistentes={compromissos}
         podeVerEquipe={podeVerEquipe}
       />
 
@@ -260,6 +261,7 @@ export default function AgendaIndexPage({
         isOpen={Boolean(compromissoReagendar)}
         onClose={() => setCompromissoReagendar(null)}
         compromisso={compromissoReagendar}
+        compromissosExistentes={compromissos}
       />
 
       <ModalCancelarCompromisso
@@ -274,6 +276,7 @@ export default function AgendaIndexPage({
         compromisso={compromissoEditar}
         tipos={tipos}
         colaboradores={colaboradores}
+        compromissosExistentes={compromissos}
         podeVerEquipe={podeVerEquipe}
       />
     </AppLayout>
