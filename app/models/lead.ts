@@ -1,12 +1,14 @@
 import { LeadSchema } from '#database/schema'
-import { belongsTo, hasMany, column } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import { belongsTo, hasMany, hasOne, column } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
 import HistoricoStatusLead from '#models/historico_status_lead'
 import CompromissoAgenda from '#models/compromisso_agenda'
+import Cliente from '#models/cliente'
+import Projeto from '#models/projeto'
 
 export enum OrigemLead {
   INSTAGRAM = 'instagram',
@@ -19,27 +21,110 @@ export enum OrigemLead {
 }
 
 export enum StatusFunil {
+  // Quadro 1: Comercial
   NOVO_LEAD = 'novo_lead',
   QUALIFICANDO = 'qualificando',
   EM_VISITA = 'em_visita',
   EM_BRIEFING = 'em_briefing',
+  FILA_PROJETO = 'fila_projeto',
   EM_PROJETO = 'em_projeto',
+  PRONTO_PARA_RENDERIZAR = 'pronto_para_renderizar',
+  FINALIZACAO_RENDERIZADO = 'finalizacao_renderizado',
+  CONFIRMAR_APRESENTACAO = 'confirmar_apresentacao',
+  APRESENTACAO_AGENDADA = 'apresentacao_agendada',
   EM_FECHAMENTO = 'em_fechamento',
+  STAND_BY = 'stand_by',
+  ALTERACAO_AJUSTE = 'alteracao_ajuste',
   FECHADO = 'fechado',
   PERDIDO = 'perdido',
   DESQUALIFICADO = 'desqualificado',
+
+  // Quadro 2: Pós-venda (Conferência)
+  CADERNO_COMERCIAL = 'caderno_comercial',
+  AGUARDANDO_OBRA = 'aguardando_obra',
+  FILA_MEDICAO_TECNICA = 'fila_medicao_tecnica',
+  FILA_PASTA_TECNICA = 'fila_pasta_tecnica',
+  EM_ADEQUACAO_OBRA = 'em_adequacao_obra',
+  MEDICAO_TECNICA = 'medicao_tecnica',
+  FILA_MEDICAO_FINAL = 'fila_medicao_final',
+  MEDICAO_FINAL = 'medicao_final',
+  PRE_EXECUTIVO = 'pre_executivo',
+  FILA_PROJETO_EXECUTIVO = 'fila_projeto_executivo',
+  ADEQUACAO = 'adequacao',
+  AUDITORIA_PROJETO = 'auditoria_projeto',
+  ASSINATURA_EXECUTIVA = 'assinatura_executiva',
+  EM_CODIFICACAO = 'em_codificacao',
+  POSTAGEM = 'postagem',
+
+  // Quadro 3: Pós-venda - Entrega e Montagem
+  AGUARDANDO_PRODUCAO = 'aguardando_producao',
+  PRONTO_INDUSTRIA = 'pronto_industria',
+  VISTORIA_MONTAGEM = 'vistoria_montagem',
+  ENTREGA_AGENDADA = 'entrega_agendada',
+  EM_MONTAGEM = 'em_montagem',
+  CHECKLIST_FINAL = 'checklist_final',
+  MONTAGEM_FINALIZADA = 'montagem_finalizada',
+  FINALIZADA_COM_PENDENCIA = 'finalizada_com_pendencia',
+  RELATORIO_OBRA = 'relatorio_obra',
+
+  // Quadro 4: Pós-venda - Assistência Técnica
+  AGUARDANDO_ABERTURA_AT = 'aguardando_abertura_at',
+  AT_ABERTA = 'at_aberta',
+  AT_FINALIZADA = 'at_finalizada',
+  POS_VENDA_CONCLUIDO = 'pos_venda_concluido',
 }
 
-export const STATUS_FUNIL_LABELS: Record<StatusFunil, string> = {
+export const STATUS_FUNIL_LABELS: Record<string, string> = {
   [StatusFunil.NOVO_LEAD]: 'Novo Lead',
-  [StatusFunil.QUALIFICANDO]: 'Qualificando',
+  [StatusFunil.QUALIFICANDO]: 'Qualificação',
   [StatusFunil.EM_VISITA]: 'Em Visita',
-  [StatusFunil.EM_BRIEFING]: 'Em Briefing',
+  [StatusFunil.EM_BRIEFING]: 'Briefing',
+  [StatusFunil.FILA_PROJETO]: 'Fila de Projeto',
   [StatusFunil.EM_PROJETO]: 'Em Projeto',
-  [StatusFunil.EM_FECHAMENTO]: 'Em Fechamento',
-  [StatusFunil.FECHADO]: 'Fechado',
+  [StatusFunil.PRONTO_PARA_RENDERIZAR]: 'Pronto para Renderizar',
+  [StatusFunil.FINALIZACAO_RENDERIZADO]: 'Finalização / Renderizado',
+  [StatusFunil.CONFIRMAR_APRESENTACAO]: 'Confirmar Apresentação',
+  [StatusFunil.APRESENTACAO_AGENDADA]: 'Apresentação Agendada',
+  [StatusFunil.EM_FECHAMENTO]: 'Em Aberto / Em Negociação / Apresentado',
+  [StatusFunil.STAND_BY]: 'Stand-by',
+  [StatusFunil.ALTERACAO_AJUSTE]: 'Alteração / Modificação / Ajuste',
+  [StatusFunil.FECHADO]: 'Fechado / Vendido',
   [StatusFunil.PERDIDO]: 'Perdido',
   [StatusFunil.DESQUALIFICADO]: 'Desqualificado',
+
+  // Pós-venda (Conferência)
+  [StatusFunil.CADERNO_COMERCIAL]: 'Caderno Comercial',
+  [StatusFunil.AGUARDANDO_OBRA]: 'Aguardando Obra',
+  [StatusFunil.FILA_MEDICAO_TECNICA]: 'Fila Medição Técnica',
+  [StatusFunil.FILA_PASTA_TECNICA]: 'Fila Pasta Técnica',
+  [StatusFunil.EM_ADEQUACAO_OBRA]: 'Em Adequação de Obra',
+  [StatusFunil.MEDICAO_TECNICA]: 'Medição Técnica',
+  [StatusFunil.FILA_MEDICAO_FINAL]: 'Fila Medição Final',
+  [StatusFunil.MEDICAO_FINAL]: 'Medição Final',
+  [StatusFunil.PRE_EXECUTIVO]: 'Pré-executivo',
+  [StatusFunil.FILA_PROJETO_EXECUTIVO]: 'Fila Projeto Executivo',
+  [StatusFunil.ADEQUACAO]: 'Adequação',
+  [StatusFunil.AUDITORIA_PROJETO]: 'Auditoria Projeto',
+  [StatusFunil.ASSINATURA_EXECUTIVA]: 'Assinatura Executiva',
+  [StatusFunil.EM_CODIFICACAO]: 'Em Codificação',
+  [StatusFunil.POSTAGEM]: 'Postagem',
+
+  // Pós-venda - Entrega e Montagem
+  [StatusFunil.AGUARDANDO_PRODUCAO]: 'Aguardando Produção',
+  [StatusFunil.PRONTO_INDUSTRIA]: 'Pronto pra Indústria',
+  [StatusFunil.VISTORIA_MONTAGEM]: 'Vistoria para Montagem',
+  [StatusFunil.ENTREGA_AGENDADA]: 'Entrega Agendada',
+  [StatusFunil.EM_MONTAGEM]: 'Em Montagem',
+  [StatusFunil.CHECKLIST_FINAL]: 'Checklist Final',
+  [StatusFunil.MONTAGEM_FINALIZADA]: 'Montagem Finalizada',
+  [StatusFunil.FINALIZADA_COM_PENDENCIA]: 'Finalizada com Pendência',
+  [StatusFunil.RELATORIO_OBRA]: 'Relatório de Obra',
+
+  // Pós-venda - Assistência Técnica
+  [StatusFunil.AGUARDANDO_ABERTURA_AT]: 'Aguardando Abertura de AT',
+  [StatusFunil.AT_ABERTA]: 'AT Aberta',
+  [StatusFunil.AT_FINALIZADA]: 'Finalizada',
+  [StatusFunil.POS_VENDA_CONCLUIDO]: 'Pós-venda',
 }
 
 export const ORIGEM_LEAD_LABELS: Record<OrigemLead, string> = {
@@ -136,6 +221,16 @@ export default class Lead extends LeadSchema {
     foreignKey: 'arquitetoId',
   })
   declare arquiteto: BelongsTo<typeof Arquiteto>
+
+  @belongsTo(() => Cliente, {
+    foreignKey: 'clienteId',
+  })
+  declare cliente: BelongsTo<typeof Cliente>
+
+  @hasOne(() => Projeto, {
+    foreignKey: 'leadId',
+  })
+  declare projeto: HasOne<typeof Projeto>
 
   get diasSemInteracao(): number {
     const ref = this.ultimaInteracaoEm || this.createdAt

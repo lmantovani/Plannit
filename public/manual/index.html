@@ -159,17 +159,19 @@
             <a href="#jornada-projeto" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-700 transition">3. Fluxo Operacional (32 Etapas)</a>
             <div class="pt-2 border-t border-stone-100">
               <span class="text-[10px] uppercase font-bold text-stone-400 block px-2 mb-1">Telas & Funcionalidades</span>
-              <a href="#mod-01" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.1. Autenticação & Segurança</a>
+              <a href="#mod-01" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.1. Autenticação & "Ver como..."</a>
               <a href="#mod-02" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.2. Dashboard & Alerta RN016</a>
-              <a href="#mod-03" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.3. CRM & Qualificação RN001</a>
-              <a href="#mod-04" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.4. Briefings & Score RN002</a>
+              <a href="#mod-03" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.3. CRM, Multi-Quadros & Lead Drawer</a>
+              <a href="#mod-04" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.4. Briefings, Roteiros & Score RN002</a>
               <a href="#mod-05" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.5. Fila & Limite WIP RN003</a>
               <a href="#mod-06" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.6. Especificadores & Score RFV</a>
-              <a href="#mod-07" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.7. Clientes & Aprovação Crédito</a>
+              <a href="#mod-07" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.7. Clientes & Prontuário Pessoal</a>
               <a href="#mod-08" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.8. Sala de Controle & Render RN004/RN005</a>
               <a href="#mod-09" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.9. Fechamento Comercial & Parcelas</a>
               <a href="#mod-10" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.10. Handoff Técnico RN006</a>
               <a href="#mod-11" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.11. RH, Cargos & Auditoria</a>
+              <a href="#mod-12" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.12. Agenda de Compromissos (/agenda)</a>
+              <a href="#mod-13" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-stone-600 transition">4.13. Configurações, Quadros & RBAC Dinâmico</a>
             </div>
             <div class="pt-2 border-t border-stone-100">
               <a href="#tabela-travas" class="block py-1.5 px-2 rounded hover:bg-stone-100 text-primary-700 font-bold transition">5. Guia Rápido de Regras (RNs)</a>
@@ -255,35 +257,56 @@
                 <tr class="hover:bg-stone-50">
                   <td class="p-3 font-bold"><span class="badge-diretoria px-2.5 py-1 rounded text-[11px] font-bold">👑 Diretoria</span></td>
                   <td class="p-3 text-stone-700 font-medium">Gestão Executiva & Estratégica</td>
-                  <td class="p-3 text-stone-600">Todos os 23 módulos irrestritos</td>
-                  <td class="p-3 text-stone-800 font-semibold">Configuração de WIP, purga administrativa de cadastros e visão financeira global.</td>
+                  <td class="p-3 text-stone-600">Todos os módulos irrestritos (Bypass Mestre de Segurança)</td>
+                  <td class="p-3 text-stone-800 font-semibold">Configuração global de WIP, purga administrativa, Matriz Dinâmica de Permissões e Seletor "Ver como..." para simulação de qualquer perfil.</td>
                 </tr>
                 <tr class="hover:bg-stone-50">
                   <td class="p-3 font-bold"><span class="badge-gerente px-2.5 py-1 rounded text-[11px] font-bold">💼 Gerente Comercial</span></td>
                   <td class="p-3 text-stone-700 font-medium">Coordenação de Vendas & Parcerias</td>
-                  <td class="p-3 text-stone-600">Dashboard, CRM, Briefings, Clientes, Especificadores, Fila</td>
-                  <td class="p-3 text-stone-800 font-semibold">Definição de metas de visitas a arquitetos, reatribuição de donos de parceiros e aprovação de descontos.</td>
+                  <td class="p-3 text-stone-600">Dashboard, CRM, Briefings, Clientes, Especificadores, Agenda, Fila</td>
+                  <td class="p-3 text-stone-800 font-semibold">Definição de metas de visitas a arquitetos, reatribuição de donos de parceiros, aprovação de descontos e gestão de quadros do CRM.</td>
                 </tr>
                 <tr class="hover:bg-stone-50">
                   <td class="p-3 font-bold"><span class="badge-vendedor px-2.5 py-1 rounded text-[11px] font-bold">🤝 Vendedor</span></td>
                   <td class="p-3 text-stone-700 font-medium">Atendimento ao Cliente & Fechamento</td>
-                  <td class="p-3 text-stone-600">CRM, Briefings, Sala de Controle, Fechamento, Clientes</td>
-                  <td class="p-3 text-stone-800 font-semibold">Aprovação/Devolução de maquetes 3D (RN004), assinatura de contratos e liberação de Handoff (RN006).</td>
+                  <td class="p-3 text-stone-600">CRM, Briefings, Sala de Controle, Fechamento, Clientes, Agenda</td>
+                  <td class="p-3 text-stone-800 font-semibold">Aprovação/Devolução de maquetes 3D (RN004), assinatura de contratos, registro no Prontuário e liberação de Handoff (RN006).</td>
                 </tr>
                 <tr class="hover:bg-stone-50">
                   <td class="p-3 font-bold"><span class="badge-projetista px-2.5 py-1 rounded text-[11px] font-bold">🎨 Projetista 3D</span></td>
                   <td class="p-3 text-stone-700 font-medium">Desenho Técnico & Modelagem 3D</td>
-                  <td class="p-3 text-stone-600">Fila de Projetos, Sala de Controle de Projetos Próprios</td>
-                  <td class="p-3 text-stone-800 font-semibold">Submissão de maquetes e arquivos 3D, conclusão de renders fotorrealistas de alta resolução.</td>
+                  <td class="p-3 text-stone-600">Fila de Projetos, Sala de Controle de Projetos Próprios, Agenda</td>
+                  <td class="p-3 text-stone-800 font-semibold">Submissão de maquetes e arquivos 3D, conclusão de renders fotorrealistas de alta resolução e consulta a roteiros técnicos de apoio.</td>
                 </tr>
                 <tr class="hover:bg-stone-50">
                   <td class="p-3 font-bold"><span class="badge-conferente px-2.5 py-1 rounded text-[11px] font-bold">📐 Conferente de Obra</span></td>
                   <td class="p-3 text-stone-700 font-medium">Medição Fina & Validação Física</td>
-                  <td class="p-3 text-stone-600">Projetos liberados pelo Handoff (contato_conf), Ficha Técnica</td>
+                  <td class="p-3 text-stone-600">Projetos liberados pelo Handoff (contato_conf), Ficha Técnica, Agenda</td>
                   <td class="p-3 text-stone-800 font-semibold">Emissão de laudo físico de obra, checklist de prumo/alvenaria e adequação executiva.</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Novidade: RBAC Dinâmico e Simulação "Ver como..." -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-xs">
+            <div class="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-1.5">
+              <span class="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                <span>⚡</span> Matriz Dinâmica de Permissões Parametrizável
+              </span>
+              <p class="text-amber-900 text-[11px] leading-relaxed">
+                As permissões não são fixas no código-fonte: a Diretoria pode criar novos perfis em <code>/configuracoes?tab=perfis</code> e ligar/desligar permissões granulares com 1 clique (ex: permitir que Gerentes configurem etapas do CRM ou gerenciem acessos).
+              </p>
+            </div>
+
+            <div class="p-4 bg-stone-900 text-white rounded-2xl space-y-1.5 border border-stone-800">
+              <span class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                <span>🎭</span> Simulação de Perfil ("Ver como...") no Header
+              </span>
+              <p class="text-stone-300 text-[11px] leading-relaxed">
+                Usuários com perfil Diretoria contam com um seletor no topo da tela para <strong>simular a experiência exata de qualquer perfil</strong> (Vendedor, Projetista, etc.) sem alterar dados no banco, validando telas, travas e isolamentos em tempo real.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -361,6 +384,24 @@
                 Tentativas de login com força bruta bloqueiam temporariamente o IP. Todas as sessões são isoladas por cookies HTTP-only seguros e tokens anti-CSRF.
               </p>
             </div>
+
+            <!-- Recurso Exclusivo: Simulação de Perfil no Header -->
+            <div class="p-5 bg-gradient-to-br from-stone-900 to-stone-950 text-white rounded-2xl border border-stone-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                  <span>🎭</span> Recurso "Ver como..." (Simulação de Perfil no Topo)
+                </span>
+                <span class="badge-diretoria text-[9px] px-2 py-0.5 rounded font-bold uppercase">Exclusivo Diretoria</span>
+              </div>
+              <p class="text-stone-300 text-[11px] leading-relaxed">
+                No cabeçalho fixo da aplicação (Header), a Diretoria dispõe do seletor <strong>"Ver como..."</strong>. Ao escolher qualquer perfil (ex: <em>Vendedor</em> ou <em>Projetista</em>):
+              </p>
+              <ul class="list-disc list-inside space-y-1 text-stone-300 text-[11px] pl-1">
+                <li>O sistema passa a responder <strong>exatamente com as permissões, menus e restrições de isolamento</strong> daquele perfil em memória durante a sessão.</li>
+                <li>O superusuário desativa temporariamente o bypass mestre para que a Diretoria veja o que cada operador realmente enxerga.</li>
+                <li>Um botão pulsante <strong>"Restaurar Meu Perfil"</strong> no Header permite retornar imediatamente ao perfil pleno da Diretoria com 1 clique, sem jamais alterar dados no banco de dados.</li>
+              </ul>
+            </div>
           </div>
         </article>
 
@@ -416,14 +457,14 @@
         </article>
 
         <!-- =================================================================== -->
-        <!-- MÓDULO 4.3: CRM & FUNIL DE LEADS (RN001 / RF003 / RF004) -->
+        <!-- MÓDULO 4.3: CRM & FUNIL MULTI-QUADROS (RN001 / RF003 / RF004) -->
         <!-- =================================================================== -->
         <article id="mod-03" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
             <div>
-              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 03 • CRM, PIPELINE & DRAWER LATERAL</span>
-              <h3 class="text-2xl font-display font-bold text-stone-900">CRM Comercial, Gestão de Leads & Ficha Lateral de Atendimento</h3>
-              <p class="text-xs text-stone-500 mt-1">Gestão completa do pipeline de vendas, qualificação obrigatória, linha do tempo auditável e monitoramento de estagnação.</p>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 03 • CRM, MULTI-QUADROS & LEAD DRAWER</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">CRM Comercial, Multi-Pipelines & Gaveta de Atendimento</h3>
+              <p class="text-xs text-stone-500 mt-1">Pipelines segmentados (Comercial, Conferência, Montagem e Assistência Técnica), transferência cross-quadro, qualificação obrigatória, SLA de permanência e sincronização com prontuário.</p>
             </div>
             <div class="flex flex-wrap gap-1">
               <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
@@ -432,129 +473,208 @@
             </div>
           </div>
 
-          <!-- Grade Visual: Kanban e Drawer Lateral Lado a Lado -->
+          <!-- Grade Visual: Kanban Multi-Quadros e Drawer Lateral Lado a Lado -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Screenshot 1: Kanban Geral -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-stone-800">1. Pipeline Geral no Funil Kanban</span>
-                <span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-mono">Visão Macro</span>
+                <span class="text-xs font-bold text-stone-800">1. Pipeline Multi-Quadros com Seletor Superior</span>
+                <span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-mono">4 Quadros Ativos</span>
               </div>
               <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
                 <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
                   <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
-                  <span class="text-[10px] font-mono text-stone-400">/crm — Pipeline e Alertas de Estagnação</span>
+                  <span class="text-[10px] font-mono text-stone-400">/crm — Barra de Quadros & Colunas Especializadas</span>
                 </div>
                 <img src="images/03_crm.png" alt="CRM e Funil Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
               </div>
               <p class="text-[11px] text-stone-500 leading-normal">
-                Permite alternar entre visualização <strong>Kanban</strong> ou <strong>Lista</strong>, filtrar por origem, vendedor e período, e arrastar cards de forma intuitiva.
+                Navegação limpa por abas superiores com contadores em tempo real. Permite visualizar um quadro por vez com arraste nativo e alternância para visão em <strong>Lista</strong>.
               </p>
             </div>
 
-            <!-- Screenshot 2: Drawer Lateral do Lead -->
+            <!-- Screenshot 2: Drawer Lateral do Lead Atualizado (520px) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-stone-800">2. Gaveta Lateral de Atendimento (Lead Drawer)</span>
-                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono font-semibold">Ficha 360º</span>
+                <span class="text-xs font-bold text-stone-800">2. Gaveta de Atendimento Expandida (Lead Drawer 520px)</span>
+                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono font-semibold">Ficha Operacional</span>
               </div>
               <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
                 <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
                   <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
-                  <span class="text-[10px] font-mono text-stone-400">/crm — Ficha do Lead & Histórico</span>
+                  <span class="text-[10px] font-mono text-stone-400">/crm — Ficha Integrada, SLA & Prontuário</span>
                 </div>
                 <img src="images/03b_crm_drawer.png" alt="Gaveta Lateral do Lead no Plannit" class="w-full h-auto object-cover" loading="lazy" />
               </div>
               <p class="text-[11px] text-stone-500 leading-normal">
-                Abre instantaneamente ao clicar em qualquer card do funil sem trocar de página, centralizando o controle do lead em uma única barra operacional.
+                Gaveta ampla com blocos retráteis de dados cadastrais e qualificação, rolagem vertical generosa, seletor de quadro/etapa e salvamento direto no Prontuário.
               </p>
             </div>
           </div>
 
-          <!-- DETALHAMENTO DA GAVETA LATERAL (LEAD DRAWER) -->
+          <!-- A ESTRUTURA DOS 4 QUADROS OPERACIONAIS -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+              <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+                <span>🗂️</span> Estrutura Padrão dos 4 Quadros Operacionais (42 Colunas no Total)
+              </h4>
+              <span class="text-[10px] bg-stone-200 text-stone-800 px-2 py-0.5 rounded font-bold uppercase">100% Parametrizável em Configurações</span>
+            </div>
+
+            <p class="text-xs text-stone-600 leading-relaxed">
+              Para evitar poluição visual de dezenas de colunas em uma única tela, o Plannit segmenta o fluxo em <strong>4 Quadros Especializados</strong> selecionáveis no topo:
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <!-- Quadro 1: Comercial -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-600"></span> 1. Kanban Comercial (14 Etapas)
+                  </span>
+                  <span class="badge badge-neutro text-[9px]">Funil de Vendas</span>
+                </div>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  <em>Novo Lead &bull; Qualificação &bull; Briefing &bull; Fila de Projeto &bull; Em Projeto &bull; Pronto para Renderizar &bull; Finalização / Renderizado &bull; Confirmar Apresentação &bull; Apresentação Agendada &bull; Em Aberto / Em Negociação / Apresentado &bull; Stand-by &bull; Alteração / Modificação / Ajuste &bull; Fechado / Vendido &bull; Perdido.</em>
+                </p>
+              </div>
+
+              <!-- Quadro 2: Conferência -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> 2. Pós-venda: Conferência (15 Etapas)
+                  </span>
+                  <span class="badge badge-neutro text-[9px]">Engenharia & Obra</span>
+                </div>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  <em>Caderno Comercial &bull; Aguardando Obra &bull; Fila Medição Técnica &bull; Fila Pasta Técnica &bull; Em Adequação de Obra &bull; Medição Técnica &bull; Fila Medição Final &bull; Medição Final &bull; Pré-executivo &bull; Fila Projeto Executivo &bull; Adequação &bull; Auditoria Projeto &bull; Assinatura Executiva &bull; Em Codificação &bull; Postagem.</em>
+                </p>
+              </div>
+
+              <!-- Quadro 3: Entrega e Montagem -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> 3. Pós-venda: Entrega & Montagem (9 Etapas)
+                  </span>
+                  <span class="badge badge-neutro text-[9px]">Fábrica & Campo</span>
+                </div>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  <em>Aguardando Produção &bull; Pronto pra Indústria &bull; Vistoria para Montagem &bull; Entrega Agendada &bull; Em Montagem &bull; Checklist Final &bull; Montagem Finalizada &bull; Finalizada com Pendência &bull; Relatório de Obra.</em>
+                </p>
+              </div>
+
+              <!-- Quadro 4: Assistência Técnica -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> 4. Pós-venda: Assistência Técnica (4 Etapas)
+                  </span>
+                  <span class="badge badge-neutro text-[9px]">Garantia & Suporte</span>
+                </div>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  <em>Aguardando Abertura de AT &bull; AT Aberta &bull; Finalizada &bull; Pós-venda.</em>
+                </p>
+              </div>
+            </div>
+
+            <!-- Como Transferir Cards entre Quadros Diferentes -->
+            <div class="p-4 bg-primary-50/70 border border-primary-200/80 rounded-xl space-y-2">
+              <span class="font-bold text-primary-950 text-xs block">
+                🔄 Como Transferir um Card Entre Quadros Diferentes (Ex: Comercial &rarr; Conferência)
+              </span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-stone-700">
+                <div class="bg-white p-3 rounded-lg border border-primary-200/60 space-y-1">
+                  <strong>Método 1 — Arrastar e Soltar na Aba:</strong>
+                  <p class="text-stone-600">
+                    Basta clicar e arrastar o card desejado para o topo da tela, soltando-o diretamente sobre a aba do quadro de destino. O card é alocado automaticamente na primeira etapa ativa daquele pipeline.
+                  </p>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-primary-200/60 space-y-1">
+                  <strong>Método 2 — Seletor Rápido no Drawer:</strong>
+                  <p class="text-stone-600">
+                    Abra o LeadDrawer e utilize o seletor <em>"Quadro / Etapa"</em> no cabeçalho para transferir o card para qualquer coluna de qualquer quadro com apenas 1 clique.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DETALHAMENTO DA GAVETA LATERAL (LEAD DRAWER ATUALIZADA) -->
           <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-5">
             <div class="flex items-center gap-2 border-b border-stone-200 pb-3">
               <span class="text-lg">🔍</span>
               <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide">
-                Anatomia & O que Pode Ser Feito na Barra Lateral (Lead Drawer)
+                Anatomia & Recursos da Nova Gaveta Lateral (Lead Drawer)
               </h4>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <!-- Item 1: Identificação & Qualificação -->
+              <!-- Item 1: Identificação & Ficha do Cliente -->
               <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-stone-900 text-xs">1. Identificação & Selo de Qualificação</span>
                   <span class="badge badge-neutro text-[9px]">Status RN001</span>
                 </div>
                 <p class="text-stone-600 leading-relaxed text-[11px]">
-                  Exibe o nome do lead, telefone de contato direto com link rápido para WhatsApp e o indicador visual:
-                  <strong>Badge Verde ("Qualificado")</strong> ou <strong>Badge Cinza ("Não Qualificado")</strong>. Leads não qualificados ficam impedidos de entrar na esteira de projetos.
+                  Exibe o nome do lead, telefone de contato direto com WhatsApp, selo verde ("Qualificado") ou cinza ("Não Qualificado"), além do link rápido <strong>"Ficha do Cliente ↗"</strong> para a ficha cadastral completa.
                 </p>
               </div>
 
-              <!-- Item 2: Botão Dourado de Qualificação -->
-              <div class="p-4 bg-white rounded-xl border border-amber-200 shadow-2xs space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-amber-950 text-xs flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    2. Botão "Qualificar Lead (RN001)"
-                  </span>
-                  <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Ação Chave</span>
-                </div>
-                <p class="text-stone-600 leading-relaxed text-[11px]">
-                  Ao clicar neste botão, o vendedor confirma que já alinhou perfil de imóvel, faixa orçamentária e prazo com o cliente. O backend registra a qualificação, habilita o ponto verde no card e <strong>destrava a permissão para avançar o lead para Briefing e Projeto</strong>.
-                </p>
-              </div>
-
-              <!-- Item 3: Botão Marcar como Perdido -->
-              <div class="p-4 bg-white rounded-xl border border-rose-200 shadow-2xs space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-rose-900 text-xs flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    3. Botão "Marcar como Perdido (RF004)"
-                  </span>
-                  <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">Descarte</span>
-                </div>
-                <p class="text-stone-600 leading-relaxed text-[11px]">
-                  Abre uma janela modal exigindo o registro formal do <strong>Motivo da Perda</strong> (ex: optou por marcenaria rápida, verba insuficiente, desistência da compra do imóvel) e opcionalmente o <strong>Concorrente Escolhido</strong> (ex: Florense, Dell Anno, Ornare). Nada é apagado do sistema, gerando inteligência de mercado.
-                </p>
-              </div>
-
-              <!-- Item 4: Dados de Origem & Marketing -->
+              <!-- Item 2: Ações Rápidas & Multi-Projeto -->
               <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
                 <div class="flex items-center justify-between">
-                  <span class="font-bold text-stone-900 text-xs">4. Informações de Origem & Campanha</span>
-                  <span class="badge badge-neutro text-[9px]">Atribuição</span>
+                  <span class="font-bold text-stone-900 text-xs">2. Ações Rápidas & Botão "+ Novo Projeto"</span>
+                  <span class="text-[10px] bg-primary-100 text-primary-900 font-bold px-1.5 py-0.5 rounded">Produtividade</span>
                 </div>
                 <p class="text-stone-600 leading-relaxed text-[11px]">
-                  Registra o canal de captação (<em>Instagram, Google Ads, Indicação de Amigo, Especificador / Arquiteto, Walk-in no Showroom, Construtora</em>), cidade/UF do cliente e a campanha publicitária específica que gerou o contato (ex: <em>"Campanha Cozinhas Gourmet Outono"</em>).
+                  Botões de <em>Qualificar</em>, <em>Briefing Técnico</em>, <em>Agendar Encontro</em> e o botão <strong>"+ Novo Projeto p/ este Cliente"</strong>, que permite abrir novos cards paralelos no CRM para o mesmo cliente sem duplicar a ficha cadastral.
                 </p>
               </div>
-            </div>
 
-            <!-- Item 5 & 6: Linha do Tempo e Registro de Interações -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
+              <!-- Item 3: Blocos Retráteis de Cadastro e Qualificação -->
               <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
-                <span class="font-bold text-stone-900 text-xs block">5. Linha do Tempo Auditável (Timeline RF003)</span>
-                <p class="text-stone-600 leading-relaxed text-[11px]">
-                  Exibe o histórico cronológico de todos os pontos de contato. Cada evento mostra:
-                </p>
-                <ul class="list-disc list-inside space-y-1 text-stone-600 text-[11px] pl-1">
-                  <li><strong>Canal com Ícone Colorido:</strong> WhatsApp (verde), Ligação telefônica (azul), E-mail (roxo), Visita presencial (âmbar) ou Reunião (índigo).</li>
-                  <li><strong>Resumo da Conversa:</strong> o que foi acertado, dúvidas do cliente e prazos combinados.</li>
-                  <li><strong>Autor & Carimbo Temporal:</strong> nome do consultor comercial que registrou e data/hora exata (ex: <em>"Por: Vendedor Líder • 06/09/2026, 16:22"</em>).</li>
-                </ul>
-              </div>
-
-              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
-                <span class="font-bold text-stone-900 text-xs block">6. Registro Imediato de Nova Interação</span>
-                <p class="text-stone-600 leading-relaxed text-[11px]">
-                  No rodapé da gaveta, o vendedor seleciona o canal de atendimento, digita o resumo do contato em poucos segundos e clica em <strong>"Registrar Interação"</strong>.
-                </p>
-                <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900 leading-relaxed">
-                  <strong>Efeito Imediato no Sistema:</strong> ao salvar uma interação, o sistema atualiza o campo <em>"última interação"</em> para <em>"agora mesmo"</em> e <strong>reseta o contador de dias sem contato para zero</strong>, apagando o aviso amarelo de estagnação do card.
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">3. Blocos Retráteis (Colapsáveis)</span>
+                  <span class="text-[10px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">Espaço Otimizado</span>
                 </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Os blocos de <strong>Dados Cadastrais</strong> (origem, cidade, e-mail, campanha) e <strong>Qualificação Validada (RN001)</strong> iniciam em modo resumido de 1 linha e podem ser expandidos com 1 clique, liberando toda a altura da tela para a rolagem de interações.
+                </p>
+              </div>
+
+              <!-- Item 4: Painel de Compromissos Agendados -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">4. Compromissos Vinculados da Agenda</span>
+                  <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">Agenda Integrada</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Exibe os encontros futuros (visita técnica, apresentação ou alinhamento) vinculados a este lead, com botão para agendar novos compromissos e modal para registrar a conclusão imediata.
+                </p>
+              </div>
+
+              <!-- Item 5: SLA de Permanência por Coluna -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">5. Tempo Acumulado nas Colunas (SLA)</span>
+                  <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Métricas</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Painel de auditoria que calcula com precisão matemática quanto tempo o lead permaneceu em cada fase do funil, somando passagens repetidas (caso o lead tenha voltado para uma coluna anterior).
+                </p>
+              </div>
+
+              <!-- Item 6: Interações com Prontuário do Cliente -->
+              <div class="p-4 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-stone-900 text-xs">6. Registro & Prontuário do Cliente</span>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-900 font-bold px-1.5 py-0.5 rounded">Sincronização</span>
+                </div>
+                <p class="text-stone-600 leading-relaxed text-[11px]">
+                  Formulário para registrar contatos (WhatsApp, Ligação, E-mail, Visita). Inclui a caixa de seleção <strong>"Salvar também no Prontuário do Cliente"</strong>, permitindo categorizar e espelhar a anotação na ficha pessoal do cliente.
+                </p>
               </div>
             </div>
           </div>
@@ -812,6 +932,39 @@
             </div>
           </div>
 
+          <!-- Novidade: Roteiros Técnicos Dinâmicos N:N de Apoio ao Briefing -->
+          <div class="p-6 bg-amber-50/60 border border-amber-200/90 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-amber-200/70 pb-3">
+              <h4 class="font-bold text-sm text-amber-950 uppercase tracking-wide flex items-center gap-2">
+                <span>💡</span> Sidebar Lateral de Roteiros Técnicos & Checklists de Ambientes
+              </h4>
+              <span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-bold uppercase">Apoio em Tempo Real</span>
+            </div>
+            <p class="text-xs text-stone-700 leading-relaxed">
+              Durante o preenchimento da Seção 3 (Detalhamento Técnico), o consultor conta com uma <strong>gaveta lateral retrátil de Roteiros Técnicos</strong>. O sistema identifica os ambientes selecionados (Cozinha Gourmet, Closet, Home Theater, etc.) e carrega automaticamente:
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 space-y-1">
+                <strong class="text-stone-900 text-xs block">1. Perguntas Estratégicas</strong>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  Perguntas investigativas para descobrir hábitos reais da família (ex: altura dos moradores para nichos, ergonomia da torre quente).
+                </p>
+              </div>
+              <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 space-y-1">
+                <strong class="text-stone-900 text-xs block">2. Inserção com 1 Clique</strong>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  Botão para transferir a pergunta ou diretriz técnica diretamente para o campo de anotações do briefing, sem perda do rascunho em edição.
+                </p>
+              </div>
+              <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 space-y-1">
+                <strong class="text-stone-900 text-xs block">3. Roteiros N:N Gerenciáveis</strong>
+                <p class="text-stone-600 text-[11px] leading-relaxed">
+                  Os roteiros são cadastrados no banco em <code>/configuracoes?tab=roteiros</code>. Um único roteiro pode atender múltiplos ambientes simultaneamente.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Caixa RN002 -->
           <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl space-y-1">
             <span class="font-bold text-red-900 block text-xs">🛡️ Regra Inegociável RN002 — Bloqueio de Briefing &lt; 70 Pontos</span>
@@ -1057,6 +1210,39 @@
               <p class="text-stone-600 text-[11px]">
                 Apenas o <strong>Financeiro, Gerente ou Diretoria</strong> possuem autorização para aprovar o crédito do cliente, requisito que compõe um dos 8 itens obrigatórios do Handoff Técnico.
               </p>
+            </div>
+
+            <!-- Novidade: Prontuário de Relacionamento do Cliente -->
+            <div class="p-5 bg-gradient-to-br from-amber-500/10 via-amber-50/40 to-stone-50 border border-amber-200/90 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                  <span>📌</span> Prontuário de Relacionamento do Cliente (Timeline Pessoal)
+                </span>
+                <span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-bold uppercase">Encantamento & Fidelização</span>
+              </div>
+              <p class="text-stone-700 text-[11px] leading-relaxed">
+                Dentro da ficha de cada cliente (<code>/clientes/:id</code>), a equipe comercial dispõe da aba <strong>Prontuário</strong>. Uma linha do tempo dedicada a registrar o contexto humano do comprador:
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div class="bg-white p-3 rounded-xl border border-amber-200/80 space-y-1">
+                  <strong class="text-stone-900 text-xs block">Categorias Parametrizadas</strong>
+                  <p class="text-stone-600 text-[11px]">
+                    Anotações categorizadas por <em>Pessoal, Família & Filhos, Pets, Hobbies, Preferências</em> ou categorias customizadas criadas em Configurações.
+                  </p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-amber-200/80 space-y-1">
+                  <strong class="text-stone-900 text-xs block">Fixação no Topo (Destaques)</strong>
+                  <p class="text-stone-600 text-[11px]">
+                    Alertas cruciais de atendimento (ex: <em>"Gosta de café sem açúcar", "Prefere reuniões aos sábados"</em>) podem ser fixados em destaque dourado no topo.
+                  </p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-amber-200/80 space-y-1">
+                  <strong class="text-stone-900 text-xs block">Sincronização com CRM</strong>
+                  <p class="text-stone-600 text-[11px]">
+                    Qualquer interação no CRM marcada com <em>"📌 Salvar também no Prontuário"</em> é espelhada aqui instantaneamente via conexão em tempo real.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </article>
@@ -1412,6 +1598,193 @@
         </article>
 
         <!-- =================================================================== -->
+        <!-- MÓDULO 4.12: AGENDA DE COMPROMISSOS & ENCONTROS COMERCIAIS (/agenda) -->
+        <!-- =================================================================== -->
+        <article id="mod-12" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria gerente vendedor projetista conferente">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 12 • AGENDA INTEGRADA DE ENCONTROS & REUNIÕES</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Agenda Comercial, Gestão de Compromissos & Visitas</h3>
+              <p class="text-xs text-stone-500 mt-1">Controle integrado de reuniões presenciais, visitas técnicas a obras e alinhamentos online com sincronização instantânea com os leads do CRM.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Diretoria</span>
+              <span class="badge-gerente px-2 py-0.5 rounded text-[10px] font-bold">Gerente</span>
+              <span class="badge-vendedor px-2 py-0.5 rounded text-[10px] font-bold">Vendedor</span>
+              <span class="badge-projetista px-2 py-0.5 rounded text-[10px] font-bold">Projetista</span>
+              <span class="badge-conferente px-2 py-0.5 rounded text-[10px] font-bold">Conferente</span>
+            </div>
+          </div>
+
+          <!-- Screenshot Real da Agenda -->
+          <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900">
+            <div class="bg-stone-800 px-4 py-2 border-b border-stone-700 flex items-center gap-2">
+              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+              <span class="text-[11px] font-mono text-stone-400">http://plannit.lidermoveis.com.br/agenda</span>
+            </div>
+            <img src="images/12_agenda.png" alt="Módulo de Agenda Real do Plannit" class="w-full h-auto object-cover" loading="lazy" />
+          </div>
+
+          <!-- Anatomia dos Recursos da Agenda -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>📅</span> Recursos & Fluxo de Operação da Agenda
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">1. Filtros Pessoal vs Equipe</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Vendedores e projetistas visualizam seus próprios compromissos. Gestores e Diretoria podem alternar para a visão de toda a equipe ou filtrar por colaborador específico.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">2. Vínculo Direto com o CRM</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Cada compromisso é associado ao card do Lead/Projeto. Ao abrir a gaveta lateral no CRM, os encontros daquele cliente aparecem destacados com status em tempo real.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">3. Conclusão & Histórico</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Ao concluir um encontro, o operador digita o resumo da conversa. O sistema grava o evento na Linha do Tempo do lead e reseta o alerta de estagnação.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">4. Videochamadas & Local</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Suporte nativo a links de reunião remota (Google Meet, Zoom, Teams) e endereço físico para deslocamento da equipe externa e conferentes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
+        <!-- MÓDULO 4.13: CONFIGURAÇÕES, QUADROS KANBAN & RBAC DINÂMICO (/configuracoes) -->
+        <!-- =================================================================== -->
+        <article id="mod-13" class="modulo-card bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-8" data-perfis="diretoria">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary-700">MÓDULO 13 • CONFIGURAÇÕES, GOVERNANÇA & CUSTOMIZAÇÃO TOTAL</span>
+              <h3 class="text-2xl font-display font-bold text-stone-900">Central de Governança, Quadros do Kanban & RBAC Dinâmico</h3>
+              <p class="text-xs text-stone-500 mt-1">Ambiente mestre para personalização completa de funis, catálogos operacionais de apoio e matriz dinâmica de permissões de acesso.</p>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <span class="badge-diretoria px-2 py-0.5 rounded text-[10px] font-bold">Exclusivo Diretoria</span>
+              <span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-mono font-bold">Delegação Configurável</span>
+            </div>
+          </div>
+
+          <!-- Grade Visual: Quadros Kanban e Perfis/Permissões Lado a Lado -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Screenshot 1: Quadros Kanban -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-stone-800">1. Gestão Completa de Quadros & Colunas do Funil</span>
+                <span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-mono">/configuracoes?tab=kanban</span>
+              </div>
+              <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
+                <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
+                  <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
+                  <span class="text-[10px] font-mono text-stone-400">Quadros, Cores, Ordem & Travas RN001/RF004</span>
+                </div>
+                <img src="images/13_configuracoes_kanban.png" alt="Configurações de Quadros do Kanban" class="w-full h-auto object-cover" loading="lazy" />
+              </div>
+              <p class="text-[11px] text-stone-500 leading-normal">
+                Permite criar novos quadros, adicionar etapas, reordenar com <code>↑</code>/<code>↓</code>, ativar/desativar (Verde/Vermelho) e configurar travas estritas por coluna.
+              </p>
+            </div>
+
+            <!-- Screenshot 2: Perfis e Permissões -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-stone-800">2. Matriz Dinâmica de Permissões (RBAC)</span>
+                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono font-semibold">/configuracoes?tab=perfis</span>
+              </div>
+              <div class="screenshot-frame rounded-2xl overflow-hidden border border-stone-300 shadow-md bg-stone-900">
+                <div class="bg-stone-800 px-3 py-1.5 border-b border-stone-700 flex items-center gap-2">
+                  <div class="flex gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
+                  <span class="text-[10px] font-mono text-stone-400">Controle Granular por Perfil & Bypass da Diretoria</span>
+                </div>
+                <img src="images/14_configuracoes_perfis.png" alt="Matriz Dinâmica de Permissões no Plannit" class="w-full h-auto object-cover" loading="lazy" />
+              </div>
+              <p class="text-[11px] text-stone-500 leading-normal">
+                Governança centralizada onde a Diretoria cria novos perfis e ajusta capacidades de cada função com atualização imediata sem necessidade de deploy.
+              </p>
+            </div>
+          </div>
+
+          <!-- As 8 Abas Especializadas de Configuração -->
+          <div class="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+            <h4 class="font-bold text-sm text-stone-900 uppercase tracking-wide flex items-center gap-2">
+              <span>⚙️</span> As 8 Dimensões de Customização do Plannit
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">1. Quadros Kanban</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Criação e edição de pipelines, colunas, cores temáticas, ordem de apresentação e guardrails de qualificação (RN001).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">2. Perfis & Permissões</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Matriz dinâmica RBAC com controle granular de ações em cada módulo da plataforma e delegação de autoridade.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">3. Catálogo de Ambientes</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Lista padronizada de cômodos (Cozinha, Closet, Gourmet, etc.) consumida de forma unificada no CRM e nos Briefings.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">4. Origens de Leads</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Canais oficiais de captação (Showroom, Instagram, Especificador, Google Ads) com validação de preenchimento no backend.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">5. Campanhas Ativas</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Catálogo de ações de marketing vigentes para rastreamento preciso do retorno sobre investimento (ROI publicitário).
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">6. Tipos de Compromisso</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Categorias de encontros da Agenda (Apresentação, Medição, Alinhamento) com duração sugerida e ícones representativos.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">7. Categorias do Prontuário</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Tags coloridas para organização das observações pessoais dos clientes com integridade referencial protegida.
+                </p>
+              </div>
+
+              <div class="p-3.5 bg-white rounded-xl border border-stone-200 space-y-1">
+                <span class="font-bold text-stone-900 block text-xs">8. Roteiros de Briefing</span>
+                <p class="text-stone-500 text-[11px] leading-relaxed">
+                  Banco de perguntas e diretrizes técnicas com relação N:N que abastece a gaveta de apoio do Briefing Inteligente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- =================================================================== -->
         <!-- SEÇÃO 5: GUIA RÁPIDO DE REGRAS E TRAVAS DO SISTEMA -->
         <!-- =================================================================== -->
         <section id="tabela-travas" class="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
@@ -1478,6 +1851,24 @@
                   <td class="p-3 font-semibold">Preservação de Histórico</td>
                   <td class="p-3 text-stone-600">Exclusão física de projetos e maquetes.</td>
                   <td class="p-3 text-stone-700">Utilizar arquivamento com motivo obrigatório de soft-delete.</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RN-KANBAN-01</td>
+                  <td class="p-3 font-semibold">Trava Dinâmica de Qualificação</td>
+                  <td class="p-3 text-stone-600">Avanço para qualquer coluna marcada como "Exige Qualificação" no catálogo.</td>
+                  <td class="p-3 text-stone-700">Completar a qualificação estruturada do lead (orçamento, prazo, imóvel e ambientes).</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RF-KANBAN-02</td>
+                  <td class="p-3 font-semibold">Trava Dinâmica de Motivo de Perda</td>
+                  <td class="p-3 text-stone-600">Avanço para colunas de descarte sem registro do motivo formal.</td>
+                  <td class="p-3 text-stone-700">Registrar justificativa no modal de perda (e concorrente escolhido se aplicável).</td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="p-3 font-mono font-bold text-primary-700">RBAC-DINAMICO</td>
+                  <td class="p-3 font-semibold">Governança & Bypass da Diretoria</td>
+                  <td class="p-3 text-stone-600">Ações não autorizadas na Matriz Dinâmica de Permissões.</td>
+                  <td class="p-3 text-stone-700">Solicitar concessão da permissão em <code>/configuracoes?tab=perfis</code> à Diretoria.</td>
                 </tr>
               </tbody>
             </table>

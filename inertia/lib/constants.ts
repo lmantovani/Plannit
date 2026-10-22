@@ -5,16 +5,90 @@ export interface FunilEtapa {
   bg: string
   border: string
   text: string
+  quadroSlug?: string
+  quadroNome?: string
+  exigeQualificacao?: boolean
+  exigeMotivoPerda?: boolean
+  tipoEstagio?: string
+}
+
+export interface KanbanEtapaCatalogoItem {
+  id: number
+  quadroId: number
+  nome: string
+  slug: string
+  cor: string
+  ordem: number
+  exigeQualificacao: boolean
+  exigeMotivoPerda: boolean
+  tipoEstagio: string
+  isActive?: boolean
+  isSistema?: boolean
+}
+
+export interface KanbanQuadroCatalogoItem {
+  id: number
+  nome: string
+  slug: string
+  descricao: string | null
+  cor: string
+  ordem: number
+  isActive?: boolean
+  isSistema?: boolean
+  etapas: KanbanEtapaCatalogoItem[]
 }
 
 export const FUNIL_ETAPAS: FunilEtapa[] = [
-  { key: 'novo_lead', label: 'Novo Lead', cor: '#3b82f6', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  { key: 'qualificando', label: 'Qualificando', cor: '#8b5cf6', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-  { key: 'em_visita', label: 'Em Visita', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  { key: 'em_briefing', label: 'Em Briefing', cor: '#a66a12', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800' },
-  { key: 'em_projeto', label: 'Em Projeto', cor: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
-  { key: 'fechado', label: 'Fechado', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
-  { key: 'perdido', label: 'Perdido', cor: '#dc2626', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700' },
+  // Comercial
+  { key: 'novo_lead', label: 'Novo Lead', cor: '#3b82f6', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', quadroSlug: 'comercial', exigeQualificacao: false },
+  { key: 'qualificando', label: 'Qualificação', cor: '#8b5cf6', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', quadroSlug: 'comercial', exigeQualificacao: false },
+  { key: 'em_visita', label: 'Em Visita', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', quadroSlug: 'comercial', exigeQualificacao: false },
+  { key: 'em_briefing', label: 'Briefing', cor: '#a66a12', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'fila_projeto', label: 'Fila de Projeto', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'em_projeto', label: 'Em Projeto', cor: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'pronto_para_renderizar', label: 'Pronto para Renderizar', cor: '#06b6d4', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'finalizacao_renderizado', label: 'Finalização / Renderizado', cor: '#0ea5e9', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'confirmar_apresentacao', label: 'Confirmar Apresentação', cor: '#ec4899', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'apresentacao_agendada', label: 'Apresentação Agendada', cor: '#d946ef', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', text: 'text-fuchsia-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'em_fechamento', label: 'Em Aberto / Em Negociação / Apresentado', cor: '#eab308', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'stand_by', label: 'Stand-by', cor: '#64748b', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'alteracao_ajuste', label: 'Alteração / Modificação / Ajuste', cor: '#f97316', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', quadroSlug: 'comercial', exigeQualificacao: true },
+  { key: 'fechado', label: 'Fechado / Vendido', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'comercial', exigeQualificacao: true, tipoEstagio: 'ganho' },
+  { key: 'perdido', label: 'Perdido', cor: '#dc2626', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', quadroSlug: 'comercial', exigeQualificacao: false, exigeMotivoPerda: true, tipoEstagio: 'perdido' },
+
+  // Pós-venda (Conferência)
+  { key: 'caderno_comercial', label: 'Caderno Comercial', cor: '#0284c7', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'aguardando_obra', label: 'Aguardando Obra', cor: '#64748b', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'fila_medicao_tecnica', label: 'Fila Medição Técnica', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'fila_pasta_tecnica', label: 'Fila Pasta Técnica', cor: '#eab308', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'em_adequacao_obra', label: 'Em Adequação de Obra', cor: '#f97316', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'medicao_tecnica', label: 'Medição Técnica', cor: '#06b6d4', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'fila_medicao_final', label: 'Fila Medição Final', cor: '#3b82f6', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'medicao_final', label: 'Medição Final', cor: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'pre_executivo', label: 'Pré-executivo', cor: '#8b5cf6', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'fila_projeto_executivo', label: 'Fila Projeto Executivo', cor: '#a855f7', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'adequacao', label: 'Adequação', cor: '#ec4899', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'auditoria_projeto', label: 'Auditoria Projeto', cor: '#14b8a6', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'assinatura_executiva', label: 'Assinatura Executiva', cor: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'em_codificacao', label: 'Em Codificação', cor: '#0ea5e9', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+  { key: 'postagem', label: 'Postagem', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_conferencia', exigeQualificacao: true },
+
+  // Pós-venda - Entrega e Montagem
+  { key: 'aguardando_producao', label: 'Aguardando Produção', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'pronto_industria', label: 'Pronto pra Indústria', cor: '#0284c7', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'vistoria_montagem', label: 'Vistoria para Montagem', cor: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'entrega_agendada', label: 'Entrega Agendada', cor: '#8b5cf6', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'em_montagem', label: 'Em Montagem', cor: '#06b6d4', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'checklist_final', label: 'Checklist Final', cor: '#14b8a6', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'montagem_finalizada', label: 'Montagem Finalizada', cor: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'finalizada_com_pendencia', label: 'Finalizada com Pendência', cor: '#f97316', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+  { key: 'relatorio_obra', label: 'Relatório de Obra', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_entrega_montagem', exigeQualificacao: true },
+
+  // Pós-venda - Assistência Técnica
+  { key: 'aguardando_abertura_at', label: 'Aguardando Abertura de AT', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', quadroSlug: 'pos_venda_assistencia_tecnica', exigeQualificacao: true },
+  { key: 'at_aberta', label: 'AT Aberta', cor: '#ef4444', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', quadroSlug: 'pos_venda_assistencia_tecnica', exigeQualificacao: true },
+  { key: 'at_finalizada', label: 'Finalizada', cor: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_assistencia_tecnica', exigeQualificacao: true },
+  { key: 'pos_venda_concluido', label: 'Pós-venda', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', quadroSlug: 'pos_venda_assistencia_tecnica', exigeQualificacao: true, tipoEstagio: 'ganho' },
 ]
 
 export const ORIGEM_LABELS: Record<string, string> = {

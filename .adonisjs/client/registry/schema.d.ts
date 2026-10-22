@@ -55,6 +55,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['destroy']>>>
     }
   }
+  'session.simular_perfil': {
+    methods: ["POST"]
+    pattern: '/auth/simular-perfil'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/session_controller').default['simularPerfil']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['simularPerfil']>>>
+    }
+  }
   'crm.index': {
     methods: ["GET","HEAD"]
     pattern: '/crm'
@@ -77,6 +89,30 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/lead').createLeadValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['store']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'crm.leads.ficha_cliente': {
+    methods: ["GET","HEAD"]
+    pattern: '/crm/leads/:id/ficha-cliente'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['abrirFichaCliente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['abrirFichaCliente']>>>
+    }
+  }
+  'crm.leads.novo_projeto': {
+    methods: ["POST"]
+    pattern: '/crm/leads/:id/novo-projeto'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['criarNovoProjetoCard']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['criarNovoProjetoCard']>>>
     }
   }
   'crm.leads.update_status': {
@@ -811,6 +847,42 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['aprovarCadastro']>>>
     }
   }
+  'clientes.novo_projeto_crm': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/novo-projeto-crm'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['criarNovoProjetoCrm']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['criarNovoProjetoCrm']>>>
+    }
+  }
+  'clientes.prontuario.store': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/prontuario'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/prontuario').criarProntuarioValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/prontuario').criarProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['salvarProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['salvarProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.prontuario.destroy': {
+    methods: ["DELETE"]
+    pattern: '/clientes/:id/prontuario/:prontuarioId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; prontuarioId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['excluirProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['excluirProntuario']>>>
+    }
+  }
   'clientes.enderecos.store': {
     methods: ["POST"]
     pattern: '/clientes/:id/enderecos'
@@ -1265,6 +1337,174 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
+    }
+  }
+  'configuracoes.categorias_prontuario.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/categorias-prontuario'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createCategoriaProntuarioValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createCategoriaProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCategoriaProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.categorias_prontuario.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/categorias-prontuario/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateCategoriaProntuarioValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateCategoriaProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCategoriaProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.categorias_prontuario.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/categorias-prontuario/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCategoriaProntuario']>>>
+    }
+  }
+  'configuracoes.categorias_prontuario.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/categorias-prontuario/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCategoriaProntuario']>>>
+    }
+  }
+  'configuracoes.kanban_quadros.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/kanban-quadros'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createKanbanQuadroValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createKanbanQuadroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanQuadro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_quadros.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/kanban-quadros/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateKanbanQuadroValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateKanbanQuadroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanQuadro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_quadros.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-quadros/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_quadros.reorder': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-quadros/:id/reorder'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_quadros.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/kanban-quadros/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/kanban-etapas'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createKanbanEtapaValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createKanbanEtapaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanEtapa']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_etapas.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/kanban-etapas/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateKanbanEtapaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateKanbanEtapaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanEtapa']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_etapas.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-etapas/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanEtapa']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.reorder': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-etapas/:id/reorder'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanEtapa']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/kanban-etapas/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanEtapa']>>>
     }
   }
   'configuracoes.roteiros.store': {

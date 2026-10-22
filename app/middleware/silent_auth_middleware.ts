@@ -11,6 +11,13 @@ export default class SilentAuthMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
     await ctx.auth.check()
 
+    if (ctx.auth.user && ctx.session) {
+      ctx.auth.user.applyImpersonation(
+        ctx.session.get('impersonate_perfil'),
+        ctx.session.get('impersonate_perfil_label')
+      )
+    }
+
     return next()
   }
 }

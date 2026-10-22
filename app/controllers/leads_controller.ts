@@ -15,7 +15,13 @@ import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
 import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
+import CategoriaProntuarioCatalogo from '#models/categoria_prontuario_catalogo'
+import KanbanQuadroCatalogo from '#models/kanban_quadro_catalogo'
+import KanbanEtapaCatalogo from '#models/kanban_etapa_catalogo'
 import { StatusCompromisso } from '#models/compromisso_agenda'
+import Cliente from '#models/cliente'
+import ProntuarioCliente from '#models/prontuario_cliente'
+import Projeto, { STATUS_PROJETO_LABELS, type StatusProjeto } from '#models/projeto'
 import {
   createLeadValidator,
   interacaoValidator,
@@ -95,6 +101,9 @@ export default class LeadsController {
       .preload('vendedor', (vQuery) => vQuery.select('id', 'nome', 'email'))
       .preload('qualificadoPor', (qQuery) => qQuery.select('id', 'nome', 'email'))
       .preload('arquiteto', (aQuery) => aQuery.select('id', 'nome', 'escritorio'))
+      .preload('projeto', (pQuery) => {
+        pQuery.where('arquivado', false).preload('briefing')
+      })
       .preload('compromissos', (cQuery) => {
         cQuery
           .orderBy('data_hora_inicio', 'asc')
@@ -111,17 +120,42 @@ export default class LeadsController {
 
     const rawLeads = await leadsQuery
 
-    // Métricas para a barra superior calculadas direto dos models
+    // Catálogo de Quadros e Etapas do Kanban
+    const kanbanQuadrosCatalogo = await KanbanQuadroCatalogo.query()
+      .where('isActive', true)
+      .preload('etapas', (q) => {
+        q.where('isActive', true).orderBy('ordem', 'asc').orderBy('nome', 'asc')
+      })
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const todasEtapasCatalogo = await KanbanEtapaCatalogo.query()
+    const etapasLabelsMap: Record<string, string> = { ...STATUS_FUNIL_LABELS }
+    const etapasTipoMap: Record<string, string> = {}
+
+    for (const et of todasEtapasCatalogo) {
+      etapasLabelsMap[et.slug] = et.nome
+      etapasTipoMap[et.slug] = et.tipoEstagio
+    }
+
+    // Métricas para a barra superior calculadas direto dos models + catálogo de etapas
     const estatisticas = {
       total: rawLeads.length,
-      ativos: rawLeads.filter(
-        (l) =>
+      ativos: rawLeads.filter((l) => {
+        const tipo = etapasTipoMap[l.statusFunil]
+        if (tipo) return tipo === 'aberta'
+        return (
           l.statusFunil !== StatusFunil.FECHADO &&
           l.statusFunil !== StatusFunil.PERDIDO &&
           l.statusFunil !== StatusFunil.DESQUALIFICADO
+        )
+      }).length,
+      fechados: rawLeads.filter(
+        (l) => etapasTipoMap[l.statusFunil] === 'ganho' || l.statusFunil === StatusFunil.FECHADO
       ).length,
-      fechados: rawLeads.filter((l) => l.statusFunil === StatusFunil.FECHADO).length,
-      perdidos: rawLeads.filter((l) => l.statusFunil === StatusFunil.PERDIDO).length,
+      perdidos: rawLeads.filter(
+        (l) => etapasTipoMap[l.statusFunil] === 'perdido' || l.statusFunil === StatusFunil.PERDIDO
+      ).length,
       estagnados: rawLeads.filter((l) => l.precisaAtencao).length,
     }
 
@@ -233,6 +267,20 @@ export default class LeadsController {
         motivoPerda: lead.motivoPerda,
         concorrentePerdido: lead.concorrentePerdido,
         convertidoEmCliente: lead.convertidoEmCliente,
+        clienteId: lead.clienteId || null,
+        projeto: lead.projeto
+          ? {
+              id: lead.projeto.id,
+              codigo: lead.projeto.codigo,
+              status: lead.projeto.status,
+              statusLabel:
+                STATUS_PROJETO_LABELS[lead.projeto.status as StatusProjeto] || lead.projeto.status,
+              valorContrato: lead.projeto.valorContrato ? Number(lead.projeto.valorContrato) : null,
+              briefingId: lead.projeto.briefing ? lead.projeto.briefing.id : null,
+              briefingScore: lead.projeto.briefing ? Number(lead.projeto.briefing.score || 0) : null,
+              briefingStatus: lead.projeto.briefing ? lead.projeto.briefing.status : null,
+            }
+          : null,
         statusAlteradoEm: lead.statusAlteradoEm ? lead.statusAlteradoEm.toISO() : null,
         ultimaInteracaoEm: lead.ultimaInteracaoEm ? lead.ultimaInteracaoEm.toISO() : null,
         createdAt: lead.createdAt ? lead.createdAt.toISO() : null,
@@ -257,9 +305,9 @@ export default class LeadsController {
           id: h.id,
           leadId: h.leadId,
           statusDe: h.statusDe,
-          statusDeLabel: h.statusDe ? STATUS_FUNIL_LABELS[h.statusDe as StatusFunil] || h.statusDe : null,
+          statusDeLabel: h.statusDe ? etapasLabelsMap[h.statusDe] || h.statusDe : null,
           statusPara: h.statusPara,
-          statusParaLabel: STATUS_FUNIL_LABELS[h.statusPara as StatusFunil] || h.statusPara,
+          statusParaLabel: etapasLabelsMap[h.statusPara] || h.statusPara,
           tempoPermanenciaSegundos: h.tempoPermanenciaSegundos,
           observacao: h.observacao,
           createdAt: h.createdAt ? h.createdAt.toISO() : null,
@@ -305,6 +353,16 @@ export default class LeadsController {
       .orderBy('ordem', 'asc')
       .orderBy('nome', 'asc')
 
+    const categoriasProntuarioCatalogo = await CategoriaProntuarioCatalogo.query()
+      .where('isActive', true)
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const clientesCatalogo = await Cliente.query()
+      .where('isActive', true)
+      .select('id', 'nome', 'telefone', 'email', 'arquitetoId')
+      .orderBy('nome', 'asc')
+
     const colaboradores = (user.isGestor || user.isSuperuser)
       ? await User.query()
           .where('is_active', true)
@@ -323,6 +381,13 @@ export default class LeadsController {
         perfil: c.perfil,
       })),
       arquitetos: arquitetos.map((a) => ({ id: a.id, nome: a.nome, escritorio: a.escritorio })),
+      clientesCatalogo: clientesCatalogo.map((cl) => ({
+        id: cl.id,
+        nome: cl.nome,
+        telefone: cl.telefone,
+        email: cl.email,
+        arquitetoId: cl.arquitetoId,
+      })),
       ambientesCatalogo: ambientesCatalogo.map((a) => ({ id: a.id, nome: a.nome, categoria: a.categoria })),
       origensCatalogo: origensCatalogo.map((o) => ({ id: o.id, nome: o.nome, slug: o.slug })),
       campanhasCatalogo: campanhasCatalogo.map((c) => ({ id: c.id, nome: c.nome })),
@@ -332,6 +397,33 @@ export default class LeadsController {
         slug: t.slug,
         cor: t.cor,
         ordem: t.ordem,
+      })),
+      categoriasProntuarioCatalogo: categoriasProntuarioCatalogo.map((cp) => ({
+        id: cp.id,
+        nome: cp.nome,
+        slug: cp.slug,
+        cor: cp.cor,
+        icone: cp.icone,
+        ordem: cp.ordem,
+      })),
+      kanbanQuadrosCatalogo: kanbanQuadrosCatalogo.map((q) => ({
+        id: q.id,
+        nome: q.nome,
+        slug: q.slug,
+        descricao: q.descricao,
+        cor: q.cor,
+        ordem: q.ordem,
+        etapas: (q.etapas || []).map((e) => ({
+          id: e.id,
+          quadroId: e.quadroId,
+          nome: e.nome,
+          slug: e.slug,
+          cor: e.cor,
+          ordem: e.ordem,
+          exigeQualificacao: e.exigeQualificacao,
+          exigeMotivoPerda: e.exigeMotivoPerda,
+          tipoEstagio: e.tipoEstagio,
+        })),
       })),
       filtros: {
         q: search,
@@ -350,7 +442,7 @@ export default class LeadsController {
   }
 
   /**
-   * RF001 — Cadastra novo lead.
+   * RF001 — Cadastra novo lead (ou novo card de projeto para um cliente já existente).
    */
   async store({ request, response, auth, session }: HttpContext) {
     const user = auth.user!
@@ -365,6 +457,33 @@ export default class LeadsController {
     // Especificador indicador só é vinculado quando a origem do lead é "Especificador"
     const arquitetoId = payload.origem === OrigemLead.ARQUITETO ? payload.arquitetoId || null : null
 
+    // Garante vínculo imediato com a Ficha do Cliente (reaproveita clienteId se informado ou busca por telefone/nome)
+    let cliente: Cliente | null = null
+    if (payload.clienteId) {
+      cliente = await Cliente.find(payload.clienteId)
+    }
+
+    if (!cliente) {
+      cliente = await Cliente.query()
+        .where('isActive', true)
+        .where((q) => {
+          q.where('telefone', payload.telefone).orWhereILike('nome', payload.nome.trim())
+        })
+        .first()
+    }
+
+    if (!cliente) {
+      cliente = await Cliente.create({
+        nome: payload.nome.trim(),
+        telefone: payload.telefone,
+        email: payload.email || null,
+        arquitetoId,
+        tipo: 'pessoa_fisica',
+        isActive: true,
+        cadastroAprovado: false,
+      })
+    }
+
     const lead = await Lead.create({
       nome: payload.nome,
       telefone: payload.telefone,
@@ -377,6 +496,7 @@ export default class LeadsController {
       vendedorId: vendedorId || null,
       arquitetoId,
       possuiArquiteto: Boolean(arquitetoId),
+      clienteId: cliente.id,
       statusFunil: StatusFunil.NOVO_LEAD,
       qualificado: false,
     })
@@ -389,6 +509,158 @@ export default class LeadsController {
   }
 
   /**
+   * Abre a Ficha Cadastral do Cliente (/clientes/:id) a partir de um Lead do CRM.
+   * Caso o lead ainda não possua clienteId vinculado, cria/vincula automaticamente a ficha.
+   */
+  async abrirFichaCliente({ params, request, response, auth, session }: HttpContext) {
+    const user = auth.user!
+    const lead = await Lead.find(params.id)
+
+    if (!lead) {
+      session.flash('error', 'Lead não encontrado.')
+      if (this.wantsJson(request)) {
+        return response.notFound({ message: 'Lead não encontrado.' })
+      }
+      return response.redirect().back()
+    }
+
+    // Isolamento por perfil: vendedor só acessa a ficha dos seus próprios leads
+    if (user.perfil === PerfilUsuario.VENDEDOR && lead.vendedorId !== user.id) {
+      session.flash('error', 'Você não tem permissão para acessar a ficha deste lead.')
+      if (this.wantsJson(request)) {
+        return response.forbidden({ message: 'Você não tem permissão para acessar a ficha deste lead.' })
+      }
+      return response.redirect().back()
+    }
+
+    let cliente: Cliente | null = null
+    if (lead.clienteId) {
+      cliente = await Cliente.find(lead.clienteId)
+    }
+
+    if (!cliente) {
+      cliente = await Cliente.query()
+        .where('isActive', true)
+        .where((q) => {
+          if (lead.telefone) q.where('telefone', lead.telefone)
+          q.orWhereILike('nome', lead.nome.trim())
+        })
+        .first()
+
+      if (!cliente) {
+        cliente = await Cliente.create({
+          nome: lead.nome.trim(),
+          telefone: lead.telefone || '(00) 00000-0000',
+          email: lead.email || null,
+          arquitetoId: lead.arquitetoId || null,
+          tipo: 'pessoa_fisica',
+          isActive: true,
+          cadastroAprovado: false,
+        })
+      }
+
+      lead.clienteId = cliente.id
+      await lead.save()
+
+      // Sincroniza projetos do lead que estivessem sem cliente_id
+      await Projeto.query()
+        .where('lead_id', lead.id)
+        .whereNull('cliente_id')
+        .update({ cliente_id: cliente.id })
+    }
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        clienteId: cliente.id,
+        redirectUrl: `/clientes/${cliente.id}`,
+      })
+    }
+
+    return response.redirect().toRoute('clientes.show', { id: cliente.id })
+  }
+
+  /**
+   * Cria um novo card no Kanban do CRM para o mesmo cliente a partir de um card existente,
+   * permitindo iniciar um novo projeto (com seu próprio briefing exclusivo) sem duplicar o cliente.
+   */
+  async criarNovoProjetoCard({ params, request, response, auth, session }: HttpContext) {
+    const user = auth.user!
+    const leadOriginal = await Lead.findOrFail(params.id)
+
+    let cliente: Cliente | null = null
+    if (leadOriginal.clienteId) {
+      cliente = await Cliente.find(leadOriginal.clienteId)
+    }
+
+    if (!cliente) {
+      cliente = await Cliente.query()
+        .where('isActive', true)
+        .where((q) => {
+          if (leadOriginal.telefone) q.where('telefone', leadOriginal.telefone)
+          q.orWhereILike('nome', leadOriginal.nome.trim())
+        })
+        .first()
+
+      if (!cliente) {
+        cliente = await Cliente.create({
+          nome: leadOriginal.nome.trim(),
+          telefone: leadOriginal.telefone || '(00) 00000-0000',
+          email: leadOriginal.email || null,
+          arquitetoId: leadOriginal.arquitetoId || null,
+          tipo: 'pessoa_fisica',
+          isActive: true,
+          cadastroAprovado: false,
+        })
+      }
+
+      leadOriginal.clienteId = cliente.id
+      await leadOriginal.save()
+    }
+
+    const novoLead = await Lead.create({
+      nome: cliente.nome,
+      telefone: cliente.telefone || leadOriginal.telefone,
+      email: cliente.email || leadOriginal.email,
+      cidade: leadOriginal.cidade,
+      estado: leadOriginal.estado || 'SP',
+      origem: leadOriginal.origem || OrigemLead.INDICACAO,
+      origemDescricao: leadOriginal.origemDescricao,
+      vendedorId: leadOriginal.vendedorId || user.id,
+      arquitetoId: cliente.arquitetoId || leadOriginal.arquitetoId,
+      possuiArquiteto: Boolean(cliente.arquitetoId || leadOriginal.arquitetoId),
+      clienteId: cliente.id,
+      convertidoEmCliente: false,
+      statusFunil: StatusFunil.NOVO_LEAD,
+      qualificado: false,
+      ultimaInteracaoEm: DateTime.now(),
+    })
+
+    await this.registrarHistoricoStatus(novoLead, null, StatusFunil.NOVO_LEAD, user)
+    await novoLead.save()
+
+    await InteracaoLead.create({
+      leadId: novoLead.id,
+      responsavelId: user.id,
+      tipo: 'reuniao',
+      resumo: `Novo card de projeto aberto no CRM para o cliente ${cliente.nome} (a partir do card #${leadOriginal.id}). Qualifique os ambientes deste novo projeto para iniciar seu briefing exclusivo.`,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.created({
+        message: 'Novo card de projeto criado no CRM.',
+        leadId: novoLead.id,
+        clienteId: cliente.id,
+      })
+    }
+
+    session.flash(
+      'success',
+      `Novo card de projeto criado na coluna "Novo Lead" para "${cliente.nome}"! Qualifique os ambientes para iniciar o novo briefing.`
+    )
+    return response.redirect().back()
+  }
+
+  /**
    * Atualização de status no Kanban (Drag and Drop) com guardrails RN001 e RF004.
    */
   async updateStatus({ params, request, response, auth, session }: HttpContext) {
@@ -396,23 +668,34 @@ export default class LeadsController {
     const payload = await request.validateUsing(updateStatusValidator)
     const user = auth.user!
 
-    const etapasPosVisita: string[] = [
+    const etapaDestino = await KanbanEtapaCatalogo.findBy('slug', payload.statusFunil)
+
+    const etapasPosVisitaFallback: string[] = [
       StatusFunil.EM_BRIEFING,
+      StatusFunil.FILA_PROJETO,
       StatusFunil.EM_PROJETO,
       StatusFunil.EM_FECHAMENTO,
     ]
 
-    // RN001: Bloqueia avanço para briefing/projeto sem qualificação prévia
-    if (etapasPosVisita.includes(payload.statusFunil) && !lead.qualificado) {
+    const exigeQualificacao = etapaDestino
+      ? etapaDestino.exigeQualificacao
+      : etapasPosVisitaFallback.includes(payload.statusFunil)
+
+    // RN001: Bloqueia avanço para briefing/projeto/pós-venda sem qualificação prévia
+    if (exigeQualificacao && !lead.qualificado) {
       session.flash(
         'error',
-        'RN001 — Bloqueio de Funil: O lead precisa ser qualificado antes de avançar para Briefing ou Projeto.'
+        'RN001 — Bloqueio de Funil: O lead precisa ser qualificado antes de avançar para esta etapa.'
       )
       return response.redirect().back()
     }
 
+    const exigeMotivoPerda = etapaDestino
+      ? etapaDestino.exigeMotivoPerda || etapaDestino.tipoEstagio === 'perdido'
+      : payload.statusFunil === StatusFunil.PERDIDO
+
     // RF004: Exige motivo ao marcar como Perdido
-    if (payload.statusFunil === StatusFunil.PERDIDO && !payload.motivoPerda) {
+    if (exigeMotivoPerda && !payload.motivoPerda) {
       session.flash(
         'error',
         'RF004: É obrigatório informar o motivo da perda ao arquivar um lead como perdido.'
@@ -422,7 +705,7 @@ export default class LeadsController {
 
     const statusAnterior = lead.statusFunil
     lead.statusFunil = payload.statusFunil
-    if (payload.statusFunil === StatusFunil.PERDIDO) {
+    if (exigeMotivoPerda) {
       lead.motivoPerda = payload.motivoPerda || null
       lead.concorrentePerdido = payload.concorrentePerdido || null
     }
@@ -430,7 +713,9 @@ export default class LeadsController {
     await this.registrarHistoricoStatus(lead, statusAnterior, payload.statusFunil, user)
     await lead.save()
 
-    session.flash('success', `Status de "${lead.nome}" atualizado para ${lead.statusFunil}.`)
+    const labelDestino =
+      etapaDestino?.nome || STATUS_FUNIL_LABELS[payload.statusFunil] || payload.statusFunil
+    session.flash('success', `Status de "${lead.nome}" atualizado para "${labelDestino}".`)
     return response.redirect().back()
   }
 
@@ -551,10 +836,53 @@ export default class LeadsController {
       resumo: payload.resumo,
     })
 
+    let salvoNoProntuario = false
+    if (payload.adicionarAoProntuario) {
+      if (!lead.clienteId) {
+        let cliente = await Cliente.query()
+          .where('isActive', true)
+          .where((q) => {
+            if (lead.telefone) q.where('telefone', lead.telefone)
+            q.orWhereILike('nome', lead.nome.trim())
+          })
+          .first()
+
+        if (!cliente) {
+          cliente = await Cliente.create({
+            nome: lead.nome.trim(),
+            telefone: lead.telefone || '(00) 00000-0000',
+            email: lead.email || null,
+            arquitetoId: lead.arquitetoId || null,
+            tipo: 'pessoa_fisica',
+            isActive: true,
+            cadastroAprovado: false,
+          })
+        }
+
+        lead.clienteId = cliente.id
+      }
+
+      await ProntuarioCliente.create({
+        clienteId: lead.clienteId,
+        autorId: user.id,
+        leadId: lead.id,
+        categoria: payload.categoriaProntuario || 'pessoal',
+        titulo: `Anotação via CRM (${payload.tipo})`,
+        descricao: payload.resumo,
+      })
+
+      salvoNoProntuario = true
+    }
+
     lead.ultimaInteracaoEm = DateTime.now()
     await lead.save()
 
-    session.flash('success', 'Interação registrada com sucesso!')
+    session.flash(
+      'success',
+      salvoNoProntuario
+        ? 'Interação registrada e adicionada ao prontuário do cliente!'
+        : 'Interação registrada com sucesso!'
+    )
     return response.redirect().back()
   }
 }

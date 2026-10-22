@@ -72,6 +72,13 @@ export const PERFIS_EXTERNOS: PerfilUsuario[] = [
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   declare perfil: PerfilUsuario | string
 
+  // Estado efêmero de simulação de perfil ("Ver como...") durante o ciclo da requisição
+  isImpersonating: boolean = false
+  perfilOriginal?: string
+  perfilOriginalLabel?: string
+  isSuperuserOriginal?: boolean
+  private _customPerfilLabel?: string
+
   @hasMany(() => Arquiteto, { foreignKey: 'consultorId' })
   declare arquitetos: HasMany<typeof Arquiteto>
 
@@ -87,7 +94,49 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   }
 
   get perfilLabel(): string {
+    if (this._customPerfilLabel) return this._customPerfilLabel
     return (PERFIL_LABELS as Record<string, string>)[this.perfil] || this.perfil
+  }
+
+  /**
+   * Indica se o usuário REAL (no banco de dados, antes de qualquer simulação)
+   * pertence à Diretoria ou é Superusuário, podendo utilizar o seletor "Ver como...".
+   */
+  get canImpersonate(): boolean {
+    const realPerfil = this.perfilOriginal ?? this.perfil
+    const realSuper = this.isSuperuserOriginal ?? this.isSuperuser
+    return Boolean(realSuper || realPerfil === PerfilUsuario.DIRETORIA)
+  }
+
+  /**
+   * Aplica em memória (sem persistir no banco) o perfil simulado na sessão.
+   * Idempotente: preserva os dados originais na primeira chamada.
+   */
+  applyImpersonation(impersonatedPerfil?: string | null, impersonatedLabel?: string | null) {
+    if (this.perfilOriginal === undefined) {
+      this.perfilOriginal = this.perfil
+      this.perfilOriginalLabel =
+        (PERFIL_LABELS as Record<string, string>)[this.perfil] || this.perfil
+      this.isSuperuserOriginal = Boolean(this.isSuperuser)
+    }
+
+    if (!this.canImpersonate) {
+      return
+    }
+
+    const alvo = impersonatedPerfil ? String(impersonatedPerfil).trim() : ''
+    if (alvo && alvo !== this.perfilOriginal) {
+      this.isImpersonating = true
+      this.perfil = alvo
+      this.isSuperuser = false
+      this._customPerfilLabel =
+        impersonatedLabel || (PERFIL_LABELS as Record<string, string>)[alvo] || alvo
+    } else {
+      this.isImpersonating = false
+      this.perfil = this.perfilOriginal!
+      this.isSuperuser = Boolean(this.isSuperuserOriginal)
+      this._customPerfilLabel = undefined
+    }
   }
 
   hasRole(roles: (PerfilUsuario | string) | (PerfilUsuario | string)[]): boolean {

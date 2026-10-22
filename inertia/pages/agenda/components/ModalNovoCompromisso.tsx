@@ -5,7 +5,6 @@ import {
   Calendar,
   ExternalLink,
   RotateCw,
-  Clock,
   MapPin,
   User,
   Users,
@@ -15,8 +14,10 @@ import {
 } from 'lucide-react'
 import { DateTime } from 'luxon'
 import { toast } from 'sonner'
+import clsx from 'clsx'
 import BuscaAutocomplete from '../../../components/ui/BuscaAutocomplete'
-import type { TipoCompromisso, Colaborador, LeadResumo } from '../types'
+import SeletorDataHoraDuracao, { LOCAIS_SUGERIDOS } from './SeletorDataHoraDuracao'
+import type { TipoCompromisso, Colaborador, LeadResumo, Compromisso } from '../types'
 
 interface ModalNovoCompromissoProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ interface ModalNovoCompromissoProps {
   tipos: TipoCompromisso[]
   colaboradores: Colaborador[]
   leads?: LeadResumo[]
+  compromissosExistentes?: Compromisso[]
   podeVerEquipe: boolean
   defaultLeadId?: number | null
   travarLead?: boolean
@@ -35,6 +37,7 @@ export default function ModalNovoCompromisso({
   tipos = [],
   colaboradores = [],
   leads = [],
+  compromissosExistentes = [],
   podeVerEquipe = false,
   defaultLeadId = null,
   travarLead = false,
@@ -107,9 +110,10 @@ export default function ModalNovoCompromisso({
 
   if (!isOpen) return null
 
-  // Atualizar tipoId caso a lista de tipos mude e o selecionado não exista
   const tipoSelecionado = tipos.find((t) => t.id === tipoId) || tipos[0]
   const leadSelecionado = leads.find((l) => String(l.id) === String(leadId))
+  const responsavelEfetivoId = podeVerEquipe ? Number(responsavelId) : Number(currentUser?.id || 0)
+  const responsavelSelecionado = colaboradores.find((c) => c.id === responsavelEfetivoId)
 
   const handleRefreshTipos = () => {
     setIsRefreshingTipos(true)
@@ -131,7 +135,7 @@ export default function ModalNovoCompromisso({
       return
     }
     if (!dataHoraInicio || !dataHoraFim) {
-      setErroForm('Informe a data e horário de início e término.')
+      setErroForm('Informe a data, horário de início e duração.')
       return
     }
 
@@ -153,7 +157,7 @@ export default function ModalNovoCompromisso({
       dataHoraInicio: dtInicio.toUTC().toISO(),
       dataHoraFim: dtFim.toUTC().toISO(),
       local: local.trim() || null,
-      responsavelId: podeVerEquipe ? Number(responsavelId) : currentUser.id,
+      responsavelId: responsavelEfetivoId,
       leadId: leadId ? Number(leadId) : null,
       observacoes: observacoes.trim() || null,
     }
@@ -172,7 +176,6 @@ export default function ModalNovoCompromisso({
     })
   }
 
-  // Prepara opções de Lead para o BuscaAutocomplete
   const opcoesLeads = leads.map((l) => ({
     value: String(l.id),
     label: l.nome,
@@ -182,11 +185,18 @@ export default function ModalNovoCompromisso({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-2xl w-full overflow-hidden animate-scale-up">
-        {/* Cabeçalho do Modal */}
+        {/* Cabeçalho do Modal com barra superior na cor do Tipo selecionado */}
+        <div
+          className="h-1.5 w-full transition-colors"
+          style={{ backgroundColor: tipoSelecionado?.cor || '#C8841A' }}
+        />
         <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-800 flex items-center justify-center">
-              <Calendar size={18} />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-2xs transition-colors"
+              style={{ backgroundColor: tipoSelecionado?.cor || '#C8841A' }}
+            >
+              <Calendar size={17} />
             </div>
             <div>
               <h2 className="text-base font-semibold text-stone-900 font-serif">
@@ -201,7 +211,7 @@ export default function ModalNovoCompromisso({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
             title="Fechar"
           >
             <X size={18} />
@@ -217,7 +227,6 @@ export default function ModalNovoCompromisso({
             </div>
           )}
 
-
           {/* Tipo de Compromisso com Catálogo e Atalho */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -229,7 +238,7 @@ export default function ModalNovoCompromisso({
                 <button
                   type="button"
                   onClick={handleRefreshTipos}
-                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors"
+                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors cursor-pointer"
                   title="Atualizar tipos do catálogo"
                 >
                   <RotateCw size={12} className={isRefreshingTipos ? 'animate-spin' : ''} />
@@ -259,11 +268,12 @@ export default function ModalNovoCompromisso({
                     key={tipo.id}
                     type="button"
                     onClick={() => setTipoId(tipo.id)}
-                    className={`flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all ${
+                    className={clsx(
+                      'flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all cursor-pointer',
                       isSelected
                         ? 'border-primary-600 bg-primary-50/50 shadow-2xs font-medium text-stone-900'
                         : 'border-stone-200 hover:border-stone-300 bg-white text-stone-700'
-                    }`}
+                    )}
                   >
                     <span
                       className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
@@ -276,38 +286,20 @@ export default function ModalNovoCompromisso({
             </div>
           </div>
 
-          {/* Horários: Início e Fim */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Clock size={13} className="text-stone-400" />
-                Data & Hora de Início <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={dataHoraInicio}
-                onChange={(e) => setDataHoraInicio(e.target.value)}
-                className="input w-full text-xs"
-                required
-              />
-            </div>
+          {/* Seletor de Data, Horário e Duração Estilo Google Agenda */}
+          <SeletorDataHoraDuracao
+            dataHoraInicio={dataHoraInicio}
+            dataHoraFim={dataHoraFim}
+            onChange={(novoInicio, novoFim) => {
+              setDataHoraInicio(novoInicio)
+              setDataHoraFim(novoFim)
+            }}
+            compromissosExistentes={compromissosExistentes}
+            responsavelId={responsavelEfetivoId}
+            responsavelNome={responsavelSelecionado?.nome || currentUser?.nome}
+          />
 
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Clock size={13} className="text-stone-400" />
-                Data & Hora de Término <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={dataHoraFim}
-                onChange={(e) => setDataHoraFim(e.target.value)}
-                className="input w-full text-xs"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Local e Responsável */}
+          {/* Local com Sugestões Rápidas + Colaborador Responsável */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
@@ -321,6 +313,26 @@ export default function ModalNovoCompromisso({
                 placeholder="Ex.: Showroom Loja / Obra do Cliente / Online"
                 className="input w-full text-xs"
               />
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {LOCAIS_SUGERIDOS.map((sug) => {
+                  const ativo = local === sug.valor
+                  return (
+                    <button
+                      key={sug.valor}
+                      type="button"
+                      onClick={() => setLocal(ativo ? '' : sug.valor)}
+                      className={clsx(
+                        'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                        ativo
+                          ? 'bg-stone-800 text-white border-stone-800'
+                          : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                      )}
+                    >
+                      {sug.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div>
@@ -332,7 +344,7 @@ export default function ModalNovoCompromisso({
                 <select
                   value={responsavelId}
                   onChange={(e) => setResponsavelId(Number(e.target.value))}
-                  className="input w-full text-xs"
+                  className="input w-full text-xs cursor-pointer"
                 >
                   {colaboradores.map((colab) => (
                     <option key={colab.id} value={colab.id}>
@@ -348,6 +360,9 @@ export default function ModalNovoCompromisso({
                   className="input w-full text-xs bg-stone-100 text-stone-500 cursor-not-allowed"
                 />
               )}
+              <p className="text-[10px] text-stone-400 mt-1">
+                Agenda vinculada ao colaborador selecionado.
+              </p>
             </div>
           </div>
 
@@ -364,10 +379,14 @@ export default function ModalNovoCompromisso({
                     {leadSelecionado.nome.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-800 leading-tight">{leadSelecionado.nome}</p>
+                    <p className="font-semibold text-stone-800 leading-tight">
+                      {leadSelecionado.nome}
+                    </p>
                     {(leadSelecionado.telefone || leadSelecionado.cidade) && (
                       <p className="text-[11px] text-stone-500">
-                        {[leadSelecionado.telefone, leadSelecionado.cidade].filter(Boolean).join(' • ')}
+                        {[leadSelecionado.telefone, leadSelecionado.cidade]
+                          .filter(Boolean)
+                          .join(' • ')}
                       </p>
                     )}
                   </div>
@@ -412,7 +431,7 @@ export default function ModalNovoCompromisso({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="btn btn-secondary text-xs"
+              className="btn btn-secondary text-xs cursor-pointer"
             >
               Cancelar
             </button>
@@ -420,7 +439,7 @@ export default function ModalNovoCompromisso({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn btn-primary text-xs flex items-center gap-1.5 shadow-sm"
+              className="btn btn-primary text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Calendar size={14} />
               <span>{isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}</span>

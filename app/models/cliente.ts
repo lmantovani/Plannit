@@ -5,6 +5,7 @@ import EnderecoCliente from '#models/endereco_cliente'
 import Projeto from '#models/projeto'
 import Arquiteto from '#models/arquiteto'
 import User from '#models/user'
+import ProntuarioCliente from '#models/prontuario_cliente'
 
 export enum TipoCliente {
   PESSOA_FISICA = 'pessoa_fisica',
@@ -23,6 +24,11 @@ export default class Cliente extends ClienteSchema {
     foreignKey: 'clienteId',
   })
   declare projetos: HasMany<typeof Projeto>
+
+  @hasMany(() => ProntuarioCliente, {
+    foreignKey: 'clienteId',
+  })
+  declare prontuarios: HasMany<typeof ProntuarioCliente>
 
   @belongsTo(() => Arquiteto, {
     foreignKey: 'arquitetoId',

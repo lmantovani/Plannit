@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Head, router, useForm, usePage } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
@@ -9,6 +9,8 @@ import {
   timeAgo,
   formatDate,
   formatDateTime,
+  type FunilEtapa,
+  type KanbanQuadroCatalogoItem,
 } from '../../lib/constants'
 import {
   Search,
@@ -32,6 +34,8 @@ import {
   ExternalLink,
   RotateCw,
   History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { DateTime } from 'luxon'
@@ -42,6 +46,8 @@ import ModalNovoParceiroRapido, {
 } from '../../components/especificadores/ModalNovoParceiroRapido'
 import EspecificadorAutocomplete from '../../components/especificadores/EspecificadorAutocomplete'
 import CampanhaAutocomplete from '../../components/crm/CampanhaAutocomplete'
+import BuscaAutocomplete from '../../components/ui/BuscaAutocomplete'
+import { useSincronizarCatalogos } from '../../lib/catalogos'
 import ModalNovoCompromisso from '../agenda/components/ModalNovoCompromisso'
 import ModalConcluirCompromisso from '../agenda/components/ModalConcluirCompromisso'
 import type { TipoCompromisso, Colaborador, Compromisso } from '../agenda/types'
@@ -104,6 +110,17 @@ export type CompromissoItemLead = {
   responsavel?: { id: number; nome: string } | null
 }
 
+export type LeadProjetoVinculado = {
+  id: number
+  codigo: string
+  status: string
+  statusLabel: string
+  valorContrato: number | null
+  briefingId: number | null
+  briefingScore: number | null
+  briefingStatus: string | null
+}
+
 export type LeadItem = {
   id: number
   nome: string
@@ -135,6 +152,8 @@ export type LeadItem = {
   motivoPerda: string | null
   concorrentePerdido: string | null
   convertidoEmCliente: boolean
+  clienteId?: number | null
+  projeto?: LeadProjetoVinculado | null
   statusAlteradoEm: string | null
   ultimaInteracaoEm: string | null
   createdAt: string | null
@@ -162,16 +181,34 @@ export type VendedorOption = {
   nome: string
 }
 
+export type ClienteCatalogoOption = {
+  id: number
+  nome: string
+  telefone: string
+  email: string | null
+  arquitetoId: number | null
+}
+
 export type PageProps = {
   leads: LeadItem[]
   estatisticas: Estatisticas
   vendedores: VendedorOption[]
   colaboradores?: Colaborador[]
   arquitetos: ArquitetoOption[]
+  clientesCatalogo?: ClienteCatalogoOption[]
   ambientesCatalogo?: { id: number; nome: string; categoria: string }[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
   tiposCompromissoCatalogo?: TipoCompromisso[]
+  categoriasProntuarioCatalogo?: Array<{
+    id: number
+    nome: string
+    slug: string
+    cor: string
+    icone?: string | null
+    ordem?: number
+  }>
+  kanbanQuadrosCatalogo?: KanbanQuadroCatalogoItem[]
   filtros: {
     q: string
     statusFunil: string
@@ -233,19 +270,137 @@ const CRMIndex: React.FC<PageProps> = ({
   vendedores,
   colaboradores = [],
   arquitetos,
+  clientesCatalogo = [],
   ambientesCatalogo = [],
   origensCatalogo = [],
   campanhasCatalogo = [],
   tiposCompromissoCatalogo = [],
+  categoriasProntuarioCatalogo = [],
+  kanbanQuadrosCatalogo = [],
   filtros,
   isVendedor,
 }) => {
+  useSincronizarCatalogos([
+    'kanbanQuadrosCatalogo',
+    'categoriasProntuarioCatalogo',
+    'origensCatalogo',
+    'campanhasCatalogo',
+    'tiposCompromissoCatalogo',
+    'ambientesCatalogo',
+  ])
   const [view, setView] = useState<'kanban' | 'lista'>('kanban')
   const [search, setSearch] = useState(filtros.q || '')
   const [origemFiltro, setOrigemFiltro] = useState(filtros.origem || '')
   const [vendedorFiltro, setVendedorFiltro] = useState<string>(
     filtros.vendedorId ? String(filtros.vendedorId) : ''
   )
+
+  // Constrói a lista de quadros ativos do catálogo (com fallback para os 4 quadros padrão)
+  const quadrosKanban = useMemo<KanbanQuadroCatalogoItem[]>(() => {
+    if (kanbanQuadrosCatalogo && kanbanQuadrosCatalogo.length > 0) {
+      return kanbanQuadrosCatalogo
+    }
+    const defs = [
+      { id: 1, nome: 'Kanban Comercial', slug: 'comercial', descricao: null, cor: '#b45309', ordem: 1 },
+      { id: 2, nome: 'Pós-venda (Conferência)', slug: 'pos_venda_conferencia', descricao: null, cor: '#0284c7', ordem: 2 },
+      { id: 3, nome: 'Pós-venda - Entrega e Montagem', slug: 'pos_venda_entrega_montagem', descricao: null, cor: '#059669', ordem: 3 },
+      { id: 4, nome: 'Pós-venda - Assistência Técnica', slug: 'pos_venda_assistencia_tecnica', descricao: null, cor: '#7c3aed', ordem: 4 },
+    ]
+    return defs.map((q) => ({
+      ...q,
+      etapas: FUNIL_ETAPAS.filter((e) => e.quadroSlug === q.slug && e.key !== 'em_visita').map(
+        (e, idx) => ({
+          id: idx + 1,
+          quadroId: q.id,
+          nome: e.label,
+          slug: e.key,
+          cor: e.cor,
+          ordem: idx + 1,
+          exigeQualificacao: Boolean(e.exigeQualificacao),
+          exigeMotivoPerda: Boolean(e.exigeMotivoPerda),
+          tipoEstagio: e.tipoEstagio || 'aberta',
+        })
+      ),
+    }))
+  }, [kanbanQuadrosCatalogo])
+
+  const [quadroSelecionadoSlug, setQuadroSelecionadoSlug] = useState<string>(
+    () => quadrosKanban[0]?.slug || 'comercial'
+  )
+  const [isRefreshingKanban, setIsRefreshingKanban] = useState(false)
+  const [dragOverQuadroSlug, setDragOverQuadroSlug] = useState<string | null>(null)
+
+  const quadroAtivo = useMemo(() => {
+    return (
+      quadrosKanban.find((q) => q.slug === quadroSelecionadoSlug) ||
+      quadrosKanban[0] ||
+      null
+    )
+  }, [quadrosKanban, quadroSelecionadoSlug])
+
+  // Mapa completo de todas as etapas de todos os quadros (para labels, cores e regras RN001/RF004)
+  const mapaTodasEtapas = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        key: string
+        label: string
+        cor: string
+        quadroSlug: string
+        quadroNome: string
+        exigeQualificacao: boolean
+        exigeMotivoPerda: boolean
+        tipoEstagio: string
+      }
+    > = {}
+
+    for (const f of FUNIL_ETAPAS) {
+      map[f.key] = {
+        key: f.key,
+        label: f.label,
+        cor: f.cor,
+        quadroSlug: f.quadroSlug || 'comercial',
+        quadroNome: 'Kanban Comercial',
+        exigeQualificacao: Boolean(f.exigeQualificacao),
+        exigeMotivoPerda: Boolean(f.exigeMotivoPerda),
+        tipoEstagio: f.tipoEstagio || 'aberta',
+      }
+    }
+
+    for (const q of quadrosKanban) {
+      for (const e of q.etapas || []) {
+        map[e.slug] = {
+          key: e.slug,
+          label: e.nome,
+          cor: e.cor,
+          quadroSlug: q.slug,
+          quadroNome: q.nome,
+          exigeQualificacao: e.exigeQualificacao,
+          exigeMotivoPerda: e.exigeMotivoPerda,
+          tipoEstagio: e.tipoEstagio,
+        }
+      }
+    }
+
+    return map
+  }, [quadrosKanban])
+
+  const etapasAtivasDoQuadro = useMemo<FunilEtapa[]>(() => {
+    if (!quadroAtivo) return FUNIL_ETAPAS
+    return (quadroAtivo.etapas || []).map((e) => ({
+      key: e.slug,
+      label: e.nome,
+      cor: e.cor,
+      bg: 'bg-stone-50',
+      border: 'border-stone-200',
+      text: 'text-stone-700',
+      quadroSlug: quadroAtivo.slug,
+      quadroNome: quadroAtivo.nome,
+      exigeQualificacao: e.exigeQualificacao,
+      exigeMotivoPerda: e.exigeMotivoPerda,
+      tipoEstagio: e.tipoEstagio,
+    }))
+  }, [quadroAtivo])
 
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null)
   const [showNovoModal, setShowNovoModal] = useState(false)
@@ -284,39 +439,74 @@ const CRMIndex: React.FC<PageProps> = ({
     return matchSearch && matchOrigem && matchVendedor
   })
 
-  // Agrupa leads por coluna para o Kanban
-  const leadsPorStatus = FUNIL_ETAPAS.reduce(
-    (acc, etapa) => {
-      acc[etapa.key] = filteredLeads.filter((l) => l.statusFunil === etapa.key)
-      return acc
-    },
-    {} as Record<string, LeadItem[]>
+  // Normaliza status legado 'em_visita' para 'qualificando' caso 'em_visita' não seja uma coluna ativa
+  const temColunaEmVisita = useMemo(
+    () => quadrosKanban.some((q) => (q.etapas || []).some((e) => e.slug === 'em_visita')),
+    [quadrosKanban]
   )
 
-  // Handlers de Drag and Drop
+  const getStatusEfetivoNoKanban = (statusFunil: string) => {
+    if (statusFunil === 'em_visita' && !temColunaEmVisita) {
+      return 'qualificando'
+    }
+    return statusFunil
+  }
+
+  // Contagem de leads por quadro (para exibir nos badges do seletor de quadros)
+  const contagemPorQuadro = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const q of quadrosKanban) {
+      const slugsDoQuadro = new Set((q.etapas || []).map((e) => e.slug))
+      counts[q.slug] = filteredLeads.filter((l) =>
+        slugsDoQuadro.has(getStatusEfetivoNoKanban(l.statusFunil))
+      ).length
+    }
+    return counts
+  }, [quadrosKanban, filteredLeads, temColunaEmVisita])
+
+  // Agrupa leads por coluna para o Quadro Ativo do Kanban
+  const leadsPorStatus = useMemo(() => {
+    return etapasAtivasDoQuadro.reduce(
+      (acc, etapa) => {
+        acc[etapa.key] = filteredLeads.filter(
+          (l) => getStatusEfetivoNoKanban(l.statusFunil) === etapa.key
+        )
+        return acc
+      },
+      {} as Record<string, LeadItem[]>
+    )
+  }, [etapasAtivasDoQuadro, filteredLeads, temColunaEmVisita])
+
+  // Handlers de Drag and Drop e mudança de etapa
   const handleDragStart = (leadId: number) => {
     draggedLeadId.current = leadId
   }
 
-  const handleDrop = (targetStatus: string) => {
-    const leadId = draggedLeadId.current
-    setDragOverCol(null)
-    draggedLeadId.current = null
-
-    if (!leadId) return
-    const lead = leads.find((l) => l.id === leadId)
+  const moverLeadParaEtapa = (lead: LeadItem, targetStatus: string) => {
     if (!lead || lead.statusFunil === targetStatus) return
 
+    const infoDestino = mapaTodasEtapas[targetStatus]
+    const exigePerda =
+      targetStatus === 'perdido' ||
+      infoDestino?.exigeMotivoPerda ||
+      infoDestino?.tipoEstagio === 'perdido'
+
     // Se estiver movendo para 'perdido', abre o modal com motivo obrigatório (RF004)
-    if (targetStatus === 'perdido') {
+    if (exigePerda) {
       setLeadParaPerder(lead)
       return
     }
 
-    // RN001: Bloqueio de avanço para briefing/projeto sem qualificação
-    const etapasRestritas = ['em_briefing', 'em_projeto', 'em_fechamento']
-    if (etapasRestritas.includes(targetStatus) && !lead.qualificado) {
-      toast.error('RN001 — O lead precisa ser qualificado antes de avançar para etapas de Briefing ou Projeto.')
+    // RN001: Bloqueio de avanço para etapas que exigem qualificação
+    const exigeQualif =
+      infoDestino !== undefined
+        ? infoDestino.exigeQualificacao
+        : ['em_briefing', 'fila_projeto', 'em_projeto', 'em_fechamento'].includes(targetStatus)
+
+    if (exigeQualif && !lead.qualificado) {
+      toast.error(
+        'RN001 — O lead precisa ser qualificado antes de avançar para esta etapa.'
+      )
       setSelectedLeadId(lead.id)
       setLeadParaQualificar(lead)
       return
@@ -324,7 +514,7 @@ const CRMIndex: React.FC<PageProps> = ({
 
     // Envia atualização de status para o backend
     router.patch(
-      `/crm/leads/${leadId}/status`,
+      `/crm/leads/${lead.id}/status`,
       { statusFunil: targetStatus },
       {
         preserveScroll: true,
@@ -333,6 +523,33 @@ const CRMIndex: React.FC<PageProps> = ({
         },
       }
     )
+  }
+
+  const handleDrop = (targetStatus: string) => {
+    const leadId = draggedLeadId.current
+    setDragOverCol(null)
+    setDragOverQuadroSlug(null)
+    draggedLeadId.current = null
+
+    if (!leadId) return
+    const lead = leads.find((l) => l.id === leadId)
+    if (!lead) return
+    moverLeadParaEtapa(lead, targetStatus)
+  }
+
+  const handleDropOnQuadroTab = (quadroAlvo: KanbanQuadroCatalogoItem) => {
+    const leadId = draggedLeadId.current
+    setDragOverCol(null)
+    setDragOverQuadroSlug(null)
+    draggedLeadId.current = null
+
+    if (!leadId) return
+    const lead = leads.find((l) => l.id === leadId)
+    const primeiraEtapa = quadroAlvo.etapas?.[0]
+    if (!lead || !primeiraEtapa) return
+
+    setQuadroSelecionadoSlug(quadroAlvo.slug)
+    moverLeadParaEtapa(lead, primeiraEtapa.slug)
   }
 
   // Qualificar lead (RN001) - Abre o modal com critérios estruturados
@@ -506,11 +723,108 @@ const CRMIndex: React.FC<PageProps> = ({
           </div>
         </div>
 
+        {/* Barra Seletora de Quadros (Pipelines) do Kanban */}
+        <div className="card p-2.5 bg-white flex flex-wrap items-center justify-between gap-2.5 border border-stone-200/90">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider px-2 shrink-0">
+              Quadros:
+            </span>
+            {quadrosKanban.map((q) => {
+              const isSelected = quadroAtivo?.slug === q.slug
+              const isDragTarget = dragOverQuadroSlug === q.slug
+              const count = contagemPorQuadro[q.slug] || 0
+
+              return (
+                <button
+                  key={q.slug}
+                  type="button"
+                  onClick={() => setQuadroSelecionadoSlug(q.slug)}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (dragOverQuadroSlug !== q.slug) setDragOverQuadroSlug(q.slug)
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverQuadroSlug === q.slug) setDragOverQuadroSlug(null)
+                  }}
+                  onDrop={() => handleDropOnQuadroTab(q)}
+                  className={clsx(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer border',
+                    isDragTarget
+                      ? 'ring-2 ring-primary-400 bg-primary-50 border-primary-300 text-primary-900 scale-105'
+                      : isSelected
+                        ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                        : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100 hover:text-stone-900'
+                  )}
+                  title={
+                    q.descricao ||
+                    `Visualizar quadro "${q.nome}" (${(q.etapas || []).length} colunas). Você também pode arrastar um card e soltar aqui para movê-lo para a 1ª coluna deste quadro.`
+                  }
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: q.cor }}
+                  />
+                  <span>{q.nome}</span>
+                  <span
+                    className={clsx(
+                      'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-stone-200/80 text-stone-700'
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {!isVendedor && (
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRefreshingKanban(true)
+                  router.reload({
+                    only: ['kanbanQuadrosCatalogo'],
+                    onFinish: () => {
+                      setIsRefreshingKanban(false)
+                      toast.info('Quadros e etapas sincronizados com sucesso.')
+                    },
+                  })
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
+                title="Sincronizar quadros e colunas do Kanban"
+              >
+                <RotateCw size={12} className={clsx(isRefreshingKanban && 'animate-spin')} />
+                <span>Sincronizar</span>
+              </button>
+
+              <a
+                href="/configuracoes?tab=kanban"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-900 bg-primary-50/70 hover:bg-primary-100 px-2.5 py-1 rounded-md border border-primary-200/70 transition-colors"
+                title="Personalizar quadros e colunas do Kanban em Configurações"
+              >
+                <span>Configurar Quadros</span>
+                <ExternalLink size={11} />
+              </a>
+            </div>
+          )}
+        </div>
+
         {/* Visualização: Kanban vs Lista */}
         {view === 'kanban' ? (
           <div className="flex-1 overflow-x-auto pb-4">
-            <div className="flex gap-3 min-w-[1300px] h-[calc(100vh-270px)]">
-              {FUNIL_ETAPAS.map((etapa) => {
+            <div
+              className="flex gap-3 h-[calc(100vh-320px)]"
+              style={{
+                minWidth: `${Math.max(etapasAtivasDoQuadro.length * 225, 900)}px`,
+              }}
+            >
+              {etapasAtivasDoQuadro.map((etapa) => {
                 const columnLeads = leadsPorStatus[etapa.key] || []
                 const isOver = dragOverCol === etapa.key
 
@@ -526,24 +840,27 @@ const CRMIndex: React.FC<PageProps> = ({
                     }}
                     onDrop={() => handleDrop(etapa.key)}
                     className={clsx(
-                      'flex-1 flex flex-col rounded-xl bg-stone-50/80 border transition-all min-w-[200px]',
+                      'flex-1 flex flex-col rounded-xl bg-stone-50/80 border transition-all min-w-[215px]',
                       isOver
                         ? 'border-primary-400 bg-primary-50/30 ring-2 ring-primary-300 ring-inset'
                         : 'border-stone-200/90'
                     )}
                   >
                     {/* Cabeçalho da Coluna */}
-                    <div className="p-3 border-b border-stone-200/80 flex items-center justify-between bg-white rounded-t-xl">
-                      <div className="flex items-center gap-2">
+                    <div className="p-3 border-b border-stone-200/80 flex items-center justify-between bg-white rounded-t-xl gap-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
                         <span
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: etapa.cor }}
                         />
-                        <span className="text-xs font-bold text-stone-700 tracking-tight">
+                        <span
+                          className="text-xs font-bold text-stone-700 tracking-tight truncate"
+                          title={etapa.label}
+                        >
                           {etapa.label}
                         </span>
                       </div>
-                      <span className="text-[11px] font-semibold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-semibold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full shrink-0">
                         {columnLeads.length}
                       </span>
                     </div>
@@ -588,80 +905,108 @@ const CRMIndex: React.FC<PageProps> = ({
                     <th className="py-2.5 px-3 text-left">Contato</th>
                     <th className="py-2.5 px-3 text-left">Cidade</th>
                     <th className="py-2.5 px-3 text-left">Origem</th>
-                    <th className="py-2.5 px-3 text-left">Status</th>
+                    <th className="py-2.5 px-3 text-left">Quadro / Etapa</th>
                     <th className="py-2.5 px-3 text-left">Qualificação</th>
                     <th className="py-2.5 px-3 text-left">Vendedor</th>
                     <th className="py-2.5 px-3 text-left">Último Contato</th>
+                    <th className="py-2.5 px-3 text-right">Ficha</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {filteredLeads.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-stone-400">
+                      <td colSpan={9} className="py-8 text-center text-stone-400">
                         Nenhum lead encontrado com os filtros selecionados.
                       </td>
                     </tr>
                   ) : (
-                    filteredLeads.map((l) => (
-                      <tr
-                        key={l.id}
-                        onClick={() => setSelectedLeadId(l.id)}
-                        className="hover:bg-stone-50/80 cursor-pointer transition-colors"
-                      >
-                        <td className="py-3 px-3 font-semibold text-stone-800">
-                          <div className="flex items-center gap-2">
-                            {l.precisaAtencao && (
-                              <span
-                                className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"
-                                title="Mais de 3 dias sem contato!"
-                              />
-                            )}
-                            <span>{l.nome}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-stone-600">
-                          <div>{l.telefone}</div>
-                          {l.email && (
-                            <div className="text-[11px] text-stone-400 truncate max-w-[160px]">
-                              {l.email}
+                    filteredLeads.map((l) => {
+                      const infoEtapa = mapaTodasEtapas[getStatusEfetivoNoKanban(l.statusFunil)]
+                      return (
+                        <tr
+                          key={l.id}
+                          onClick={() => setSelectedLeadId(l.id)}
+                          className="hover:bg-stone-50/80 cursor-pointer transition-colors"
+                        >
+                          <td className="py-3 px-3 font-semibold text-stone-800">
+                            <div className="flex items-center gap-2">
+                              {l.precisaAtencao && (
+                                <span
+                                  className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"
+                                  title="Mais de 3 dias sem contato!"
+                                />
+                              )}
+                              <span>{l.nome}</span>
                             </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-stone-600">{l.cidade || '—'}</td>
-                        <td className="py-3 px-3">
-                          <span
-                            className="badge badge-neutro text-[10px]"
-                            title={l.origemDescricao || undefined}
-                          >
-                            {origensMap[l.origem] || l.origem}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-stone-100 text-stone-700">
-                            {FUNIL_ETAPAS.find((e) => e.key === l.statusFunil)?.label ||
-                              l.statusFunil}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          {l.qualificado ? (
-                            <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
-                              <CheckCircle2 size={13} />
-                              Qualificado
+                          </td>
+                          <td className="py-3 px-3 text-stone-600">
+                            <div>{l.telefone}</div>
+                            {l.email && (
+                              <div className="text-[11px] text-stone-400 truncate max-w-[160px]">
+                                {l.email}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-stone-600">{l.cidade || '—'}</td>
+                          <td className="py-3 px-3">
+                            <span
+                              className="badge badge-neutro text-[10px]"
+                              title={l.origemDescricao || undefined}
+                            >
+                              {origensMap[l.origem] || l.origem}
                             </span>
-                          ) : (
-                            <span className="text-[11px] font-medium text-stone-400">
-                              Não qualificado
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-stone-600">
-                          {l.vendedor?.nome || 'Não atribuído'}
-                        </td>
-                        <td className="py-3 px-3 text-stone-400">
-                          {timeAgo(l.ultimaInteracaoEm)}
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-col gap-0.5">
+                              {infoEtapa?.quadroNome && (
+                                <span className="text-[10px] text-stone-400 font-medium">
+                                  {infoEtapa.quadroNome}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-stone-100 text-stone-700 w-fit">
+                                {infoEtapa?.cor && (
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: infoEtapa.cor }}
+                                  />
+                                )}
+                                {infoEtapa?.label || l.statusFunil}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            {l.qualificado ? (
+                              <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                                <CheckCircle2 size={13} />
+                                Qualificado
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-stone-400">
+                                Não qualificado
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-stone-600">
+                            {l.vendedor?.nome || 'Não atribuído'}
+                          </td>
+                          <td className="py-3 px-3 text-stone-400">
+                            {timeAgo(l.ultimaInteracaoEm)}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <a
+                              href={l.clienteId ? `/clientes/${l.clienteId}` : `/crm/leads/${l.id}/ficha-cliente`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200/70 transition-colors"
+                              title="Abrir Ficha Completa do Cliente"
+                            >
+                              <User size={11} />
+                              <span>Ver Ficha</span>
+                              <ExternalLink size={10} />
+                            </a>
+                          </td>
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -684,6 +1029,9 @@ const CRMIndex: React.FC<PageProps> = ({
           onAgendarCompromisso={(leadAlvo) => setAgendamentoLead(leadAlvo)}
           onConcluirCompromisso={(compAlvo) => setCompromissoParaConcluir(compAlvo)}
           origensMap={origensMap}
+          categoriasProntuarioCatalogo={categoriasProntuarioCatalogo}
+          quadrosKanban={quadrosKanban}
+          onMoverParaEtapa={(novoSlug) => moverLeadParaEtapa(selectedLead, novoSlug)}
         />
       )}
 
@@ -704,6 +1052,7 @@ const CRMIndex: React.FC<PageProps> = ({
           vendedores={vendedores}
           isVendedor={isVendedor}
           arquitetos={arquitetos}
+          clientesCatalogo={clientesCatalogo}
           origensCatalogo={origensCatalogo}
           campanhasCatalogo={campanhasCatalogo}
         />
@@ -781,9 +1130,22 @@ function LeadCard({
 
       {/* Nome e Indicador de Qualificação */}
       <div className="flex items-start justify-between gap-1.5 mb-1.5">
-        <h4 className="font-semibold text-xs text-stone-900 group-hover:text-primary-700 leading-snug">
-          {lead.nome}
-        </h4>
+        <div className="min-w-0">
+          <h4 className="font-semibold text-xs text-stone-900 group-hover:text-primary-700 leading-snug">
+            {lead.nome}
+          </h4>
+          {lead.projeto && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-stone-900 text-amber-300 font-mono font-bold text-[9px]">
+                <FileText size={9} />
+                {lead.projeto.codigo}
+              </span>
+              <span className="text-[9px] text-stone-500 truncate">
+                {lead.projeto.statusLabel}
+              </span>
+            </div>
+          )}
+        </div>
         {lead.qualificado ? (
           <span
             title="Lead com critérios de qualificação validados (RN001)"
@@ -842,18 +1204,31 @@ function LeadCard({
         )
       })()}
 
-      {/* Rodapé do Card */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-100 text-[10px]">
-        <span
-          className="badge badge-neutro text-[9px] py-0 px-1.5"
-          title={lead.origemDescricao || undefined}
-        >
-          {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
-        </span>
+      {/* Rodapé do Card com Atalho Direto para a Ficha do Cliente */}
+      <div className="flex items-center justify-between gap-1.5 mt-3 pt-2 border-t border-stone-100 text-[10px]">
+        <div className="flex items-center gap-1 min-w-0">
+          <span
+            className="badge badge-neutro text-[9px] py-0 px-1.5 truncate"
+            title={lead.origemDescricao || undefined}
+          >
+            {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
+          </span>
+
+          <a
+            href={lead.clienteId ? `/clientes/${lead.clienteId}` : `/crm/leads/${lead.id}/ficha-cliente`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-50/90 hover:bg-primary-100 text-primary-800 border border-primary-200/70 font-semibold text-[9px] transition-colors shrink-0"
+            title="Abrir Ficha Completa do Cliente"
+          >
+            <User size={9} />
+            <span>Ficha</span>
+            <ExternalLink size={8} />
+          </a>
+        </div>
 
         <span
           className={clsx(
-            'flex items-center gap-1 font-medium',
+            'flex items-center gap-1 font-medium shrink-0',
             lead.precisaAtencao ? 'text-amber-600' : 'text-stone-400'
           )}
           title="Última interação registrada"
@@ -877,6 +1252,9 @@ function LeadDrawer({
   onAgendarCompromisso,
   onConcluirCompromisso,
   origensMap,
+  categoriasProntuarioCatalogo = [],
+  quadrosKanban = [],
+  onMoverParaEtapa,
 }: {
   lead: LeadItem
   onClose: () => void
@@ -887,10 +1265,51 @@ function LeadDrawer({
   onAgendarCompromisso: (lead: LeadItem) => void
   onConcluirCompromisso: (compromisso: any) => void
   origensMap?: Record<string, string>
+  categoriasProntuarioCatalogo?: Array<{
+    id: number
+    nome: string
+    slug: string
+    cor: string
+    icone?: string | null
+  }>
+  quadrosKanban?: KanbanQuadroCatalogoItem[]
+  onMoverParaEtapa?: (novoSlug: string) => void
 }) {
+  const listaCategorias: Array<{ id?: number; slug: string; nome: string; cor?: string; icone?: string | null }> = useMemo(() => {
+    if (categoriasProntuarioCatalogo && categoriasProntuarioCatalogo.length > 0) {
+      return categoriasProntuarioCatalogo
+    }
+    return [
+      { id: 1, slug: 'pessoal', nome: 'Pessoal & Hábitos', cor: '#3B82F6' },
+      { id: 2, slug: 'familia', nome: 'Família & Filhos', cor: '#8B5CF6' },
+      { id: 3, slug: 'pet', nome: 'Pets & Animais', cor: '#F59E0B' },
+      { id: 4, slug: 'hobby', nome: 'Hobbies & Lazer', cor: '#10B981' },
+      { id: 5, slug: 'preferencia', nome: 'Preferências & Estilo', cor: '#EC4899' },
+      { id: 6, slug: 'atendimento', nome: 'Atendimento & CRM', cor: '#6B7280' },
+    ]
+  }, [categoriasProntuarioCatalogo])
+
   const [tipo, setTipo] = useState('whatsapp')
   const [resumo, setResumo] = useState('')
+  const [salvarNoProntuario, setSalvarNoProntuario] = useState(false)
+  const [categoriaProntuario, setCategoriaProntuario] = useState(
+    listaCategorias[0]?.slug || 'pessoal'
+  )
   const [loading, setLoading] = useState(false)
+  const [isRefreshingCategorias, setIsRefreshingCategorias] = useState(false)
+  const [expandirCadastro, setExpandirCadastro] = useState(false)
+  const [expandirQualificacao, setExpandirQualificacao] = useState(false)
+
+  const handleSincronizarCategorias = () => {
+    setIsRefreshingCategorias(true)
+    router.reload({
+      only: ['categoriasProntuarioCatalogo'],
+      onFinish: () => {
+        setIsRefreshingCategorias(false)
+        toast.info('Categorias sincronizadas com sucesso.')
+      },
+    })
+  }
 
   // A partir de "Em Briefing" o lead já tem projeto e briefing: o botão abre o existente
   const briefingJaIniciado = ['em_briefing', 'em_projeto', 'em_fechamento', 'fechado'].includes(
@@ -937,13 +1356,23 @@ function LeadDrawer({
     setLoading(true)
     router.post(
       `/crm/leads/${lead.id}/interacoes`,
-      { tipo, resumo },
+      {
+        tipo,
+        resumo,
+        adicionarAoProntuario: salvarNoProntuario,
+        categoriaProntuario: salvarNoProntuario ? categoriaProntuario : undefined,
+      },
       {
         preserveScroll: true,
         onSuccess: () => {
           setResumo('')
+          setSalvarNoProntuario(false)
           setLoading(false)
-          toast.success('Interação adicionada com sucesso!')
+          toast.success(
+            salvarNoProntuario
+              ? 'Interação registrada e adicionada ao prontuário!'
+              : 'Interação adicionada com sucesso!'
+          )
         },
         onError: () => setLoading(false),
       }
@@ -967,126 +1396,194 @@ function LeadDrawer({
     }
   }
 
+  const urlFichaCliente = lead.clienteId
+    ? `/clientes/${lead.clienteId}`
+    : `/crm/leads/${lead.id}/ficha-cliente`
+
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white shadow-2xl border-l border-stone-200 z-50 flex flex-col animate-slide-in-right">
-      {/* Header do Drawer */}
-      <div className="p-4 border-b border-stone-100 flex items-start justify-between bg-stone-50/60">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-display font-semibold text-stone-900 text-base leading-snug">
-              {lead.nome}
-            </h3>
-            {lead.qualificado ? (
-              <span className="badge badge-sucesso text-[10px] flex items-center gap-1">
-                <CheckCircle2 size={10} /> Qualificado
-              </span>
-            ) : (
-              <span className="badge badge-neutro text-[10px]">Não Qualificado</span>
-            )}
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[520px] bg-white shadow-2xl border-l border-stone-200 z-50 flex flex-col animate-slide-in-right">
+      {/* Header Compacto do Drawer */}
+      <div className="px-4 py-3 border-b border-stone-200/80 bg-stone-50/70 space-y-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-display font-semibold text-stone-900 text-base leading-snug">
+                {lead.nome}
+              </h3>
+              {lead.qualificado ? (
+                <span className="badge badge-sucesso text-[10px] flex items-center gap-1">
+                  <CheckCircle2 size={10} /> Qualificado
+                </span>
+              ) : (
+                <span className="badge badge-neutro text-[10px]">Não Qualificado</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap text-xs">
+              <span className="text-stone-600 font-medium">{lead.telefone}</span>
+              <span className="text-stone-300">•</span>
+              <a
+                href={urlFichaCliente}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-900 hover:underline"
+                title="Abrir Ficha Cadastral Completa do Cliente (/clientes)"
+              >
+                <User size={11} />
+                <span>Ficha do Cliente</span>
+                <ExternalLink size={10} />
+              </a>
+            </div>
           </div>
-          <p className="text-xs text-stone-500 mt-0.5">{lead.telefone}</p>
+
+          <button
+            onClick={onClose}
+            className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200 rounded-md transition-colors shrink-0"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <button
-          onClick={onClose}
-          className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-200 rounded-md transition-colors"
-        >
-          <X size={18} />
-        </button>
-      </div>
+        {/* Barra Compacta de Ações Rápidas */}
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+          {!lead.qualificado && lead.statusFunil !== 'perdido' && (
+            <button
+              onClick={onQualificar}
+              className="btn btn-primary py-1 px-2.5 gap-1 text-[11px] shadow-2xs"
+            >
+              <Sparkles size={12} />
+              <span>Qualificar (RN001)</span>
+            </button>
+          )}
 
-      {/* Ações Rápidas (RN001 & RF004 & R4) */}
-      <div className="p-3 bg-stone-100/70 border-b border-stone-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-        {!lead.qualificado && lead.statusFunil !== 'perdido' && (
-          <button
-            onClick={onQualificar}
-            className="btn btn-primary btn-sm flex-1 gap-1.5 text-xs shadow-sm"
-          >
-            <Sparkles size={13} />
-            <span>Qualificar Lead (RN001)</span>
-          </button>
-        )}
+          {lead.qualificado && lead.statusFunil !== 'perdido' && (
+            <button
+              onClick={onIniciarBriefing}
+              disabled={iniciandoBriefing}
+              className="btn py-1 px-2.5 gap-1 text-[11px] shadow-2xs bg-stone-900 hover:bg-stone-800 text-white font-semibold transition-all disabled:opacity-60"
+              title={
+                briefingJaIniciado
+                  ? 'Abre o Briefing Inteligente já existente deste lead'
+                  : 'Cria o projeto no sistema e abre o Briefing Inteligente'
+              }
+            >
+              <FileText size={12} className="text-primary-400" />
+              <span>
+                {iniciandoBriefing
+                  ? 'Abrindo...'
+                  : briefingJaIniciado
+                    ? 'Briefing Técnico'
+                    : 'Iniciar Briefing'}
+              </span>
+            </button>
+          )}
 
-        {lead.qualificado && lead.statusFunil !== 'perdido' && (
-          <button
-            onClick={onIniciarBriefing}
-            disabled={iniciandoBriefing}
-            className="btn btn-sm flex-1 gap-1.5 text-xs shadow-sm bg-stone-900 hover:bg-stone-800 text-white font-semibold transition-all disabled:opacity-60"
-            title={
-              briefingJaIniciado
-                ? 'Abre o Briefing Inteligente já existente deste lead'
-                : 'Cria o projeto no sistema e abre o Briefing Inteligente'
-            }
-          >
-            <FileText size={13} className="text-primary-400" />
-            <span>
-              {iniciandoBriefing
-                ? 'Abrindo...'
-                : briefingJaIniciado
-                  ? 'Abrir Briefing Técnico'
-                  : 'Iniciar Briefing Técnico'}
-            </span>
-          </button>
-        )}
+          {lead.statusFunil !== 'perdido' && (
+            <button
+              type="button"
+              onClick={() => onAgendarCompromisso(lead)}
+              className="btn btn-secondary py-1 px-2.5 gap-1 text-[11px] text-stone-700 hover:text-stone-900 shadow-2xs"
+              title="Agendar novo encontro, reunião ou visita com este lead"
+            >
+              <Calendar size={12} className="text-primary-600 shrink-0" />
+              <span>Agendar</span>
+            </button>
+          )}
 
-        {lead.statusFunil !== 'perdido' && (
           <button
             type="button"
-            onClick={() => onAgendarCompromisso(lead)}
-            className="btn btn-secondary btn-sm flex-1 gap-1.5 text-xs text-stone-700 hover:text-stone-900 shadow-2xs"
-            title="Agendar novo encontro, reunião ou visita com este lead"
+            onClick={() => {
+              router.post(
+                `/crm/leads/${lead.id}/novo-projeto`,
+                {},
+                {
+                  onSuccess: () => {
+                    onClose()
+                  },
+                }
+              )
+            }}
+            className="btn btn-secondary py-1 px-2.5 gap-1 text-[11px] text-stone-800 bg-white hover:bg-stone-50 border-stone-300 shadow-2xs"
+            title="Cria um novo card independente no Kanban do CRM para iniciar outro projeto/briefing para este mesmo cliente"
           >
-            <Calendar size={13} className="text-primary-600 shrink-0" />
-            <span>Agendar Encontro</span>
+            <Plus size={12} className="text-primary-600 shrink-0" />
+            <span>Novo Projeto</span>
           </button>
-        )}
 
-        {lead.statusFunil !== 'perdido' && (
-          <button
-            onClick={onMarcarPerdido}
-            className="btn btn-secondary btn-sm text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-300"
-          >
-            <XCircle size={13} />
-            <span>Perdido</span>
-          </button>
-        )}
-      </div>
-
-      {/* Informações Cadastrais */}
-      <div className="p-4 border-b border-stone-100 grid grid-cols-2 gap-3 text-xs">
-        <div>
-          <p className="text-[10px] font-semibold text-stone-400 uppercase">Origem</p>
-          <p className="font-medium text-stone-700 mt-0.5">
-            {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
-          </p>
-          {lead.origemDescricao && (
-            <p className="text-[11px] text-stone-500 mt-0.5">{lead.origemDescricao}</p>
+          {lead.statusFunil !== 'perdido' && (
+            <button
+              onClick={onMarcarPerdido}
+              className="btn btn-secondary py-1 px-2 text-[11px] text-rose-600 hover:bg-rose-50 hover:border-rose-300 ml-auto"
+              title="Marcar lead como perdido"
+            >
+              <XCircle size={12} />
+              <span>Perdido</span>
+            </button>
           )}
         </div>
 
-        <div>
-          <p className="text-[10px] font-semibold text-stone-400 uppercase">Cidade / Estado</p>
-          <p className="font-medium text-stone-700 mt-0.5">
-            {lead.cidade ? `${lead.cidade}${lead.estado ? ` - ${lead.estado}` : ''}` : '—'}
-          </p>
-        </div>
+        {/* Seletor Rápido de Quadro & Etapa do Kanban */}
+        {quadrosKanban.length > 0 && onMoverParaEtapa && (
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-stone-200/60 text-xs">
+            <span className="text-[10px] font-semibold text-stone-500 uppercase shrink-0">
+              Quadro / Etapa:
+            </span>
+            <select
+              value={lead.statusFunil === 'em_visita' ? 'qualificando' : lead.statusFunil}
+              onChange={(e) => onMoverParaEtapa(e.target.value)}
+              className="input py-1 px-2 text-xs font-medium text-stone-800 flex-1 bg-white"
+            >
+              {quadrosKanban.map((q) => (
+                <optgroup key={q.id} label={`📋 ${q.nome}`}>
+                  {(q.etapas || []).map((et) => (
+                    <option key={et.slug} value={et.slug}>
+                      {et.nome}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
-        {lead.email && (
-          <div className="col-span-2">
-            <p className="text-[10px] font-semibold text-stone-400 uppercase">E-mail</p>
-            <p className="font-medium text-stone-700 mt-0.5 truncate">{lead.email}</p>
+      {/* Área Central Unificada com Rolagem Ampla */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Projeto & Briefing Único deste Card */}
+        {lead.projeto && (
+          <div className="px-3.5 py-2.5 rounded-xl bg-stone-900 text-white flex items-center justify-between gap-2 text-xs shadow-2xs">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono font-bold text-amber-300">{lead.projeto.codigo}</span>
+                <span className="px-2 py-0.5 rounded-full bg-stone-800 text-stone-200 text-[10px] font-medium">
+                  {lead.projeto.statusLabel}
+                </span>
+              </div>
+              <p className="text-[10px] text-stone-400 mt-0.5">
+                {lead.projeto.briefingScore !== null
+                  ? `Briefing único vinculado • Score: ${lead.projeto.briefingScore} pts`
+                  : 'Projeto vinculado a este card'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {lead.projeto.briefingId && (
+                <a
+                  href={`/briefings/${lead.projeto.briefingId}/edit`}
+                  className="px-2 py-1 rounded bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold text-[10px] transition-colors"
+                >
+                  Briefing ↗
+                </a>
+              )}
+              <a
+                href={`/projetos/${lead.projeto.id}`}
+                className="px-2 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-100 font-semibold text-[10px] border border-stone-700 transition-colors"
+              >
+                Projeto ↗
+              </a>
+            </div>
           </div>
         )}
 
-        {lead.campanha && (
-          <div className="col-span-2">
-            <p className="text-[10px] font-semibold text-stone-400 uppercase">Campanha</p>
-            <p className="font-medium text-stone-600 mt-0.5 text-[11px]">{lead.campanha}</p>
-          </div>
-        )}
-
+        {/* Alertas de Perda ou Desqualificação */}
         {lead.motivoPerda && (
-          <div className="col-span-2 p-2.5 bg-rose-50 border border-rose-200 rounded-lg">
+          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl">
             <p className="text-[10px] font-semibold text-rose-700 uppercase">Motivo da Perda</p>
             <p className="text-xs text-rose-800 mt-0.5">{lead.motivoPerda}</p>
             {lead.concorrentePerdido && (
@@ -1098,7 +1595,7 @@ function LeadDrawer({
         )}
 
         {lead.statusFunil === 'desqualificado' && lead.motivoDesqualificacao && (
-          <div className="col-span-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
             <div className="flex items-center gap-1.5 text-rose-800 font-semibold text-[11px]">
               <XCircle size={13} className="text-rose-600" />
               <span>Lead Desqualificado (RN001)</span>
@@ -1107,76 +1604,167 @@ function LeadDrawer({
           </div>
         )}
 
-        {/* Ficha de Qualificação Estruturada (RN001) */}
-        {lead.qualificado && (
-          <div className="col-span-2 p-3 bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-stone-50 border border-amber-200/80 rounded-xl space-y-2 shadow-2xs">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-amber-950">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-emerald-600" />
-                <span>Qualificação Validada (RN001)</span>
+        {/* Bloco Retrátil: Dados Cadastrais (Origem, Cidade, E-mail, Campanha) */}
+        <div className="rounded-xl border border-stone-200/80 bg-stone-50/60 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setExpandirCadastro((v) => !v)}
+            className="w-full px-3 py-2 flex items-center justify-between gap-2 text-left hover:bg-stone-100/70 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2 min-w-0 text-xs">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider shrink-0">
+                Dados Cadastrais
               </span>
-              <button
-                type="button"
-                onClick={onQualificar}
-                className="text-[10px] text-amber-800 hover:text-amber-950 underline font-medium cursor-pointer"
-              >
-                Revisar
-              </button>
+              <span className="text-stone-300">•</span>
+              <span className="text-stone-700 font-medium truncate">
+                {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
+                {lead.cidade ? ` (${lead.cidade}${lead.estado ? ` - ${lead.estado}` : ''})` : ''}
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-stone-500 shrink-0">
+              {expandirCadastro ? 'Recolher' : 'Expandir'}
+              {expandirCadastro ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </span>
+          </button>
+
+          {expandirCadastro && (
+            <div className="px-3 pb-3 pt-2 border-t border-stone-200/60 grid grid-cols-2 gap-2.5 text-xs bg-white animate-fade-in">
+              <div>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase">Origem</p>
+                <p className="font-medium text-stone-700 mt-0.5">
+                  {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
+                </p>
+                {lead.origemDescricao && (
+                  <p className="text-[11px] text-stone-500 mt-0.5">{lead.origemDescricao}</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase">Cidade / Estado</p>
+                <p className="font-medium text-stone-700 mt-0.5">
+                  {lead.cidade ? `${lead.cidade}${lead.estado ? ` - ${lead.estado}` : ''}` : '—'}
+                </p>
+              </div>
+
+              {lead.email && (
+                <div className="col-span-2">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase">E-mail</p>
+                  <p className="font-medium text-stone-700 mt-0.5 truncate">{lead.email}</p>
+                </div>
+              )}
+
+              {lead.campanha && (
+                <div className="col-span-2">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase">Campanha</p>
+                  <p className="font-medium text-stone-600 mt-0.5 text-[11px]">{lead.campanha}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Bloco Retrátil: Ficha de Qualificação Estruturada (RN001) */}
+        {lead.qualificado && (
+          <div className="bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-stone-50 border border-amber-200/80 rounded-xl overflow-hidden shadow-2xs">
+            <div
+              onClick={() => setExpandirQualificacao((v) => !v)}
+              className="px-3 py-2 flex items-center justify-between gap-2 text-[11px] font-semibold text-amber-950 hover:bg-amber-100/40 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                <span>Qualificação (RN001)</span>
+                <span className="text-amber-400">•</span>
+                <span className="font-medium text-stone-700 truncate">
+                  {lead.faixaOrcamentoLabel ||
+                    (lead.orcamentoEstimado
+                      ? `R$ ${lead.orcamentoEstimado.toLocaleString('pt-BR')}`
+                      : 'Orçamento validado')}
+                </span>
+                {lead.ambientesInteresse && lead.ambientesInteresse.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded bg-white/80 border border-amber-200 text-[10px] text-amber-900">
+                    {lead.ambientesInteresse.length} amb.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onQualificar()
+                  }}
+                  className="text-[10px] text-amber-800 hover:text-amber-950 underline font-medium cursor-pointer"
+                >
+                  Revisar
+                </button>
+                <span className="text-amber-800">
+                  {expandirQualificacao ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-amber-200/50">
-              <div>
-                <span className="text-[10px] text-stone-500 block uppercase font-medium">Orçamento / Imóvel</span>
-                <span className="font-semibold text-stone-800 leading-tight block">
-                  {lead.faixaOrcamentoLabel || (lead.orcamentoEstimado ? `R$ ${lead.orcamentoEstimado.toLocaleString('pt-BR')}` : 'A definir')}
-                </span>
-                <span className="text-[10px] text-stone-600">{lead.tipoImovelLabel || 'Imóvel'}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-stone-500 block uppercase font-medium">Previsão da Obra</span>
-                <span className="font-semibold text-stone-800 leading-tight block">
-                  {lead.prazoObraLabel || 'Prazo padrão'}
-                </span>
-              </div>
-
-              {lead.ambientesInteresse && lead.ambientesInteresse.length > 0 && (
-                <div className="col-span-2 pt-1 border-t border-amber-200/30">
-                  <span className="text-[10px] text-stone-500 block uppercase font-medium mb-1">
-                    Ambientes Pretendidos ({lead.ambientesInteresse.length})
+            {expandirQualificacao && (
+              <div className="px-3 pb-3 pt-2 grid grid-cols-2 gap-2 text-[11px] border-t border-amber-200/50 animate-fade-in">
+                <div>
+                  <span className="text-[10px] text-stone-500 block uppercase font-medium">
+                    Orçamento / Imóvel
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {lead.ambientesInteresse.map((amb) => (
-                      <span
-                        key={amb}
-                        className="px-2 py-0.5 bg-white text-stone-800 border border-stone-200/80 rounded-md text-[10px] font-medium shadow-3xs"
-                      >
-                        {amb}
-                      </span>
-                    ))}
+                  <span className="font-semibold text-stone-800 leading-tight block">
+                    {lead.faixaOrcamentoLabel ||
+                      (lead.orcamentoEstimado
+                        ? `R$ ${lead.orcamentoEstimado.toLocaleString('pt-BR')}`
+                        : 'A definir')}
+                  </span>
+                  <span className="text-[10px] text-stone-600">{lead.tipoImovelLabel || 'Imóvel'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-stone-500 block uppercase font-medium">
+                    Previsão da Obra
+                  </span>
+                  <span className="font-semibold text-stone-800 leading-tight block">
+                    {lead.prazoObraLabel || 'Prazo padrão'}
+                  </span>
+                </div>
+
+                {lead.ambientesInteresse && lead.ambientesInteresse.length > 0 && (
+                  <div className="col-span-2 pt-1 border-t border-amber-200/30">
+                    <span className="text-[10px] text-stone-500 block uppercase font-medium mb-1">
+                      Ambientes Pretendidos ({lead.ambientesInteresse.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {lead.ambientesInteresse.map((amb) => (
+                        <span
+                          key={amb}
+                          className="px-2 py-0.5 bg-white text-stone-800 border border-stone-200/80 rounded-md text-[10px] font-medium shadow-3xs"
+                        >
+                          {amb}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {lead.arquiteto && (
-                <div className="col-span-2 pt-1 border-t border-amber-200/30">
-                  <span className="text-[10px] text-stone-500 block uppercase font-medium">Especificador Parceiro</span>
-                  <span className="font-semibold text-primary-800 text-[11px]">
-                    {lead.arquiteto.nome} {lead.arquiteto.escritorio ? `(${lead.arquiteto.escritorio})` : ''}
-                  </span>
-                </div>
-              )}
+                {lead.arquiteto && (
+                  <div className="col-span-2 pt-1 border-t border-amber-200/30">
+                    <span className="text-[10px] text-stone-500 block uppercase font-medium">
+                      Especificador Parceiro
+                    </span>
+                    <span className="font-semibold text-primary-800 text-[11px]">
+                      {lead.arquiteto.nome} {lead.arquiteto.escritorio ? `(${lead.arquiteto.escritorio})` : ''}
+                    </span>
+                  </div>
+                )}
 
-              <div className="col-span-2 text-[10px] text-stone-400 pt-1 border-t border-amber-200/30 flex items-center justify-between">
-                <span>Por: {lead.qualificadoPor?.nome || 'Vendedor'}</span>
-                <span>{lead.qualificadoEm ? formatDate(lead.qualificadoEm) : 'Auditado'}</span>
+                <div className="col-span-2 text-[10px] text-stone-400 pt-1 border-t border-amber-200/30 flex items-center justify-between">
+                  <span>Por: {lead.qualificadoPor?.nome || 'Vendedor'}</span>
+                  <span>{lead.qualificadoEm ? formatDate(lead.qualificadoEm) : 'Auditado'}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
-      </div>
 
-      {/* Linha do Tempo de Interações (RF003), Histórico e Compromissos */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Seção Compacta de Compromissos Agendados (com Modal de Detalhes) */}
         <CompromissosLeadPanel
           lead={lead}
@@ -1310,6 +1898,62 @@ function LeadDrawer({
           required
         />
 
+        {/* Opção para registrar no Prontuário do Cliente */}
+        <div className="pt-0.5 space-y-1.5">
+          <label className="flex items-center gap-1.5 text-[11px] text-stone-700 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={salvarNoProntuario}
+              onChange={(e) => setSalvarNoProntuario(e.target.checked)}
+              className="rounded border-stone-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="font-medium text-stone-800">
+              📌 Salvar também no Prontuário do Cliente
+            </span>
+          </label>
+
+          {salvarNoProntuario && (
+            <div className="flex items-center justify-between pl-4 text-[11px] animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="text-stone-500 font-medium">Categoria:</span>
+                <select
+                  value={categoriaProntuario}
+                  onChange={(e) => setCategoriaProntuario(e.target.value)}
+                  className="input py-0.5 px-2 text-xs h-7"
+                >
+                  {listaCategorias.map((cat: any) => (
+                    <option key={cat.slug} value={cat.slug}>
+                      {cat.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleSincronizarCategorias}
+                  disabled={isRefreshingCategorias}
+                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors cursor-pointer"
+                  title="Sincronizar categorias com o catálogo"
+                >
+                  <RotateCw size={11} className={isRefreshingCategorias ? 'animate-spin' : ''} />
+                </button>
+                <a
+                  href="/configuracoes?tab=prontuario"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline bg-primary-50/90 hover:bg-primary-100 px-1.5 py-0.5 rounded border border-primary-200/80 transition-colors"
+                  title="Configurar categorias do prontuário em nova aba"
+                >
+                  <span>Configurar</span>
+                  <ExternalLink size={9} />
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={loading || !resumo.trim()}
@@ -1329,6 +1973,7 @@ function NovoLeadModal({
   vendedores,
   isVendedor,
   arquitetos,
+  clientesCatalogo = [],
   origensCatalogo,
   campanhasCatalogo,
 }: {
@@ -1336,6 +1981,7 @@ function NovoLeadModal({
   vendedores: VendedorOption[]
   isVendedor: boolean
   arquitetos: ArquitetoOption[]
+  clientesCatalogo?: ClienteCatalogoOption[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
 }) {
@@ -1383,6 +2029,7 @@ function NovoLeadModal({
   }, [])
 
   const { data, setData, post, processing, errors, reset } = useForm({
+    clienteId: '',
     nome: '',
     telefone: '',
     email: '',
@@ -1401,6 +2048,28 @@ function NovoLeadModal({
   const [nomeNovoParceiro, setNomeNovoParceiro] = useState('')
   const origemEspecificador = data.origem === ORIGEM_ESPECIFICADOR
   const origemOutro = data.origem === ORIGEM_OUTRO
+
+  const handleSelectClienteExistente = (idStr: string) => {
+    if (!idStr) {
+      setData((prev) => ({
+        ...prev,
+        clienteId: '',
+      }))
+      return
+    }
+    const cli = clientesCatalogo.find((c) => String(c.id) === idStr)
+    if (cli) {
+      setData((prev) => ({
+        ...prev,
+        clienteId: String(cli.id),
+        nome: cli.nome,
+        telefone: cli.telefone || prev.telefone,
+        email: cli.email || prev.email,
+        origem: cli.arquitetoId ? ORIGEM_ESPECIFICADOR : prev.origem,
+        arquitetoId: cli.arquitetoId ? String(cli.arquitetoId) : prev.arquitetoId,
+      }))
+    }
+  }
 
   const abrirNovoParceiro = (nomeDigitado: string) => {
     setNomeNovoParceiro(nomeDigitado)
@@ -1438,17 +2107,42 @@ function NovoLeadModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-stone-200 animate-scale-in">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-stone-200 animate-scale-in max-h-[92vh] flex flex-col">
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="font-display font-semibold text-stone-900 text-base">
-            Cadastrar Novo Lead
-          </h3>
+          <div>
+            <h3 className="font-display font-semibold text-stone-900 text-base">
+              Cadastrar Novo Card no CRM
+            </h3>
+            <p className="text-[11px] text-stone-500">
+              Cadastre um novo lead ou inicie um novo card de projeto para um cliente existente
+            </p>
+          </div>
           <button onClick={onClose} className="p-1 text-stone-400 hover:text-stone-700">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs overflow-y-auto">
+          {clientesCatalogo.length > 0 && (
+            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1.5">
+              <label className="label mb-0 text-stone-700">
+                Cliente já cadastrado? (Opcional — cria um novo card de projeto para o cliente)
+              </label>
+              <BuscaAutocomplete
+                opcoes={clientesCatalogo.map((c) => ({
+                  value: String(c.id),
+                  label: c.nome,
+                  descricao: c.telefone,
+                }))}
+                value={data.clienteId}
+                onChange={handleSelectClienteExistente}
+                placeholder="Buscar cliente existente por nome ou telefone..."
+                textoVazio={(busca) => `Nenhum cliente encontrado para "${busca}"`}
+                tituloLimpar="Desvincular cliente existente"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="label">Nome Completo *</label>

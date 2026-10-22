@@ -5,6 +5,9 @@ import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
 import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
+import CategoriaProntuarioCatalogo from '#models/categoria_prontuario_catalogo'
+import KanbanQuadroCatalogo from '#models/kanban_quadro_catalogo'
+import KanbanEtapaCatalogo from '#models/kanban_etapa_catalogo'
 import PerfilCatalogo from '#models/perfil_catalogo'
 import RoteiroBriefing from '#models/roteiro_briefing'
 import RoteiroBriefingAmbiente from '#models/roteiro_briefing_ambiente'
@@ -25,6 +28,12 @@ import {
   updatePerfilValidator,
   createRoteiroValidator,
   updateRoteiroValidator,
+  createCategoriaProntuarioValidator,
+  updateCategoriaProntuarioValidator,
+  createKanbanQuadroValidator,
+  updateKanbanQuadroValidator,
+  createKanbanEtapaValidator,
+  updateKanbanEtapaValidator,
 } from '#validators/configuracao'
 
 function slugify(text: string): string {
@@ -129,6 +138,15 @@ export default class ConfiguracoesController {
       .orderBy('ordem', 'asc')
       .orderBy('nome', 'asc')
 
+    const categoriasProntuario = await CategoriaProntuarioCatalogo.query()
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const kanbanQuadros = await KanbanQuadroCatalogo.query()
+      .preload('etapas', (q) => q.orderBy('ordem', 'asc').orderBy('nome', 'asc'))
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
     const roteiros = await RoteiroBriefing.query()
       .preload('ambientes')
       .orderBy('ordem', 'asc')
@@ -203,6 +221,40 @@ export default class ConfiguracoesController {
         isActive: t.isActive,
         createdAt: t.createdAt?.toISO() || null,
         updatedAt: t.updatedAt?.toISO() || null,
+      })),
+      categoriasProntuario: categoriasProntuario.map((cp) => ({
+        id: cp.id,
+        nome: cp.nome,
+        slug: cp.slug,
+        cor: cp.cor,
+        icone: cp.icone,
+        ordem: cp.ordem,
+        isActive: cp.isActive,
+        createdAt: cp.createdAt?.toISO() || null,
+        updatedAt: cp.updatedAt?.toISO() || null,
+      })),
+      kanbanQuadros: kanbanQuadros.map((q) => ({
+        id: q.id,
+        nome: q.nome,
+        slug: q.slug,
+        descricao: q.descricao,
+        cor: q.cor,
+        ordem: q.ordem,
+        isActive: q.isActive,
+        isSistema: q.isSistema,
+        etapas: (q.etapas || []).map((e) => ({
+          id: e.id,
+          quadroId: e.quadroId,
+          nome: e.nome,
+          slug: e.slug,
+          cor: e.cor,
+          ordem: e.ordem,
+          exigeQualificacao: e.exigeQualificacao,
+          exigeMotivoPerda: e.exigeMotivoPerda,
+          tipoEstagio: e.tipoEstagio,
+          isActive: e.isActive,
+          isSistema: e.isSistema,
+        })),
       })),
       roteiros: roteiros.map((r) => ({
         id: r.id,
@@ -764,6 +816,167 @@ export default class ConfiguracoesController {
   }
 
   // ==========================================
+  // CATEGORIAS DE PRONTUÁRIO
+  // ==========================================
+
+  async storeCategoriaProntuario({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createCategoriaProntuarioValidator)
+    const slug = payload.slug ? slugify(payload.slug) : slugify(payload.nome)
+
+    if (!slug || slug.length < 2) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+      }
+      session.flash('error', 'Identificador (slug) inválido ou vazio.')
+      return response.redirect().back()
+    }
+
+    const existing = await CategoriaProntuarioCatalogo.findBy('slug', slug)
+    if (existing) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: `A categoria de prontuário com identificador "${slug}" já existe.` })
+      }
+      session.flash('error', `A categoria de prontuário com identificador "${slug}" já existe.`)
+      return response.redirect().back()
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.create({
+      nome: payload.nome,
+      slug,
+      cor: payload.cor || '#3B82F6',
+      icone: payload.icone || null,
+      ordem: payload.ordem !== undefined ? payload.ordem : 0,
+      isActive: payload.isActive !== undefined ? payload.isActive : true,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.status(201).json(categoria)
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" cadastrada com sucesso no catálogo.`)
+    return response.redirect().back()
+  }
+
+  async updateCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+    const payload = await request.validateUsing(updateCategoriaProntuarioValidator)
+
+    if (payload.nome !== undefined) categoria.nome = payload.nome
+    if (payload.slug !== undefined) {
+      const slugRaw = payload.slug || payload.nome || categoria.nome
+      const slug = slugify(slugRaw)
+      if (!slug || slug.length < 2) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+        }
+        session.flash('error', 'Identificador (slug) inválido ou vazio.')
+        return response.redirect().back()
+      }
+
+      const existing = await CategoriaProntuarioCatalogo.query()
+        .where('slug', slug)
+        .whereNot('id', categoria.id)
+        .first()
+
+      if (existing) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: `O identificador "${slug}" já está em uso.` })
+        }
+        session.flash('error', `O identificador "${slug}" já está em uso.`)
+        return response.redirect().back()
+      }
+      categoria.slug = slug
+    }
+    if (payload.cor !== undefined) categoria.cor = payload.cor
+    if (payload.icone !== undefined) categoria.icone = payload.icone
+    if (payload.ordem !== undefined) categoria.ordem = payload.ordem
+    if (payload.isActive !== undefined) categoria.isActive = payload.isActive
+
+    await categoria.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(categoria)
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" atualizada com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async toggleCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+    categoria.isActive = !categoria.isActive
+    await categoria.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(categoria)
+    }
+
+    session.flash(
+      'success',
+      `Categoria "${categoria.nome}" ${categoria.isActive ? 'ativada' : 'desativada'} com sucesso.`
+    )
+    return response.redirect().back()
+  }
+
+  async destroyCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+
+    // Verificar se existem anotações vinculadas ao slug antes de excluir
+    try {
+      const checkUso = await db
+        .from('prontuario_clientes')
+        .where('categoria', categoria.slug)
+        .count('* as total')
+      const total = Number(checkUso[0]?.total || 0)
+      if (total > 0) {
+        if (this.wantsJson(request)) {
+          const msg = `Não é possível excluir a categoria "${categoria.nome}" pois existem ${total} anotação(ões) vinculada(s). Recomendamos desativá-la.`
+          return response.status(400).json({
+            message: msg,
+            error: msg,
+          })
+        }
+        session.flash(
+          'error',
+          `Não é possível excluir a categoria "${categoria.nome}" pois existem ${total} anotação(ões) vinculada(s). Recomendamos desativá-la.`
+        )
+        return response.redirect().back()
+      }
+    } catch {
+      // Ignora erro
+    }
+
+    await categoria.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({ message: 'Categoria removida com sucesso' })
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" removida do catálogo.`)
+    return response.redirect().back()
+  }
+
+  // ==========================================
   // PERMISSÕES & PERFIS
   // ==========================================
 
@@ -1186,6 +1399,426 @@ export default class ConfiguracoesController {
     }
 
     session.flash('success', `Roteiro "${titulo}" excluído com sucesso.`)
+    return response.redirect().back()
+  }
+
+  // ==========================================
+  // KANBAN QUADROS & ETAPAS DO FUNIL
+  // ==========================================
+
+  async storeKanbanQuadro({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createKanbanQuadroValidator)
+    const slugBase = slugify(payload.slug || payload.nome) || `quadro_${Date.now()}`
+    let finalSlug = slugBase
+    let counter = 1
+    while (await KanbanQuadroCatalogo.findBy('slug', finalSlug)) {
+      finalSlug = `${slugBase}_${counter}`
+      counter++
+    }
+
+    const maxOrdemRow = await db.from('kanban_quadros_catalogo').max('ordem as max_ordem')
+    const proximaOrdem = payload.ordem ?? Number(maxOrdemRow[0]?.max_ordem || 0) + 1
+
+    const quadro = await KanbanQuadroCatalogo.create({
+      nome: payload.nome,
+      slug: finalSlug,
+      descricao: payload.descricao || null,
+      cor: payload.cor || '#b45309',
+      ordem: proximaOrdem,
+      isActive: payload.isActive ?? true,
+      isSistema: false,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.status(201).json({
+        success: true,
+        message: `Quadro "${quadro.nome}" criado com sucesso.`,
+        quadro,
+      })
+    }
+
+    session.flash('success', `Quadro "${quadro.nome}" criado com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async updateKanbanQuadro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const quadro = await KanbanQuadroCatalogo.find(params.id)
+    if (!quadro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Quadro do Kanban não encontrado.' })
+      }
+      session.flash('error', 'Quadro do Kanban não encontrado.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(updateKanbanQuadroValidator)
+    if (payload.nome !== undefined) quadro.nome = payload.nome
+    if (payload.descricao !== undefined) quadro.descricao = payload.descricao || null
+    if (payload.cor !== undefined) quadro.cor = payload.cor
+    if (payload.ordem !== undefined) quadro.ordem = payload.ordem
+    if (payload.isActive !== undefined) quadro.isActive = payload.isActive
+
+    await quadro.save()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Quadro "${quadro.nome}" atualizado com sucesso.`,
+        quadro,
+      })
+    }
+
+    session.flash('success', `Quadro "${quadro.nome}" atualizado com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async toggleKanbanQuadro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const quadro = await KanbanQuadroCatalogo.find(params.id)
+    if (!quadro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Quadro do Kanban não encontrado.' })
+      }
+      session.flash('error', 'Quadro do Kanban não encontrado.')
+      return response.redirect().back()
+    }
+
+    quadro.isActive = !quadro.isActive
+    await quadro.save()
+
+    const statusMsg = quadro.isActive ? 'ativado' : 'desativado'
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Quadro "${quadro.nome}" ${statusMsg} com sucesso.`,
+        isActive: quadro.isActive,
+      })
+    }
+
+    session.flash('success', `Quadro "${quadro.nome}" ${statusMsg} com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async reorderKanbanQuadro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const direcao = request.input('direcao') as 'up' | 'down'
+    const quadros = await KanbanQuadroCatalogo.query().orderBy('ordem', 'asc').orderBy('id', 'asc')
+    const idx = quadros.findIndex((q) => q.id === Number(params.id))
+
+    if (idx === -1) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Quadro não encontrado.' })
+      }
+      session.flash('error', 'Quadro não encontrado.')
+      return response.redirect().back()
+    }
+
+    const targetIdx = direcao === 'up' ? idx - 1 : idx + 1
+    if (targetIdx >= 0 && targetIdx < quadros.length) {
+      await db.transaction(async (trx) => {
+        // Normaliza ordens sequenciais e troca os dois itens
+        const reordered = [...quadros]
+        const temp = reordered[idx]
+        reordered[idx] = reordered[targetIdx]
+        reordered[targetIdx] = temp
+
+        for (let i = 0; i < reordered.length; i++) {
+          reordered[i].useTransaction(trx)
+          reordered[i].ordem = i + 1
+          await reordered[i].save()
+        }
+      })
+    }
+
+    if (this.wantsJson(request)) {
+      return response.json({ success: true, message: 'Ordem dos quadros atualizada.' })
+    }
+
+    session.flash('success', 'Ordem dos quadros atualizada.')
+    return response.redirect().back()
+  }
+
+  async destroyKanbanQuadro({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const quadro = await KanbanQuadroCatalogo.query()
+      .where('id', params.id)
+      .preload('etapas')
+      .first()
+
+    if (!quadro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Quadro do Kanban não encontrado.' })
+      }
+      session.flash('error', 'Quadro do Kanban não encontrado.')
+      return response.redirect().back()
+    }
+
+    const slugsEtapas = (quadro.etapas || []).map((e) => e.slug)
+    if (slugsEtapas.length > 0) {
+      const leadsVinculados = await db
+        .from('leads')
+        .whereIn('status_funil', slugsEtapas)
+        .count('* as total')
+      const total = Number(leadsVinculados[0]?.total || 0)
+      if (total > 0) {
+        const msg = `Não é possível excluir o quadro "${quadro.nome}" pois existem ${total} card(s)/lead(s) posicionados em suas etapas. Mova os cards ou desative o quadro.`
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: msg })
+        }
+        session.flash('error', msg)
+        return response.redirect().back()
+      }
+    }
+
+    const nome = quadro.nome
+    await quadro.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Quadro "${nome}" excluído com sucesso.`,
+      })
+    }
+
+    session.flash('success', `Quadro "${nome}" excluído com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async storeKanbanEtapa({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createKanbanEtapaValidator)
+    const quadro = await KanbanQuadroCatalogo.find(payload.quadroId)
+    if (!quadro) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Quadro informado não existe.' })
+      }
+      session.flash('error', 'Quadro informado não existe.')
+      return response.redirect().back()
+    }
+
+    const slugBase = slugify(payload.slug || payload.nome) || `etapa_${Date.now()}`
+    let finalSlug = slugBase
+    let counter = 1
+    while (await KanbanEtapaCatalogo.findBy('slug', finalSlug)) {
+      finalSlug = `${slugBase}_${counter}`
+      counter++
+    }
+
+    const maxOrdemRow = await db
+      .from('kanban_etapas_catalogo')
+      .where('quadro_id', quadro.id)
+      .max('ordem as max_ordem')
+    const proximaOrdem = payload.ordem ?? Number(maxOrdemRow[0]?.max_ordem || 0) + 1
+
+    const etapa = await KanbanEtapaCatalogo.create({
+      quadroId: quadro.id,
+      nome: payload.nome,
+      slug: finalSlug,
+      cor: payload.cor || quadro.cor || '#3b82f6',
+      ordem: proximaOrdem,
+      exigeQualificacao: payload.exigeQualificacao ?? false,
+      exigeMotivoPerda: payload.exigeMotivoPerda ?? false,
+      tipoEstagio: payload.tipoEstagio || 'aberta',
+      isActive: payload.isActive ?? true,
+      isSistema: false,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.status(201).json({
+        success: true,
+        message: `Etapa "${etapa.nome}" adicionada ao quadro "${quadro.nome}".`,
+        etapa,
+      })
+    }
+
+    session.flash('success', `Etapa "${etapa.nome}" adicionada ao quadro "${quadro.nome}".`)
+    return response.redirect().back()
+  }
+
+  async updateKanbanEtapa({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const etapa = await KanbanEtapaCatalogo.find(params.id)
+    if (!etapa) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Etapa do Kanban não encontrada.' })
+      }
+      session.flash('error', 'Etapa do Kanban não encontrada.')
+      return response.redirect().back()
+    }
+
+    const payload = await request.validateUsing(updateKanbanEtapaValidator)
+    if (payload.quadroId !== undefined) etapa.quadroId = payload.quadroId
+    if (payload.nome !== undefined) etapa.nome = payload.nome
+    if (payload.cor !== undefined) etapa.cor = payload.cor
+    if (payload.ordem !== undefined) etapa.ordem = payload.ordem
+    if (payload.exigeQualificacao !== undefined) etapa.exigeQualificacao = payload.exigeQualificacao
+    if (payload.exigeMotivoPerda !== undefined) etapa.exigeMotivoPerda = payload.exigeMotivoPerda
+    if (payload.tipoEstagio !== undefined) etapa.tipoEstagio = payload.tipoEstagio
+    if (payload.isActive !== undefined) etapa.isActive = payload.isActive
+
+    await etapa.save()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Etapa "${etapa.nome}" atualizada com sucesso.`,
+        etapa,
+      })
+    }
+
+    session.flash('success', `Etapa "${etapa.nome}" atualizada com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async toggleKanbanEtapa({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const etapa = await KanbanEtapaCatalogo.find(params.id)
+    if (!etapa) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Etapa do Kanban não encontrada.' })
+      }
+      session.flash('error', 'Etapa do Kanban não encontrada.')
+      return response.redirect().back()
+    }
+
+    etapa.isActive = !etapa.isActive
+    await etapa.save()
+
+    const statusMsg = etapa.isActive ? 'ativada' : 'desativada'
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Etapa "${etapa.nome}" ${statusMsg} com sucesso.`,
+        isActive: etapa.isActive,
+      })
+    }
+
+    session.flash('success', `Etapa "${etapa.nome}" ${statusMsg} com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async reorderKanbanEtapa({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const etapa = await KanbanEtapaCatalogo.find(params.id)
+    if (!etapa) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Etapa não encontrada.' })
+      }
+      session.flash('error', 'Etapa não encontrada.')
+      return response.redirect().back()
+    }
+
+    const direcao = request.input('direcao') as 'up' | 'down'
+    const etapas = await KanbanEtapaCatalogo.query()
+      .where('quadroId', etapa.quadroId)
+      .orderBy('ordem', 'asc')
+      .orderBy('id', 'asc')
+
+    const idx = etapas.findIndex((e) => e.id === etapa.id)
+    const targetIdx = direcao === 'up' ? idx - 1 : idx + 1
+
+    if (idx !== -1 && targetIdx >= 0 && targetIdx < etapas.length) {
+      await db.transaction(async (trx) => {
+        const reordered = [...etapas]
+        const temp = reordered[idx]
+        reordered[idx] = reordered[targetIdx]
+        reordered[targetIdx] = temp
+
+        for (let i = 0; i < reordered.length; i++) {
+          reordered[i].useTransaction(trx)
+          reordered[i].ordem = i + 1
+          await reordered[i].save()
+        }
+      })
+    }
+
+    if (this.wantsJson(request)) {
+      return response.json({ success: true, message: 'Ordem das etapas atualizada.' })
+    }
+
+    session.flash('success', 'Ordem das etapas atualizada.')
+    return response.redirect().back()
+  }
+
+  async destroyKanbanEtapa({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!(await this.isAuthorized(user))) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const etapa = await KanbanEtapaCatalogo.find(params.id)
+    if (!etapa) {
+      if (this.wantsJson(request)) {
+        return response.status(404).json({ message: 'Etapa do Kanban não encontrada.' })
+      }
+      session.flash('error', 'Etapa do Kanban não encontrada.')
+      return response.redirect().back()
+    }
+
+    const leadsVinculados = await db
+      .from('leads')
+      .where('status_funil', etapa.slug)
+      .count('* as total')
+    const total = Number(leadsVinculados[0]?.total || 0)
+
+    if (total > 0) {
+      const msg = `Não é possível excluir a etapa "${etapa.nome}" pois existem ${total} card(s)/lead(s) nesta etapa. Mova os cards antes de excluir ou desative a etapa.`
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: msg })
+      }
+      session.flash('error', msg)
+      return response.redirect().back()
+    }
+
+    const nome = etapa.nome
+    await etapa.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({
+        success: true,
+        message: `Etapa "${nome}" excluída com sucesso.`,
+      })
+    }
+
+    session.flash('success', `Etapa "${nome}" excluída com sucesso.`)
     return response.redirect().back()
   }
 }

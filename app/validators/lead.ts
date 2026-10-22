@@ -63,6 +63,7 @@ export const createLeadValidator = vine.create({
     })
     .optional(),
   vendedorId: vine.number().positive().optional(),
+  clienteId: vine.number().positive().optional(),
   // Especificador que indicou o lead (só usado quando a origem é "arquiteto")
   arquitetoId: vine
     .number()
@@ -95,18 +96,29 @@ export const updateLeadValidator = vine.create({
   vendedorId: vine.number().positive().nullable().optional(),
 })
 
+const etapaKanbanAtivaRule = vine.createRule(async (value: unknown, _options, field: FieldContext) => {
+  if (typeof value !== 'string') return
+  const slug = value.trim()
+  if (slug === 'em_visita' || slug === 'desqualificado') return
+
+  const { default: KanbanEtapaCatalogo } = await import('#models/kanban_etapa_catalogo')
+  const etapa = await KanbanEtapaCatalogo.query()
+    .where('slug', slug)
+    .where('isActive', true)
+    .whereHas('quadro', (q) => q.where('isActive', true))
+    .first()
+
+  if (!etapa) {
+    field.report(
+      'Selecione uma etapa ativa nos Quadros do Kanban.',
+      'etapaKanbanAtiva',
+      field
+    )
+  }
+})
+
 export const updateStatusValidator = vine.create({
-  statusFunil: vine.enum([
-    'novo_lead',
-    'qualificando',
-    'em_visita',
-    'em_briefing',
-    'em_projeto',
-    'em_fechamento',
-    'fechado',
-    'perdido',
-    'desqualificado',
-  ]),
+  statusFunil: vine.string().trim().minLength(2).maxLength(100).use(etapaKanbanAtivaRule()),
   motivoPerda: vine.string().trim().minLength(3).maxLength(1000).optional(),
   concorrentePerdido: vine.string().trim().maxLength(200).optional(),
 })
@@ -119,6 +131,8 @@ export const perderLeadValidator = vine.create({
 export const interacaoValidator = vine.create({
   tipo: vine.enum(['whatsapp', 'ligacao', 'email', 'visita', 'reuniao']),
   resumo: vine.string().trim().minLength(2).maxLength(2000),
+  adicionarAoProntuario: vine.boolean().optional(),
+  categoriaProntuario: vine.string().trim().maxLength(50).optional(),
 })
 
 export const qualificarLeadValidator = vine.create({
