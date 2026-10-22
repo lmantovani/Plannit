@@ -23,6 +23,7 @@ router
     router.get('/', ({ response }) => response.redirect().toRoute('dashboard'))
     router.get('dashboard', [controllers.Dashboard, 'index']).as('dashboard')
     router.post('logout', [controllers.Session, 'destroy']).as('session.destroy')
+    router.post('auth/simular-perfil', [controllers.Session, 'simularPerfil']).as('session.simular_perfil')
 
 
     // CRM / Leads (Fase 2)

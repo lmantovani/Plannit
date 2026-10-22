@@ -13,6 +13,10 @@ export default class UserTransformer extends BaseTransformer<User> {
       isActive: this.resource.isActive,
       isSuperuser: this.resource.isSuperuser,
       initials: this.resource.initials,
+      canImpersonate: this.resource.canImpersonate,
+      isImpersonating: this.resource.isImpersonating,
+      perfilOriginal: this.resource.perfilOriginal ?? this.resource.perfil,
+      perfilOriginalLabel: this.resource.perfilOriginalLabel ?? this.resource.perfilLabel,
       createdAt: this.resource.createdAt,
       updatedAt: this.resource.updatedAt,
     }

@@ -20,6 +20,14 @@ export default class AuthMiddleware {
     } = {}
   ) {
     await ctx.auth.authenticateUsing(options.guards, { loginRoute: this.redirectTo })
+
+    if (ctx.auth.user && ctx.session) {
+      ctx.auth.user.applyImpersonation(
+        ctx.session.get('impersonate_perfil'),
+        ctx.session.get('impersonate_perfil_label')
+      )
+    }
+
     return next()
   }
 }

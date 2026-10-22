@@ -10,16 +10,17 @@
 
 ## 🧭 Sumário Executivo
 
-O cruzamento detalhado entre as decisões registradas nas transcrições das reuniões e a base de código atual do repositório (**AdonisJS v7 + Lucid ORM + Inertia React 19**) demonstra que **17 das 18 demandas técnicas já estão 100% implementadas**, incluindo:
+O cruzamento detalhado entre as decisões registradas nas transcrições das reuniões e a base de código atual do repositório (**AdonisJS v7 + Lucid ORM + Inertia React 19**) demonstra que **todas as 18 demandas técnicas (100%) já estão implementadas**, incluindo:
 - Consolidação do monólito na raiz e deploy automatizado no Railway;
 - Parametrização dos 18 roteiros técnicos de briefing no banco de dados;
 - Matriz dinâmica de permissões e perfis;
 - Agenda com seletor de duração estilo Google Agenda + paleta circular de cores;
 - Atalho direto no Card/Drawer do CRM para a Ficha do Cliente;
 - Suporte completo a **Múltiplos Projetos por Cliente**, garantindo **1 Card independente no Kanban do CRM para cada Projeto** e **1 único Briefing por Projeto**;
-- **Prontuário de Relacionamento do Cliente** na Ficha do Cliente com timeline por categorias e integração direta com o formulário de interações do CRM.
+- **Prontuário de Relacionamento do Cliente** na Ficha do Cliente com timeline por categorias parametrizáveis em Configurações e integração direta com o formulário de interações do CRM;
+- **Seletor de Simulação de Perfil ("Ver como...") no Header para a Diretoria**, permitindo auditar telas, menus, permissões e isolamento de dados de qualquer perfil em tempo real.
 
-Resta atualmente **apenas 1 único item técnico de produto** no backlog: o **Seletor "Ver como..." no Header para a Diretoria**.
+**Status do Backlog das Reuniões:** 🟢 **100% Concluído (0 pendências técnicas).**
 
 ---
 
@@ -44,7 +45,7 @@ Resta atualmente **apenas 1 único item técnico de produto** no backlog: o **Se
 | **15** | **Atalho no Card/Drawer do CRM para Abrir a Ficha do Cliente** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Botão direto no `LeadCard` (`Ficha ↗`), no cabeçalho/barra de ações do `LeadDrawer` (`Ver Ficha do Cliente ↗`) e na tabela em lista do CRM, com resolução automática de ficha via `GET /crm/leads/:id/ficha-cliente` (`leads_controller.ts`). |
 | **16** | **"Prontuário do Cliente": Observações Pessoais nas Interações & Parametrização em Configurações** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Tabela `prontuario_clientes`, model `ProntuarioCliente`, seção visual `ProntuarioClienteSection.tsx` na Ficha do Cliente (`/clientes/:id`) com timeline por categorias, estrelas de destaque e checkbox no formulário de interações do `LeadDrawer` do CRM. Tabela `categorias_prontuario_catalogo` com CRUD e aba dedicada em `/configuracoes`, cores customizáveis, ícones e sincronização cross-tab em tempo real. Testes em `prontuario_cliente.spec.ts`. |
 | **17** | **Associação de Múltiplos Projetos por Lead/Cliente (Cards Independentes)** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Regra `1 Cliente ➔ N Projetos (1 Card no CRM por Projeto)` e `1 Projeto ➔ 1 Briefing Único`. Botões **`+ Novo Projeto p/ este Cliente`** no `LeadDrawer` (`POST /crm/leads/:id/novo-projeto`), **`+ Novo Projeto no CRM`** na Ficha do Cliente (`POST /clientes/:id/novo-projeto-crm`), seletor de cliente existente no `NovoLeadModal`, badge `PRJ-ANO-NNN` nos cards do Kanban e links **`Abrir Briefing ↗`** / **`Ver Projeto ↗`** na Ficha do Cliente. |
-| **18** | **Seletor de Perfil no Header ("Ver como...") para Diretoria** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Header não possui mecanismo de alternância rápida de visualização para simular outros perfis (vendedor, projetista). |
+| **18** | **Seletor de Perfil no Header ("Ver como...") para Diretoria** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Seletor `"Ver como:"` e banner de simulação ativa em `app_layout.tsx`, `POST /auth/simular-perfil` em `session_controller.ts`, aplicação em memória em `User.applyImpersonation()` (`silent_auth_middleware`, `auth_middleware`, `inertia_middleware`) e testes em `simulacao_perfil.spec.ts`. |
 
 ---
 
@@ -110,42 +111,29 @@ Resta atualmente **apenas 1 único item técnico de produto** no backlog: o **Se
   - **Interações no CRM (`/crm`):** Formulário de Nova Interação no `LeadDrawer` com checkbox *"📌 Salvar também no Prontuário do Cliente"* e select dinâmico alimentado pelo catálogo ativo de categorias.
   - **Testes:** Suíte funcional completa em `tests/functional/prontuario_cliente.spec.ts` cobrindo adição direta, exclusão, criação via interação do CRM, CRUD completo de categorias em Configurações e trava de integridade referencial.
 
----
-
-## 📌 Detalhamento do que FALTA Implementar (Backlog Aberto)
-
-Resta atualmente **apenas 1 único item técnico de produto** pendente no backlog:
-
----
-
-### Item Único Pendente (Matriz #18): Alternância de Perfil no Header ("Ver como...") para Diretoria
-- **Modelo Recomendado para Execução:** **🧠 4. Argon** (Altera middlewares de autenticação, sessão, bypass de `isSuperuser`/`DIRETORIA` no `PermissionService` e filtros de isolamento em múltiplos controllers).
-- **Origem:** Reunião 08/10 (Minutos [00:04:25](#00:04:25) e [00:05:28](#00:05:28) — Thiago Aguiar).
-- **Conceito:** Permitir que o usuário com perfil `DIRETORIA` visualize a plataforma sob a ótica de outros perfis (Vendedor, Projetista, Conferente) para auditar permissões e visibilidade de tela sem precisar fazer logout e login com outras contas.
-- **O que precisa ser feito:**
-  1. No cabeçalho (`app_layout.tsx`), ao lado do perfil da Diretoria, exibir um dropdown de simulação: *"Modo de Visão: [ Diretoria ▼ | Vendedor | Projetista | Gerente ]"*.
-  2. O backend armazena o perfil simulado na sessão (`session.put('impersonate_perfil', perfil)`), ajustando as queries de isolamento e props compartilhadas do Inertia enquanto a simulação estiver ativa.
-  3. Exibir banner de alerta no topo informando: *"Você está visualizando o sistema como Vendedor. [Restaurar Visão de Diretoria]"*.
+### 9. Seletor de Simulação de Perfil ("Ver como...") no Header para a Diretoria (Reunião 08/10)
+- **O que foi pedido:** Permitir que o usuário com perfil `DIRETORIA` alterne rapidamente a visualização da plataforma no Header para simular outros perfis (Vendedor, Projetista, Gerente Comercial, Conferente ou qualquer perfil cadastrado em Configurações) para auditar permissões, menus e filtros de tela sem precisar deslogar.
+- **Como foi entregue:**
+  - **Model & Núcleo de Segurança (`app/models/user.ts`, `user_transformer.ts`):** Criação do método idempotente em memória `user.applyImpersonation(perfil, label)` e getter `user.canImpersonate` (que preserva `perfilOriginal` e `isSuperuserOriginal` do banco). Quando a simulação está ativa, `user.perfil` assume o perfil simulado e `user.isSuperuser` torna-se `false` em memória, fazendo com que `PermissionService`, `RoleMiddleware`, `PermissionMiddleware` e todos os controllers de negócio apliquem exatamente as mesmas regras e isolamentos do perfil simulado, sem alterar o banco de dados e sem trancar a Diretoria fora da rota de restauração.
+  - **Middlewares & Sessão (`silent_auth_middleware.ts`, `auth_middleware.ts`, `inertia_middleware.ts`):** Hidratação automática da simulação a partir da sessão (`impersonate_perfil` e `impersonate_perfil_label`) e carregamento dinâmico de todos os perfis ativos de `perfis_catalogo` em `perfisDisponiveisSimulacao`.
+  - **Endpoint de Alternância (`POST /auth/simular-perfil` em `session_controller.ts`):** Valida se o usuário real possui `canImpersonate`, verifica se o perfil alvo existe e está ativo em `perfis_catalogo`, aplica ou restaura a visão original e redireciona inteligentemente para `/dashboard` caso o perfil simulado não possua acesso à tela de origem (ex.: `/configuracoes` ou `/colaboradores`).
+  - **Interface no Header & Banner Global (`inertia/layouts/app_layout.tsx`):** Seletor `"Ver como:"` integrado ao Header Superior (exclusivo para Diretoria/Superuser) e Banner Âmbar de alta visibilidade no topo indicando o perfil simulado com botão de 1 clique **`Restaurar Visão de Diretoria`**.
+  - **Testes:** Suíte funcional em `tests/functional/simulacao_perfil.spec.ts` validando bloqueio 403 para não-Diretoria, restrição real de rotas durante a simulação, propagação das props do Inertia e restauração da visão original.
 
 ---
 
-## 🎯 Recomendações e Próximos Passos
+## 🎯 Status Geral do Backlog das Reuniões
 
 ```mermaid
 flowchart TD
-    subgraph Concluido["✅ Concluído (17 de 18 Demandas Técnicas)"]
+    subgraph Concluido["✅ 100% Concluído (18 de 18 Demandas Técnicas)"]
         A1["✅ 1. Agenda: Duração estilo Google Agenda + Conflitos"]
         A2["✅ 2. Paleta circular de cores em Configurações"]
         A3["✅ 3. CRM: Atalho direto no Card/Drawer para Ficha do Cliente"]
         A4["✅ 4. Multi-Projetos por Cliente (1 Card no CRM por Projeto / 1 Briefing por Projeto)"]
-        A5["✅ 5. Prontuário de Relacionamento na Ficha do Cliente + Integração CRM"]
+        A5["✅ 5. Prontuário de Relacionamento + Categorias Dinâmicas em Configurações"]
+        A6["✅ 6. Seletor de Simulação de Perfil ('Ver como...') no Header para Diretoria"]
     end
-
-    subgraph Proximos["🚀 Único Item Restante"]
-        B1["6. Seletor de Simulação de Perfil ('Ver como...') no Header para Diretoria (Recomendado: 🧠 4. Argon)"]
-    end
-
-    Concluido --> Proximos
 ```
 
-1. **Próximo e Último Passo Técnico (Item #18):** Implementar o seletor **"Ver como..."** no cabeçalho para a Diretoria simular outros perfis (com **Gemini 4 Argon**).
+Todas as 18 demandas técnicas mapeadas nas transcrições das reuniões de 08/10 e 15/10 encontram-se **100% implementadas, tipadas e cobertas por testes automatizados**.

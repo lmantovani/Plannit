@@ -13,9 +13,38 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
      * In that case, we must always assume that HttpContext is not fully hydrated
      * with all the properties
      */
-    const { auth } = ctx as Partial<HttpContext>
+    const { auth, session } = ctx as Partial<HttpContext>
     const user = auth?.user
+
+    if (user && session) {
+      user.applyImpersonation(
+        session.get('impersonate_perfil'),
+        session.get('impersonate_perfil_label')
+      )
+    }
+
     const permissoes = user ? await user.getPermissoes() : []
+
+    let perfisDisponiveisSimulacao: Array<{ slug: string; nome: string }> = []
+    if (user?.canImpersonate) {
+      try {
+        const { default: PerfilCatalogo } = await import('#models/perfil_catalogo')
+        const catalogo = await PerfilCatalogo.listarAtivos()
+        if (catalogo.length > 0) {
+          perfisDisponiveisSimulacao = catalogo.map((p) => ({ slug: p.slug, nome: p.nome }))
+        }
+      } catch {
+        // Fallback silencioso caso a tabela ainda não esteja disponível
+      }
+
+      if (perfisDisponiveisSimulacao.length === 0) {
+        const { PERFIL_LABELS, PERFIS_INTERNOS } = await import('#models/user')
+        perfisDisponiveisSimulacao = PERFIS_INTERNOS.map((slug) => ({
+          slug,
+          nome: PERFIL_LABELS[slug] || slug,
+        }))
+      }
+    }
 
     /**
      * Data shared with all Inertia pages. Make sure you are using
@@ -25,6 +54,7 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
       errors: ctx.inertia.always(this.getValidationErrors(ctx)),
       user: ctx.inertia.always(auth?.user ? UserTransformer.transform(auth.user) : undefined),
       permissoes: ctx.inertia.always(permissoes),
+      perfisDisponiveisSimulacao: ctx.inertia.always(perfisDisponiveisSimulacao),
     }
   }
 

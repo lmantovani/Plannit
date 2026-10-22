@@ -55,6 +55,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['destroy']>>>
     }
   }
+  'session.simular_perfil': {
+    methods: ["POST"]
+    pattern: '/auth/simular-perfil'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/session_controller').default['simularPerfil']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['simularPerfil']>>>
+    }
+  }
   'crm.index': {
     methods: ["GET","HEAD"]
     pattern: '/crm'

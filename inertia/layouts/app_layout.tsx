@@ -18,6 +18,8 @@ import {
   Menu,
   BookOpen,
   Sliders,
+  Eye,
+  RotateCcw,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -34,11 +36,21 @@ interface UserProps {
   isActive: boolean
   isSuperuser: boolean
   initials: string
+  canImpersonate?: boolean
+  isImpersonating?: boolean
+  perfilOriginal?: string
+  perfilOriginalLabel?: string
+}
+
+interface PerfilSimulacaoOption {
+  slug: string
+  nome: string
 }
 
 interface SharedProps extends Record<string, unknown> {
   user: UserProps
   permissoes?: string[]
+  perfisDisponiveisSimulacao?: PerfilSimulacaoOption[]
   flash?: {
     success?: string
     error?: string
@@ -68,7 +80,7 @@ interface NavGroup {
 }
 
 export default function AppLayout({ children, title, subtitle }: AppLayoutProps) {
-  const { user, flash, permissoes } = usePage<SharedProps>().props
+  const { user, flash, permissoes, perfisDisponiveisSimulacao } = usePage<SharedProps>().props
   const { url } = usePage()
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -80,6 +92,32 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
   })
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [trocandoPerfil, setTrocandoPerfil] = useState(false)
+
+  const listaPerfisSimulacao: PerfilSimulacaoOption[] =
+    perfisDisponiveisSimulacao && perfisDisponiveisSimulacao.length > 0
+      ? perfisDisponiveisSimulacao
+      : [
+          { slug: 'diretoria', nome: 'Diretoria' },
+          { slug: 'gerente_comercial', nome: 'Gerente Comercial' },
+          { slug: 'vendedor', nome: 'Vendedor' },
+          { slug: 'projetista', nome: 'Projetista' },
+          { slug: 'conferente', nome: 'Conferente Técnico' },
+          { slug: 'financeiro', nome: 'Financeiro' },
+          { slug: 'rh', nome: 'RH' },
+        ]
+
+  const handleTrocarPerfilSimulado = (novoPerfil: string | null) => {
+    setTrocandoPerfil(true)
+    router.post(
+      '/auth/simular-perfil',
+      { perfil: novoPerfil },
+      {
+        preserveScroll: false,
+        onFinish: () => setTrocandoPerfil(false),
+      }
+    )
+  }
 
   const toggleSidebar = () => {
     const next = !sidebarOpen
@@ -136,7 +174,12 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
     {
       section: 'Gestão',
       items: [
-        { label: 'Colaboradores', href: '/colaboradores', icon: UserCog, badge: 'RH-RN009' },
+        ...(user?.isSuperuser ||
+        user?.perfil === 'diretoria' ||
+        user?.perfil === 'rh' ||
+        permissoes?.includes('colaboradores.visualizar')
+          ? [{ label: 'Colaboradores', href: '/colaboradores', icon: UserCog, badge: 'RH-RN009' }]
+          : []),
         ...(user?.isSuperuser ||
         user?.perfil === 'diretoria' ||
         user?.perfil === 'gerente_comercial' ||
@@ -158,7 +201,7 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
         },
       ],
     },
-  ]
+  ].filter((group) => group.items.length > 0)
 
   return (
     <div className="min-h-screen bg-stone-100 flex flex-col antialiased">
@@ -347,6 +390,28 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
           sidebarOpen ? 'md:ml-60' : 'md:ml-16'
         )}
       >
+        {/* Banner Global de Simulação de Perfil Ativa */}
+        {user?.isImpersonating && (
+          <div className="bg-amber-500 text-stone-950 px-4 sm:px-6 py-2 text-xs font-medium flex flex-wrap items-center justify-between gap-3 shadow-xs z-40 border-b border-amber-600/30">
+            <div className="flex items-center gap-2">
+              <Eye size={15} className="shrink-0 text-stone-900" />
+              <span>
+                <strong>Modo de Simulação Ativo:</strong> Você está visualizando o sistema com as permissões e filtros de{' '}
+                <strong className="underline decoration-stone-900/50">{user.perfilLabel}</strong>.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleTrocarPerfilSimulado(null)}
+              disabled={trocandoPerfil}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-900 text-amber-300 hover:bg-stone-800 font-semibold text-[11px] transition-colors shrink-0 cursor-pointer shadow-2xs disabled:opacity-50"
+            >
+              <RotateCcw size={12} />
+              <span>Restaurar Visão de {user.perfilOriginalLabel || 'Diretoria'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Header Superior */}
         <header className="bg-white border-b border-stone-200/80 px-6 py-3.5 sticky top-0 z-30 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -364,7 +429,48 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Seletor "Ver como..." exclusivo para Diretoria / Superuser */}
+            {user?.canImpersonate && (
+              <div
+                className={clsx(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs transition-all',
+                  user.isImpersonating
+                    ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
+                    : 'bg-stone-50 border-stone-200/90 text-stone-700 hover:border-stone-300'
+                )}
+                title="Alternar visão de perfil para auditar telas e permissões"
+              >
+                <Eye
+                  size={13}
+                  className={clsx(
+                    'shrink-0',
+                    user.isImpersonating ? 'text-amber-600' : 'text-primary-600'
+                  )}
+                />
+                <span className="text-[11px] font-medium text-stone-500 hidden lg:inline select-none">
+                  Ver como:
+                </span>
+                <select
+                  value={user.perfil}
+                  onChange={(e) => handleTrocarPerfilSimulado(e.target.value)}
+                  disabled={trocandoPerfil}
+                  aria-label="Simular visão de perfil"
+                  className={clsx(
+                    'bg-transparent font-semibold text-xs focus:outline-none cursor-pointer pr-1 disabled:opacity-50',
+                    user.isImpersonating ? 'text-amber-800' : 'text-stone-800'
+                  )}
+                >
+                  {listaPerfisSimulacao.map((p) => (
+                    <option key={p.slug} value={p.slug}>
+                      {p.nome}
+                      {p.slug === (user.perfilOriginal || 'diretoria') ? ' (Original)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <a
               href="/manual/index.html"
               target="_blank"
@@ -377,7 +483,12 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
             </a>
 
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-stone-50 border border-stone-200/80 text-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span
+                className={clsx(
+                  'w-2 h-2 rounded-full',
+                  user?.isImpersonating ? 'bg-amber-500' : 'bg-emerald-500'
+                )}
+              ></span>
               <span className="font-medium text-stone-700">{user?.perfilLabel}</span>
               <span className="text-stone-300">|</span>
               <span className="text-stone-500">{user?.nome}</span>

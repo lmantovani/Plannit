@@ -6,6 +6,7 @@ export interface ApiDefinition {
     create: typeof routes['session.create']
     store: typeof routes['session.store']
     destroy: typeof routes['session.destroy']
+    simularPerfil: typeof routes['session.simular_perfil']
   }
   dashboard: typeof routes['dashboard']
   crm: {

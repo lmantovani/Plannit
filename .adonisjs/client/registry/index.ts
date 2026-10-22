@@ -30,6 +30,12 @@ const routes = {
     tokens: [{"old":"/logout","type":0,"val":"logout","end":""}],
     types: placeholder as Registry['session.destroy']['types'],
   },
+  'session.simular_perfil': {
+    methods: ["POST"],
+    pattern: '/auth/simular-perfil',
+    tokens: [{"old":"/auth/simular-perfil","type":0,"val":"auth","end":""},{"old":"/auth/simular-perfil","type":0,"val":"simular-perfil","end":""}],
+    types: placeholder as Registry['session.simular_perfil']['types'],
+  },
   'crm.index': {
     methods: ["GET","HEAD"],
     pattern: '/crm',

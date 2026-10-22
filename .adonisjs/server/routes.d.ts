@@ -8,6 +8,7 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'dashboard': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
+    'session.simular_perfil': { paramsTuple?: []; params?: {} }
     'crm.index': { paramsTuple?: []; params?: {} }
     'crm.leads.store': { paramsTuple?: []; params?: {} }
     'crm.leads.ficha_cliente': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -190,6 +191,7 @@ export type ScannedRoutes = {
   POST: {
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
+    'session.simular_perfil': { paramsTuple?: []; params?: {} }
     'crm.leads.store': { paramsTuple?: []; params?: {} }
     'crm.leads.novo_projeto': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.qualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
