@@ -42,6 +42,18 @@ const routes = {
     tokens: [{"old":"/crm/leads","type":0,"val":"crm","end":""},{"old":"/crm/leads","type":0,"val":"leads","end":""}],
     types: placeholder as Registry['crm.leads.store']['types'],
   },
+  'crm.leads.ficha_cliente': {
+    methods: ["GET","HEAD"],
+    pattern: '/crm/leads/:id/ficha-cliente',
+    tokens: [{"old":"/crm/leads/:id/ficha-cliente","type":0,"val":"crm","end":""},{"old":"/crm/leads/:id/ficha-cliente","type":0,"val":"leads","end":""},{"old":"/crm/leads/:id/ficha-cliente","type":1,"val":"id","end":""},{"old":"/crm/leads/:id/ficha-cliente","type":0,"val":"ficha-cliente","end":""}],
+    types: placeholder as Registry['crm.leads.ficha_cliente']['types'],
+  },
+  'crm.leads.novo_projeto': {
+    methods: ["POST"],
+    pattern: '/crm/leads/:id/novo-projeto',
+    tokens: [{"old":"/crm/leads/:id/novo-projeto","type":0,"val":"crm","end":""},{"old":"/crm/leads/:id/novo-projeto","type":0,"val":"leads","end":""},{"old":"/crm/leads/:id/novo-projeto","type":1,"val":"id","end":""},{"old":"/crm/leads/:id/novo-projeto","type":0,"val":"novo-projeto","end":""}],
+    types: placeholder as Registry['crm.leads.novo_projeto']['types'],
+  },
   'crm.leads.update_status': {
     methods: ["PATCH"],
     pattern: '/crm/leads/:id/status',
@@ -408,6 +420,24 @@ const routes = {
     tokens: [{"old":"/clientes/:id/aprovar","type":0,"val":"clientes","end":""},{"old":"/clientes/:id/aprovar","type":1,"val":"id","end":""},{"old":"/clientes/:id/aprovar","type":0,"val":"aprovar","end":""}],
     types: placeholder as Registry['clientes.aprovar']['types'],
   },
+  'clientes.novo_projeto_crm': {
+    methods: ["POST"],
+    pattern: '/clientes/:id/novo-projeto-crm',
+    tokens: [{"old":"/clientes/:id/novo-projeto-crm","type":0,"val":"clientes","end":""},{"old":"/clientes/:id/novo-projeto-crm","type":1,"val":"id","end":""},{"old":"/clientes/:id/novo-projeto-crm","type":0,"val":"novo-projeto-crm","end":""}],
+    types: placeholder as Registry['clientes.novo_projeto_crm']['types'],
+  },
+  'clientes.prontuario.store': {
+    methods: ["POST"],
+    pattern: '/clientes/:id/prontuario',
+    tokens: [{"old":"/clientes/:id/prontuario","type":0,"val":"clientes","end":""},{"old":"/clientes/:id/prontuario","type":1,"val":"id","end":""},{"old":"/clientes/:id/prontuario","type":0,"val":"prontuario","end":""}],
+    types: placeholder as Registry['clientes.prontuario.store']['types'],
+  },
+  'clientes.prontuario.destroy': {
+    methods: ["DELETE"],
+    pattern: '/clientes/:id/prontuario/:prontuarioId',
+    tokens: [{"old":"/clientes/:id/prontuario/:prontuarioId","type":0,"val":"clientes","end":""},{"old":"/clientes/:id/prontuario/:prontuarioId","type":1,"val":"id","end":""},{"old":"/clientes/:id/prontuario/:prontuarioId","type":0,"val":"prontuario","end":""},{"old":"/clientes/:id/prontuario/:prontuarioId","type":1,"val":"prontuarioId","end":""}],
+    types: placeholder as Registry['clientes.prontuario.destroy']['types'],
+  },
   'clientes.enderecos.store': {
     methods: ["POST"],
     pattern: '/clientes/:id/enderecos',
@@ -635,6 +665,30 @@ const routes = {
     pattern: '/configuracoes/tipos-compromisso/:id',
     tokens: [{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":0,"val":"tipos-compromisso","end":""},{"old":"/configuracoes/tipos-compromisso/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['configuracoes.tipos_compromisso.destroy']['types'],
+  },
+  'configuracoes.categorias_prontuario.store': {
+    methods: ["POST"],
+    pattern: '/configuracoes/categorias-prontuario',
+    tokens: [{"old":"/configuracoes/categorias-prontuario","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/categorias-prontuario","type":0,"val":"categorias-prontuario","end":""}],
+    types: placeholder as Registry['configuracoes.categorias_prontuario.store']['types'],
+  },
+  'configuracoes.categorias_prontuario.update': {
+    methods: ["PUT"],
+    pattern: '/configuracoes/categorias-prontuario/:id',
+    tokens: [{"old":"/configuracoes/categorias-prontuario/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/categorias-prontuario/:id","type":0,"val":"categorias-prontuario","end":""},{"old":"/configuracoes/categorias-prontuario/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.categorias_prontuario.update']['types'],
+  },
+  'configuracoes.categorias_prontuario.toggle': {
+    methods: ["PATCH"],
+    pattern: '/configuracoes/categorias-prontuario/:id/toggle',
+    tokens: [{"old":"/configuracoes/categorias-prontuario/:id/toggle","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/categorias-prontuario/:id/toggle","type":0,"val":"categorias-prontuario","end":""},{"old":"/configuracoes/categorias-prontuario/:id/toggle","type":1,"val":"id","end":""},{"old":"/configuracoes/categorias-prontuario/:id/toggle","type":0,"val":"toggle","end":""}],
+    types: placeholder as Registry['configuracoes.categorias_prontuario.toggle']['types'],
+  },
+  'configuracoes.categorias_prontuario.destroy': {
+    methods: ["DELETE"],
+    pattern: '/configuracoes/categorias-prontuario/:id',
+    tokens: [{"old":"/configuracoes/categorias-prontuario/:id","type":0,"val":"configuracoes","end":""},{"old":"/configuracoes/categorias-prontuario/:id","type":0,"val":"categorias-prontuario","end":""},{"old":"/configuracoes/categorias-prontuario/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['configuracoes.categorias_prontuario.destroy']['types'],
   },
   'configuracoes.roteiros.store': {
     methods: ["POST"],

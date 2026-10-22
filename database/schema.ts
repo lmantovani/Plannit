@@ -167,6 +167,29 @@ export class CargoSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class CategoriasProntuarioCatalogoSchema extends BaseModel {
+  static $columns = ['cor', 'createdAt', 'icone', 'id', 'isActive', 'nome', 'ordem', 'slug', 'updatedAt'] as const
+  $columns = CategoriasProntuarioCatalogoSchema.$columns
+  @column()
+  declare cor: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare icone: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column()
+  declare slug: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ClienteSchema extends BaseModel {
   static $columns = ['arquitetoId', 'cadastroAprovado', 'cadastroAprovadoEm', 'cadastroAprovadoPor', 'cpfCnpj', 'createdAt', 'email', 'id', 'isActive', 'nome', 'observacoes', 'profissaoRamo', 'rgIe', 'telefone', 'tipo', 'updatedAt'] as const
   $columns = ClienteSchema.$columns
@@ -954,6 +977,31 @@ export class ProjetosComerciaiSchema extends BaseModel {
   declare validadoPorId: number | null
   @column()
   declare versao: number
+}
+
+export class ProntuarioClienteSchema extends BaseModel {
+  static $columns = ['autorId', 'categoria', 'clienteId', 'createdAt', 'descricao', 'id', 'importante', 'leadId', 'titulo', 'updatedAt'] as const
+  $columns = ProntuarioClienteSchema.$columns
+  @column()
+  declare autorId: number | null
+  @column()
+  declare categoria: string
+  @column()
+  declare clienteId: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare descricao: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare importante: boolean
+  @column()
+  declare leadId: number | null
+  @column()
+  declare titulo: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class RoteiroBriefingAmbienteSchema extends BaseModel {

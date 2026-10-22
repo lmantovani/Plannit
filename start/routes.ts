@@ -28,6 +28,8 @@ router
     // CRM / Leads (Fase 2)
     router.get('crm', [controllers.Leads, 'index']).as('crm.index')
     router.post('crm/leads', [controllers.Leads, 'store']).as('crm.leads.store')
+    router.get('crm/leads/:id/ficha-cliente', [controllers.Leads, 'abrirFichaCliente']).as('crm.leads.ficha_cliente')
+    router.post('crm/leads/:id/novo-projeto', [controllers.Leads, 'criarNovoProjetoCard']).as('crm.leads.novo_projeto')
     router.patch('crm/leads/:id/status', [controllers.Leads, 'updateStatus']).as('crm.leads.update_status')
     router.post('crm/leads/:id/qualificar', [controllers.Leads, 'qualificar']).as('crm.leads.qualificar')
     router.post('crm/leads/:id/desqualificar', [controllers.Leads, 'desqualificar']).as('crm.leads.desqualificar')
@@ -121,6 +123,9 @@ router
     router.put('clientes/:id', [controllers.Clientes, 'update']).as('clientes.update')
     router.patch('clientes/:id', [controllers.Clientes, 'update']).as('clientes.patch')
     router.post('clientes/:id/aprovar', [controllers.Clientes, 'aprovarCadastro']).as('clientes.aprovar')
+    router.post('clientes/:id/novo-projeto-crm', [controllers.Clientes, 'criarNovoProjetoCrm']).as('clientes.novo_projeto_crm')
+    router.post('clientes/:id/prontuario', [controllers.Clientes, 'salvarProntuario']).as('clientes.prontuario.store')
+    router.delete('clientes/:id/prontuario/:prontuarioId', [controllers.Clientes, 'excluirProntuario']).as('clientes.prontuario.destroy')
     router.post('clientes/:id/enderecos', [controllers.Clientes, 'adicionarEndereco']).as('clientes.enderecos.store')
     router.delete('clientes/:id/enderecos/:enderecoId', [controllers.Clientes, 'removerEndereco']).as('clientes.enderecos.destroy')
     router.post('clientes/converter-lead/:leadId', [controllers.Clientes, 'converterLead']).as('clientes.converter_lead')
@@ -185,6 +190,12 @@ router
         router.put('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'updateTipoCompromisso']).as('configuracoes.tipos_compromisso.update')
         router.patch('configuracoes/tipos-compromisso/:id/toggle', [controllers.Configuracoes, 'toggleTipoCompromisso']).as('configuracoes.tipos_compromisso.toggle')
         router.delete('configuracoes/tipos-compromisso/:id', [controllers.Configuracoes, 'destroyTipoCompromisso']).as('configuracoes.tipos_compromisso.destroy')
+
+        // Categorias de Prontuário
+        router.post('configuracoes/categorias-prontuario', [controllers.Configuracoes, 'storeCategoriaProntuario']).as('configuracoes.categorias_prontuario.store')
+        router.put('configuracoes/categorias-prontuario/:id', [controllers.Configuracoes, 'updateCategoriaProntuario']).as('configuracoes.categorias_prontuario.update')
+        router.patch('configuracoes/categorias-prontuario/:id/toggle', [controllers.Configuracoes, 'toggleCategoriaProntuario']).as('configuracoes.categorias_prontuario.toggle')
+        router.delete('configuracoes/categorias-prontuario/:id', [controllers.Configuracoes, 'destroyCategoriaProntuario']).as('configuracoes.categorias_prontuario.destroy')
 
         // Roteiros de Apoio (Briefing)
         router.post('configuracoes/roteiros', [controllers.Configuracoes, 'storeRoteiro']).as('configuracoes.roteiros.store')

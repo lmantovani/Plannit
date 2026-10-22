@@ -10,6 +10,8 @@ export type ScannedRoutes = {
     'session.destroy': { paramsTuple?: []; params?: {} }
     'crm.index': { paramsTuple?: []; params?: {} }
     'crm.leads.store': { paramsTuple?: []; params?: {} }
+    'crm.leads.ficha_cliente': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'crm.leads.novo_projeto': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.qualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.desqualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -71,6 +73,9 @@ export type ScannedRoutes = {
     'clientes.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.patch': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.aprovar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.novo_projeto_crm': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.prontuario.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.prontuario.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'prontuarioId': ParamValue} }
     'clientes.enderecos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.enderecos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'enderecoId': ParamValue} }
     'clientes.converter_lead': { paramsTuple: [ParamValue]; params: {'leadId': ParamValue} }
@@ -109,6 +114,10 @@ export type ScannedRoutes = {
     'configuracoes.tipos_compromisso.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.categorias_prontuario.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
     'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -122,6 +131,7 @@ export type ScannedRoutes = {
     'session.create': { paramsTuple?: []; params?: {} }
     'dashboard': { paramsTuple?: []; params?: {} }
     'crm.index': { paramsTuple?: []; params?: {} }
+    'crm.leads.ficha_cliente': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'briefings.index': { paramsTuple?: []; params?: {} }
     'briefings.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.index': { paramsTuple?: []; params?: {} }
@@ -151,6 +161,7 @@ export type ScannedRoutes = {
     'session.create': { paramsTuple?: []; params?: {} }
     'dashboard': { paramsTuple?: []; params?: {} }
     'crm.index': { paramsTuple?: []; params?: {} }
+    'crm.leads.ficha_cliente': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'briefings.index': { paramsTuple?: []; params?: {} }
     'briefings.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'fila.index': { paramsTuple?: []; params?: {} }
@@ -180,6 +191,7 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
     'crm.leads.store': { paramsTuple?: []; params?: {} }
+    'crm.leads.novo_projeto': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.qualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.desqualificar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'crm.leads.marcar_perdido': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -204,6 +216,8 @@ export type ScannedRoutes = {
     'colaboradores.documentos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.store': { paramsTuple?: []; params?: {} }
     'clientes.aprovar': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.novo_projeto_crm': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'clientes.prontuario.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.enderecos.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'clientes.converter_lead': { paramsTuple: [ParamValue]; params: {'leadId': ParamValue} }
     'projetos.mudar_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -219,6 +233,7 @@ export type ScannedRoutes = {
     'configuracoes.origens.store': { paramsTuple?: []; params?: {} }
     'configuracoes.campanhas.store': { paramsTuple?: []; params?: {} }
     'configuracoes.tipos_compromisso.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.categorias_prontuario.store': { paramsTuple?: []; params?: {} }
     'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
     'configuracoes.perfis.store': { paramsTuple?: []; params?: {} }
   }
@@ -238,6 +253,7 @@ export type ScannedRoutes = {
     'configuracoes.origens.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.permissoes.toggle': { paramsTuple?: []; params?: {} }
   }
@@ -253,6 +269,7 @@ export type ScannedRoutes = {
     'configuracoes.origens.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.perfis.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
@@ -262,11 +279,13 @@ export type ScannedRoutes = {
     'especificadores.concorrentes.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'concorrenteId': ParamValue} }
     'colaboradores.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'colaboradores.documentos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'documentoId': ParamValue} }
+    'clientes.prontuario.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'prontuarioId': ParamValue} }
     'clientes.enderecos.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'enderecoId': ParamValue} }
     'configuracoes.ambientes.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.origens.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.campanhas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.categorias_prontuario.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.perfis.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }

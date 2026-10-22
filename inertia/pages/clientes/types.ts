@@ -19,12 +19,28 @@ export interface ProjetoClienteData {
   id: number
   codigo: string
   status: string
+  statusLabel?: string
   valorContrato: number
   prazoEntregaEstimado: string | null
   vendedorNome: string
   projetistaNome: string
   createdAt: string
+  briefingId?: number | null
+  statusBriefing?: string | null
+  ambientesBriefing?: string[]
   scoreBriefing: number | null
+  leadId?: number | null
+}
+
+export interface ProntuarioItem {
+  id: number
+  categoria: 'pessoal' | 'familia' | 'pet' | 'hobby' | 'preferencia' | 'atendimento' | string
+  titulo: string | null
+  descricao: string
+  importante: boolean
+  autorNome: string
+  leadId?: number | null
+  createdAt: string
 }
 
 export interface ClienteData {
@@ -46,6 +62,7 @@ export interface ClienteData {
   totalProjetos?: number
   enderecos?: EnderecoClienteData[]
   projetos?: ProjetoClienteData[]
+  prontuarios?: ProntuarioItem[]
   arquiteto?: {
     id: number
     nome: string
@@ -57,6 +74,8 @@ export interface ClienteData {
   } | null
   resumoCompras?: {
     totalProjetos: number
+    projetosContratados?: number
+    projetosEmBriefing?: number
     valorTotalComprado: number
     projetosAtivos: number
   }
@@ -67,4 +86,13 @@ export interface ClientesKpiData {
   aprovados: number
   pendentesAprovacao: number
   pessoaJuridica: number
+}
+
+export interface CategoriaProntuarioCatalogoItem {
+  id: number
+  nome: string
+  slug: string
+  cor: string
+  icone: string | null
+  ordem?: number
 }

@@ -271,13 +271,17 @@ export default function RoteirosBriefingPanel({
                     className={clsx(
                       'text-xs font-semibold px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 border',
                       roteiro.isActive
-                        ? 'text-stone-600 bg-white border-stone-200 hover:bg-stone-100'
-                        : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                        : 'text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100'
                     )}
-                    title={roteiro.isActive ? 'Desativar roteiro' : 'Ativar roteiro'}
+                    title={
+                      roteiro.isActive
+                        ? 'Ligado / Ativo (clique para desativar)'
+                        : 'Desligado / Inativo (clique para ativar)'
+                    }
                   >
                     <Power className="w-3 h-3" />
-                    {roteiro.isActive ? 'Desativar' : 'Ativar'}
+                    <span>{roteiro.isActive ? 'Ativo' : 'Inativo'}</span>
                   </button>
 
                   {podeGerenciar && (

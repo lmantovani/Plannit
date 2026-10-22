@@ -14,20 +14,31 @@ import {
   ArrowLeft,
   ShieldCheck,
   AlertTriangle,
+  FileText,
+  ExternalLink,
 } from 'lucide-react'
 
-import type { ClienteData } from './types'
+import type { ClienteData, CategoriaProntuarioCatalogoItem } from './types'
 import NovoEnderecoModal from './components/NovoEnderecoModal'
+import ProntuarioClienteSection from './components/ProntuarioClienteSection'
+import { useSincronizarCatalogos } from '~/lib/catalogos'
 
 interface ClienteShowProps {
   cliente: ClienteData
   arquitetos: Array<{ id: number; nome: string; escritorio: string | null }>
+  categoriasProntuarioCatalogo?: CategoriaProntuarioCatalogoItem[]
 }
 
-export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
+export default function ClienteShow({
+  cliente,
+  arquitetos,
+  categoriasProntuarioCatalogo = [],
+}: ClienteShowProps) {
   const { user } = usePage<any>().props
+  useSincronizarCatalogos(['categoriasProntuarioCatalogo', 'cliente'])
   const [modalEnderecoAberto, setModalEnderecoAberto] = useState(false)
   const [modoEdicao, setModoEdicao] = useState(false)
+  const [criandoNovoProjeto, setCriandoNovoProjeto] = useState(false)
 
   // Form states de edição
   const [nome, setNome] = useState(cliente.nome)
@@ -40,6 +51,17 @@ export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
   const [observacoes, setObservacoes] = useState(cliente.observacoes || '')
 
   const podeAprovar = ['diretoria', 'gerente_comercial', 'financeiro'].includes(user?.perfil)
+
+  const handleCriarNovoProjetoCrm = () => {
+    setCriandoNovoProjeto(true)
+    router.post(
+      `/clientes/${cliente.id}/novo-projeto-crm`,
+      {},
+      {
+        onFinish: () => setCriandoNovoProjeto(false),
+      }
+    )
+  }
 
   const handleSalvarEdicao = (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +95,10 @@ export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
     }
   }
 
+  const totalProjetos = cliente.resumoCompras?.totalProjetos ?? 0
+  const projetosContratados = cliente.resumoCompras?.projetosContratados ?? 0
+  const projetosEmBriefing = cliente.resumoCompras?.projetosEmBriefing ?? 0
+
   return (
     <AppLayout title={cliente.nome} subtitle="Ficha Cadastral e Histórico de Compras">
       <div className="space-y-6">
@@ -104,7 +130,26 @@ export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Link
+              href="/crm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 rounded-xl text-xs font-medium transition-colors shadow-2xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-primary-600" />
+              <span>Funil CRM</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleCriarNovoProjetoCrm}
+              disabled={criandoNovoProjeto}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-60"
+              title="Cria um novo card independente no Kanban do CRM para um novo projeto deste cliente"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{criandoNovoProjeto ? 'Criando Card...' : 'Novo Projeto no CRM'}</span>
+            </button>
+
             {!cliente.cadastroAprovado && podeAprovar && (
               <button
                 onClick={handleAprovarCadastro}
@@ -169,14 +214,19 @@ export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
           <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
             <div className="flex items-center gap-2 text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <FolderGit2 className="w-4 h-4 text-primary-600" />
-              Total de Projetos Contratados
+              Projetos & Briefings
             </div>
             <h3 className="text-2xl font-bold text-stone-900 mt-2">
-              {cliente.resumoCompras?.totalProjetos ?? 0} projetos
+              {totalProjetos} {totalProjetos === 1 ? 'projeto' : 'projetos'}
             </h3>
-            <p className="text-xs text-stone-500 mt-1">
-              {cliente.resumoCompras?.projetosAtivos ?? 0} ativos no momento
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px]">
+              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/60 font-medium">
+                {projetosEmBriefing} em briefing/negociação
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-medium">
+                {projetosContratados} {projetosContratados === 1 ? 'contratado' : 'contratados'}
+              </span>
+            </div>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
@@ -420,75 +470,154 @@ export default function ClienteShow({ cliente, arquitetos }: ClienteShowProps) {
           </div>
         </div>
 
-        {/* Histórico de Projetos e Compras */}
+        {/* Prontuário de Relacionamento & Observações Pessoais */}
+        <ProntuarioClienteSection
+          clienteId={cliente.id}
+          prontuarios={cliente.prontuarios}
+          categoriasCatalogo={categoriasProntuarioCatalogo}
+          canManageConfig={['diretoria', 'gerente_comercial'].includes(user?.perfil) || user?.isSuperuser}
+        />
+
+        {/* Projetos & Briefings do Cliente */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-semibold text-stone-900">Histórico de Projetos & Compras</h3>
-              <p className="text-xs text-stone-500">Acompanhamento dos projetos realizados pela Líder Móveis</p>
+              <h3 className="text-base font-semibold text-stone-900">
+                Projetos & Briefings do Cliente
+              </h3>
+              <p className="text-xs text-stone-500">
+                Cada projeto possui seu próprio card no CRM e um único briefing técnico vinculado
+              </p>
             </div>
-            <Link
-              href="/crm"
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline"
+            <button
+              type="button"
+              onClick={() => router.post(`/clientes/${cliente.id}/novo-projeto-crm`)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-700 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Iniciar Novo Projeto via CRM →
-            </Link>
+              <Plus className="w-3.5 h-3.5" />
+              Iniciar Novo Projeto no CRM
+            </button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50/75 text-stone-600 text-[11px] uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-3">Código</th>
-                  <th className="py-3 px-3">Status Atual</th>
-                  <th className="py-3 px-3">Vendedor</th>
-                  <th className="py-3 px-3">Projetista 3D</th>
-                  <th className="py-3 px-3">Valor do Contrato</th>
-                  <th className="py-3 px-3">Score Briefing</th>
-                  <th className="py-3 px-3">Data Contratação</th>
+                  <th className="py-3 px-3">Projeto</th>
+                  <th className="py-3 px-3">Etapa Atual</th>
+                  <th className="py-3 px-3">Ambientes (Briefing)</th>
+                  <th className="py-3 px-3">Vendedor / Projetista</th>
+                  <th className="py-3 px-3">Valor Contrato</th>
+                  <th className="py-3 px-3">Briefing Único</th>
+                  <th className="py-3 px-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 text-xs">
                 {cliente.projetos && cliente.projetos.length > 0 ? (
-                  cliente.projetos.map((proj) => (
-                    <tr key={proj.id} className="hover:bg-stone-50/60">
-                      <td className="py-3 px-3 font-mono font-bold text-stone-900">{proj.codigo}</td>
-                      <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-stone-100 text-stone-700">
-                          {proj.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-stone-700">{proj.vendedorNome}</td>
-                      <td className="py-3 px-3 text-stone-700">{proj.projetistaNome}</td>
-                      <td className="py-3 px-3 font-semibold text-stone-900">
-                        {proj.valorContrato > 0
-                          ? proj.valorContrato.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : 'Em negociação'}
-                      </td>
-                      <td className="py-3 px-3">
-                        {proj.scoreBriefing !== null ? (
+                  cliente.projetos.map((proj) => {
+                    const isEmBriefing =
+                      proj.status === 'em_briefing' || proj.status === 'na_fila'
+                    return (
+                      <tr key={proj.id} className="hover:bg-stone-50/60">
+                        <td className="py-3 px-3">
+                          <Link
+                            href={`/projetos/${proj.id}`}
+                            className="font-mono font-bold text-stone-900 hover:text-primary-700 hover:underline"
+                          >
+                            {proj.codigo}
+                          </Link>
+                          <div className="text-[10px] text-stone-400 mt-0.5">
+                            Criado em {new Date(proj.createdAt).toLocaleDateString('pt-BR')}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
                           <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                              proj.scoreBriefing >= 70
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-amber-50 text-amber-700'
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                              isEmBriefing
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             }`}
                           >
-                            {proj.scoreBriefing} pts
+                            {proj.statusLabel || proj.status}
                           </span>
-                        ) : (
-                          <span className="text-stone-400">—</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-stone-500">
-                        {new Date(proj.createdAt).toLocaleDateString('pt-BR')}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="py-3 px-3 text-stone-700 max-w-[200px]">
+                          {proj.ambientesBriefing && proj.ambientesBriefing.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {proj.ambientesBriefing.map((amb, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-1.5 py-0.5 bg-stone-100 text-stone-700 rounded text-[10px] font-medium"
+                                >
+                                  {amb}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-stone-400 italic">A preencher no briefing</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-stone-700">
+                          <div className="font-medium text-stone-800">{proj.vendedorNome}</div>
+                          <div className="text-[11px] text-stone-400">
+                            Proj. 3D: {proj.projetistaNome}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-stone-900">
+                          {proj.valorContrato > 0 ? (
+                            proj.valorContrato.toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            })
+                          ) : (
+                            <span className="text-stone-500 font-normal">Em negociação</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          {proj.scoreBriefing !== null ? (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                  proj.scoreBriefing >= 70
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-amber-50 text-amber-700'
+                                }`}
+                              >
+                                {proj.scoreBriefing} pts
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-stone-400">Sem briefing</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            {proj.briefingId && (
+                              <Link
+                                href={`/briefings/${proj.briefingId}/edit`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors"
+                              >
+                                <FileText className="w-3 h-3" />
+                                <span>Abrir Briefing</span>
+                                <ExternalLink className="w-2.5 h-2.5" />
+                              </Link>
+                            )}
+                            <Link
+                              href={`/projetos/${proj.id}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 transition-colors"
+                            >
+                              <span>Ver Projeto</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 ) : (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-stone-400">
-                      Nenhum projeto registrado para este cliente ainda.
+                      Nenhum projeto ou briefing registrado para este cliente ainda.
                     </td>
                   </tr>
                 )}

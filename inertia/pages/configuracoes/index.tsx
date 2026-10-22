@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Users,
   BookOpen,
+  Bookmark,
   Check,
   Palette,
 } from 'lucide-react'
@@ -26,7 +27,9 @@ import UsuariosSistemaPanel, {
   type PerfilCatalogoItem,
 } from './components/UsuariosSistemaPanel'
 import RoteirosBriefingPanel from './components/RoteirosBriefingPanel'
+import CategoriasProntuarioPanel from './components/CategoriasProntuarioPanel'
 import type { RoteiroBriefingItem } from './components/ModalRoteiroBriefing'
+import { notificarCatalogoAtualizado } from '~/lib/catalogos'
 
 export const CORES_PALETA_TIPOS = [
   '#3B82F6', // Azul Pavão (Briefing)
@@ -83,11 +86,24 @@ export type TipoCompromissoItem = {
   updatedAt: string | null
 }
 
+export type CategoriaProntuarioItem = {
+  id: number
+  nome: string
+  slug: string
+  cor: string
+  icone: string | null
+  ordem: number
+  isActive: boolean
+  createdAt: string | null
+  updatedAt: string | null
+}
+
 interface ConfiguracoesPageProps {
   ambientes: AmbienteItem[]
   origens: OrigemItem[]
   campanhas: CampanhaItem[]
   tiposCompromisso?: TipoCompromissoItem[]
+  categoriasProntuario?: CategoriaProntuarioItem[]
   roteiros?: RoteiroBriefingItem[]
   podeGerenciarPermissoes?: boolean
   permissoesConfig?: PermissaoPerfilMatrix | null
@@ -100,6 +116,7 @@ type TabKey =
   | 'origens'
   | 'campanhas'
   | 'tipos_compromisso'
+  | 'prontuario'
   | 'roteiros'
   | 'permissoes'
   | 'usuarios'
@@ -115,6 +132,7 @@ export default function ConfiguracoesPage({
   origens = [],
   campanhas = [],
   tiposCompromisso = [],
+  categoriasProntuario = [],
   roteiros = [],
   podeGerenciarPermissoes = false,
   permissoesConfig = null,
@@ -130,6 +148,7 @@ export default function ConfiguracoesPage({
         tab === 'origens' ||
         tab === 'campanhas' ||
         tab === 'tipos_compromisso' ||
+        tab === 'prontuario' ||
         tab === 'roteiros' ||
         tab === 'permissoes' ||
         tab === 'usuarios'
@@ -264,12 +283,7 @@ export default function ConfiguracoesPage({
   }
 
   const notifyCatalogoUpdate = (catalogo?: string) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        'plannit_catalogo_updated',
-        catalogo ? `${catalogo}:${Date.now()}` : String(Date.now())
-      )
-    }
+    notificarCatalogoAtualizado(catalogo || 'geral')
   }
 
   const handleUpdateAmbiente = (e: React.FormEvent) => {
@@ -584,6 +598,29 @@ export default function ConfiguracoesPage({
             </button>
 
             <button
+              onClick={() => setActiveTab('prontuario')}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
+                activeTab === 'prontuario'
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              )}
+            >
+              <Bookmark size={15} />
+              <span>Categorias do Prontuário</span>
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                  activeTab === 'prontuario'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-stone-200 text-stone-700'
+                )}
+              >
+                {categoriasProntuario.length}
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('roteiros')}
               className={clsx(
                 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
@@ -800,7 +837,7 @@ export default function ConfiguracoesPage({
                               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-[11px] transition-colors cursor-pointer',
                               amb.isActive
                                 ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200 border border-stone-200'
+                                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             )}
                             title="Clique para alternar o status"
                           >
@@ -890,7 +927,7 @@ export default function ConfiguracoesPage({
                               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-[11px] transition-colors cursor-pointer',
                               origem.isActive
                                 ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200 border border-stone-200'
+                                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             )}
                             title="Clique para alternar o status"
                           >
@@ -982,7 +1019,7 @@ export default function ConfiguracoesPage({
                               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-[11px] transition-colors cursor-pointer',
                               camp.isActive
                                 ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200 border border-stone-200'
+                                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             )}
                             title="Clique para alternar o status"
                           >
@@ -1086,7 +1123,7 @@ export default function ConfiguracoesPage({
                               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-[11px] transition-colors cursor-pointer',
                               tipo.isActive
                                 ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200 border border-stone-200'
+                                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             )}
                             title="Clique para alternar o status"
                           >
@@ -1125,7 +1162,16 @@ export default function ConfiguracoesPage({
           </div>
         )}
 
-        {/* TAB 5: PERMISSÕES & PERFIS (RBAC) */}
+        {/* TAB 5: CATEGORIAS DO PRONTUÁRIO */}
+        {activeTab === 'prontuario' && (
+          <CategoriasProntuarioPanel
+            categorias={categoriasProntuario}
+            podeGerenciar={true}
+            notifyCatalogoUpdate={notifyCatalogoUpdate}
+          />
+        )}
+
+        {/* TAB 6: PERMISSÕES & PERFIS (RBAC) */}
         {activeTab === 'permissoes' && podeGerenciarPermissoes && permissoesConfig && (
           <MatrizPermissoesPanel config={permissoesConfig} />
         )}

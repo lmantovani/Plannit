@@ -1,12 +1,14 @@
 import { LeadSchema } from '#database/schema'
-import { belongsTo, hasMany, column } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import { belongsTo, hasMany, hasOne, column } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import InteracaoLead from '#models/interacao_lead'
 import Arquiteto from '#models/arquiteto'
 import HistoricoStatusLead from '#models/historico_status_lead'
 import CompromissoAgenda from '#models/compromisso_agenda'
+import Cliente from '#models/cliente'
+import Projeto from '#models/projeto'
 
 export enum OrigemLead {
   INSTAGRAM = 'instagram',
@@ -136,6 +138,16 @@ export default class Lead extends LeadSchema {
     foreignKey: 'arquitetoId',
   })
   declare arquiteto: BelongsTo<typeof Arquiteto>
+
+  @belongsTo(() => Cliente, {
+    foreignKey: 'clienteId',
+  })
+  declare cliente: BelongsTo<typeof Cliente>
+
+  @hasOne(() => Projeto, {
+    foreignKey: 'leadId',
+  })
+  declare projeto: HasOne<typeof Projeto>
 
   get diasSemInteracao(): number {
     const ref = this.ultimaInteracaoEm || this.createdAt

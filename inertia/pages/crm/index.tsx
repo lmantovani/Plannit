@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Head, router, useForm, usePage } from '@inertiajs/react'
 import AppLayout from '../../layouts/app_layout'
 import {
@@ -42,6 +42,8 @@ import ModalNovoParceiroRapido, {
 } from '../../components/especificadores/ModalNovoParceiroRapido'
 import EspecificadorAutocomplete from '../../components/especificadores/EspecificadorAutocomplete'
 import CampanhaAutocomplete from '../../components/crm/CampanhaAutocomplete'
+import BuscaAutocomplete from '../../components/ui/BuscaAutocomplete'
+import { useSincronizarCatalogos } from '../../lib/catalogos'
 import ModalNovoCompromisso from '../agenda/components/ModalNovoCompromisso'
 import ModalConcluirCompromisso from '../agenda/components/ModalConcluirCompromisso'
 import type { TipoCompromisso, Colaborador, Compromisso } from '../agenda/types'
@@ -104,6 +106,17 @@ export type CompromissoItemLead = {
   responsavel?: { id: number; nome: string } | null
 }
 
+export type LeadProjetoVinculado = {
+  id: number
+  codigo: string
+  status: string
+  statusLabel: string
+  valorContrato: number | null
+  briefingId: number | null
+  briefingScore: number | null
+  briefingStatus: string | null
+}
+
 export type LeadItem = {
   id: number
   nome: string
@@ -135,6 +148,8 @@ export type LeadItem = {
   motivoPerda: string | null
   concorrentePerdido: string | null
   convertidoEmCliente: boolean
+  clienteId?: number | null
+  projeto?: LeadProjetoVinculado | null
   statusAlteradoEm: string | null
   ultimaInteracaoEm: string | null
   createdAt: string | null
@@ -162,16 +177,33 @@ export type VendedorOption = {
   nome: string
 }
 
+export type ClienteCatalogoOption = {
+  id: number
+  nome: string
+  telefone: string
+  email: string | null
+  arquitetoId: number | null
+}
+
 export type PageProps = {
   leads: LeadItem[]
   estatisticas: Estatisticas
   vendedores: VendedorOption[]
   colaboradores?: Colaborador[]
   arquitetos: ArquitetoOption[]
+  clientesCatalogo?: ClienteCatalogoOption[]
   ambientesCatalogo?: { id: number; nome: string; categoria: string }[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
   tiposCompromissoCatalogo?: TipoCompromisso[]
+  categoriasProntuarioCatalogo?: Array<{
+    id: number
+    nome: string
+    slug: string
+    cor: string
+    icone?: string | null
+    ordem?: number
+  }>
   filtros: {
     q: string
     statusFunil: string
@@ -233,13 +265,22 @@ const CRMIndex: React.FC<PageProps> = ({
   vendedores,
   colaboradores = [],
   arquitetos,
+  clientesCatalogo = [],
   ambientesCatalogo = [],
   origensCatalogo = [],
   campanhasCatalogo = [],
   tiposCompromissoCatalogo = [],
+  categoriasProntuarioCatalogo = [],
   filtros,
   isVendedor,
 }) => {
+  useSincronizarCatalogos([
+    'categoriasProntuarioCatalogo',
+    'origensCatalogo',
+    'campanhasCatalogo',
+    'tiposCompromissoCatalogo',
+    'ambientesCatalogo',
+  ])
   const [view, setView] = useState<'kanban' | 'lista'>('kanban')
   const [search, setSearch] = useState(filtros.q || '')
   const [origemFiltro, setOrigemFiltro] = useState(filtros.origem || '')
@@ -592,12 +633,13 @@ const CRMIndex: React.FC<PageProps> = ({
                     <th className="py-2.5 px-3 text-left">Qualificação</th>
                     <th className="py-2.5 px-3 text-left">Vendedor</th>
                     <th className="py-2.5 px-3 text-left">Último Contato</th>
+                    <th className="py-2.5 px-3 text-right">Ficha</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {filteredLeads.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-stone-400">
+                      <td colSpan={9} className="py-8 text-center text-stone-400">
                         Nenhum lead encontrado com os filtros selecionados.
                       </td>
                     </tr>
@@ -660,6 +702,18 @@ const CRMIndex: React.FC<PageProps> = ({
                         <td className="py-3 px-3 text-stone-400">
                           {timeAgo(l.ultimaInteracaoEm)}
                         </td>
+                        <td className="py-3 px-3 text-right">
+                          <a
+                            href={l.clienteId ? `/clientes/${l.clienteId}` : `/crm/leads/${l.id}/ficha-cliente`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200/70 transition-colors"
+                            title="Abrir Ficha Completa do Cliente"
+                          >
+                            <User size={11} />
+                            <span>Ver Ficha</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -684,6 +738,7 @@ const CRMIndex: React.FC<PageProps> = ({
           onAgendarCompromisso={(leadAlvo) => setAgendamentoLead(leadAlvo)}
           onConcluirCompromisso={(compAlvo) => setCompromissoParaConcluir(compAlvo)}
           origensMap={origensMap}
+          categoriasProntuarioCatalogo={categoriasProntuarioCatalogo}
         />
       )}
 
@@ -704,6 +759,7 @@ const CRMIndex: React.FC<PageProps> = ({
           vendedores={vendedores}
           isVendedor={isVendedor}
           arquitetos={arquitetos}
+          clientesCatalogo={clientesCatalogo}
           origensCatalogo={origensCatalogo}
           campanhasCatalogo={campanhasCatalogo}
         />
@@ -781,9 +837,22 @@ function LeadCard({
 
       {/* Nome e Indicador de Qualificação */}
       <div className="flex items-start justify-between gap-1.5 mb-1.5">
-        <h4 className="font-semibold text-xs text-stone-900 group-hover:text-primary-700 leading-snug">
-          {lead.nome}
-        </h4>
+        <div className="min-w-0">
+          <h4 className="font-semibold text-xs text-stone-900 group-hover:text-primary-700 leading-snug">
+            {lead.nome}
+          </h4>
+          {lead.projeto && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-stone-900 text-amber-300 font-mono font-bold text-[9px]">
+                <FileText size={9} />
+                {lead.projeto.codigo}
+              </span>
+              <span className="text-[9px] text-stone-500 truncate">
+                {lead.projeto.statusLabel}
+              </span>
+            </div>
+          )}
+        </div>
         {lead.qualificado ? (
           <span
             title="Lead com critérios de qualificação validados (RN001)"
@@ -842,18 +911,31 @@ function LeadCard({
         )
       })()}
 
-      {/* Rodapé do Card */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-stone-100 text-[10px]">
-        <span
-          className="badge badge-neutro text-[9px] py-0 px-1.5"
-          title={lead.origemDescricao || undefined}
-        >
-          {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
-        </span>
+      {/* Rodapé do Card com Atalho Direto para a Ficha do Cliente */}
+      <div className="flex items-center justify-between gap-1.5 mt-3 pt-2 border-t border-stone-100 text-[10px]">
+        <div className="flex items-center gap-1 min-w-0">
+          <span
+            className="badge badge-neutro text-[9px] py-0 px-1.5 truncate"
+            title={lead.origemDescricao || undefined}
+          >
+            {(origensMap && origensMap[lead.origem]) || ORIGEM_LABELS[lead.origem] || lead.origem}
+          </span>
+
+          <a
+            href={lead.clienteId ? `/clientes/${lead.clienteId}` : `/crm/leads/${lead.id}/ficha-cliente`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-50/90 hover:bg-primary-100 text-primary-800 border border-primary-200/70 font-semibold text-[9px] transition-colors shrink-0"
+            title="Abrir Ficha Completa do Cliente"
+          >
+            <User size={9} />
+            <span>Ficha</span>
+            <ExternalLink size={8} />
+          </a>
+        </div>
 
         <span
           className={clsx(
-            'flex items-center gap-1 font-medium',
+            'flex items-center gap-1 font-medium shrink-0',
             lead.precisaAtencao ? 'text-amber-600' : 'text-stone-400'
           )}
           title="Última interação registrada"
@@ -877,6 +959,7 @@ function LeadDrawer({
   onAgendarCompromisso,
   onConcluirCompromisso,
   origensMap,
+  categoriasProntuarioCatalogo = [],
 }: {
   lead: LeadItem
   onClose: () => void
@@ -887,10 +970,47 @@ function LeadDrawer({
   onAgendarCompromisso: (lead: LeadItem) => void
   onConcluirCompromisso: (compromisso: any) => void
   origensMap?: Record<string, string>
+  categoriasProntuarioCatalogo?: Array<{
+    id: number
+    nome: string
+    slug: string
+    cor: string
+    icone?: string | null
+  }>
 }) {
+  const listaCategorias: Array<{ id?: number; slug: string; nome: string; cor?: string; icone?: string | null }> = useMemo(() => {
+    if (categoriasProntuarioCatalogo && categoriasProntuarioCatalogo.length > 0) {
+      return categoriasProntuarioCatalogo
+    }
+    return [
+      { id: 1, slug: 'pessoal', nome: 'Pessoal & Hábitos', cor: '#3B82F6' },
+      { id: 2, slug: 'familia', nome: 'Família & Filhos', cor: '#8B5CF6' },
+      { id: 3, slug: 'pet', nome: 'Pets & Animais', cor: '#F59E0B' },
+      { id: 4, slug: 'hobby', nome: 'Hobbies & Lazer', cor: '#10B981' },
+      { id: 5, slug: 'preferencia', nome: 'Preferências & Estilo', cor: '#EC4899' },
+      { id: 6, slug: 'atendimento', nome: 'Atendimento & CRM', cor: '#6B7280' },
+    ]
+  }, [categoriasProntuarioCatalogo])
+
   const [tipo, setTipo] = useState('whatsapp')
   const [resumo, setResumo] = useState('')
+  const [salvarNoProntuario, setSalvarNoProntuario] = useState(false)
+  const [categoriaProntuario, setCategoriaProntuario] = useState(
+    listaCategorias[0]?.slug || 'pessoal'
+  )
   const [loading, setLoading] = useState(false)
+  const [isRefreshingCategorias, setIsRefreshingCategorias] = useState(false)
+
+  const handleSincronizarCategorias = () => {
+    setIsRefreshingCategorias(true)
+    router.reload({
+      only: ['categoriasProntuarioCatalogo'],
+      onFinish: () => {
+        setIsRefreshingCategorias(false)
+        toast.info('Categorias sincronizadas com sucesso.')
+      },
+    })
+  }
 
   // A partir de "Em Briefing" o lead já tem projeto e briefing: o botão abre o existente
   const briefingJaIniciado = ['em_briefing', 'em_projeto', 'em_fechamento', 'fechado'].includes(
@@ -937,13 +1057,23 @@ function LeadDrawer({
     setLoading(true)
     router.post(
       `/crm/leads/${lead.id}/interacoes`,
-      { tipo, resumo },
+      {
+        tipo,
+        resumo,
+        adicionarAoProntuario: salvarNoProntuario,
+        categoriaProntuario: salvarNoProntuario ? categoriaProntuario : undefined,
+      },
       {
         preserveScroll: true,
         onSuccess: () => {
           setResumo('')
+          setSalvarNoProntuario(false)
           setLoading(false)
-          toast.success('Interação adicionada com sucesso!')
+          toast.success(
+            salvarNoProntuario
+              ? 'Interação registrada e adicionada ao prontuário!'
+              : 'Interação adicionada com sucesso!'
+          )
         },
         onError: () => setLoading(false),
       }
@@ -967,12 +1097,16 @@ function LeadDrawer({
     }
   }
 
+  const urlFichaCliente = lead.clienteId
+    ? `/clientes/${lead.clienteId}`
+    : `/crm/leads/${lead.id}/ficha-cliente`
+
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white shadow-2xl border-l border-stone-200 z-50 flex flex-col animate-slide-in-right">
       {/* Header do Drawer */}
       <div className="p-4 border-b border-stone-100 flex items-start justify-between bg-stone-50/60">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-display font-semibold text-stone-900 text-base leading-snug">
               {lead.nome}
             </h3>
@@ -984,7 +1118,19 @@ function LeadDrawer({
               <span className="badge badge-neutro text-[10px]">Não Qualificado</span>
             )}
           </div>
-          <p className="text-xs text-stone-500 mt-0.5">{lead.telefone}</p>
+          <div className="flex items-center gap-2.5 mt-1">
+            <p className="text-xs text-stone-500">{lead.telefone}</p>
+            <span className="text-stone-300">•</span>
+            <a
+              href={urlFichaCliente}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-900 hover:underline"
+              title="Abrir Ficha Cadastral Completa do Cliente"
+            >
+              <User size={11} />
+              <span>Ver Ficha do Cliente</span>
+              <ExternalLink size={10} />
+            </a>
+          </div>
         </div>
 
         <button
@@ -1041,6 +1187,36 @@ function LeadDrawer({
           </button>
         )}
 
+        <a
+          href={urlFichaCliente}
+          className="btn btn-secondary btn-sm gap-1.5 text-xs text-primary-800 bg-primary-50/70 hover:bg-primary-100 border-primary-200/80 shadow-2xs"
+          title="Abrir Ficha Completa do Cliente (/clientes)"
+        >
+          <User size={13} className="text-primary-700 shrink-0" />
+          <span>Ficha do Cliente</span>
+          <ExternalLink size={11} />
+        </a>
+
+        <button
+          type="button"
+          onClick={() => {
+            router.post(
+              `/crm/leads/${lead.id}/novo-projeto`,
+              {},
+              {
+                onSuccess: () => {
+                  onClose()
+                },
+              }
+            )
+          }}
+          className="btn btn-secondary btn-sm gap-1.5 text-xs text-stone-800 bg-white hover:bg-stone-50 border-stone-300 shadow-2xs"
+          title="Cria um novo card independente no Kanban do CRM para iniciar outro projeto/briefing para este mesmo cliente"
+        >
+          <Plus size={13} className="text-primary-600 shrink-0" />
+          <span>+ Novo Projeto p/ este Cliente</span>
+        </button>
+
         {lead.statusFunil !== 'perdido' && (
           <button
             onClick={onMarcarPerdido}
@@ -1051,6 +1227,41 @@ function LeadDrawer({
           </button>
         )}
       </div>
+
+      {/* Projeto & Briefing Único deste Card */}
+      {lead.projeto && (
+        <div className="px-4 py-2.5 bg-stone-900 text-white border-b border-stone-800 flex items-center justify-between gap-2 text-xs">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-amber-300">{lead.projeto.codigo}</span>
+              <span className="px-2 py-0.5 rounded-full bg-stone-800 text-stone-200 text-[10px] font-medium">
+                {lead.projeto.statusLabel}
+              </span>
+            </div>
+            <p className="text-[10px] text-stone-400 mt-0.5">
+              {lead.projeto.briefingScore !== null
+                ? `Briefing único vinculado • Score: ${lead.projeto.briefingScore} pts`
+                : 'Projeto vinculado a este card'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {lead.projeto.briefingId && (
+              <a
+                href={`/briefings/${lead.projeto.briefingId}/edit`}
+                className="px-2 py-1 rounded bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold text-[10px] transition-colors"
+              >
+                Briefing ↗
+              </a>
+            )}
+            <a
+              href={`/projetos/${lead.projeto.id}`}
+              className="px-2 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-100 font-semibold text-[10px] border border-stone-700 transition-colors"
+            >
+              Projeto ↗
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Informações Cadastrais */}
       <div className="p-4 border-b border-stone-100 grid grid-cols-2 gap-3 text-xs">
@@ -1310,6 +1521,62 @@ function LeadDrawer({
           required
         />
 
+        {/* Opção para registrar no Prontuário do Cliente */}
+        <div className="pt-0.5 space-y-1.5">
+          <label className="flex items-center gap-1.5 text-[11px] text-stone-700 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={salvarNoProntuario}
+              onChange={(e) => setSalvarNoProntuario(e.target.checked)}
+              className="rounded border-stone-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="font-medium text-stone-800">
+              📌 Salvar também no Prontuário do Cliente
+            </span>
+          </label>
+
+          {salvarNoProntuario && (
+            <div className="flex items-center justify-between pl-4 text-[11px] animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="text-stone-500 font-medium">Categoria:</span>
+                <select
+                  value={categoriaProntuario}
+                  onChange={(e) => setCategoriaProntuario(e.target.value)}
+                  className="input py-0.5 px-2 text-xs h-7"
+                >
+                  {listaCategorias.map((cat: any) => (
+                    <option key={cat.slug} value={cat.slug}>
+                      {cat.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleSincronizarCategorias}
+                  disabled={isRefreshingCategorias}
+                  className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors cursor-pointer"
+                  title="Sincronizar categorias com o catálogo"
+                >
+                  <RotateCw size={11} className={isRefreshingCategorias ? 'animate-spin' : ''} />
+                </button>
+                <a
+                  href="/configuracoes?tab=prontuario"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 hover:text-primary-800 hover:underline bg-primary-50/90 hover:bg-primary-100 px-1.5 py-0.5 rounded border border-primary-200/80 transition-colors"
+                  title="Configurar categorias do prontuário em nova aba"
+                >
+                  <span>Configurar</span>
+                  <ExternalLink size={9} />
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={loading || !resumo.trim()}
@@ -1329,6 +1596,7 @@ function NovoLeadModal({
   vendedores,
   isVendedor,
   arquitetos,
+  clientesCatalogo = [],
   origensCatalogo,
   campanhasCatalogo,
 }: {
@@ -1336,6 +1604,7 @@ function NovoLeadModal({
   vendedores: VendedorOption[]
   isVendedor: boolean
   arquitetos: ArquitetoOption[]
+  clientesCatalogo?: ClienteCatalogoOption[]
   origensCatalogo?: { id: number; nome: string; slug: string }[]
   campanhasCatalogo?: { id: number; nome: string }[]
 }) {
@@ -1383,6 +1652,7 @@ function NovoLeadModal({
   }, [])
 
   const { data, setData, post, processing, errors, reset } = useForm({
+    clienteId: '',
     nome: '',
     telefone: '',
     email: '',
@@ -1401,6 +1671,28 @@ function NovoLeadModal({
   const [nomeNovoParceiro, setNomeNovoParceiro] = useState('')
   const origemEspecificador = data.origem === ORIGEM_ESPECIFICADOR
   const origemOutro = data.origem === ORIGEM_OUTRO
+
+  const handleSelectClienteExistente = (idStr: string) => {
+    if (!idStr) {
+      setData((prev) => ({
+        ...prev,
+        clienteId: '',
+      }))
+      return
+    }
+    const cli = clientesCatalogo.find((c) => String(c.id) === idStr)
+    if (cli) {
+      setData((prev) => ({
+        ...prev,
+        clienteId: String(cli.id),
+        nome: cli.nome,
+        telefone: cli.telefone || prev.telefone,
+        email: cli.email || prev.email,
+        origem: cli.arquitetoId ? ORIGEM_ESPECIFICADOR : prev.origem,
+        arquitetoId: cli.arquitetoId ? String(cli.arquitetoId) : prev.arquitetoId,
+      }))
+    }
+  }
 
   const abrirNovoParceiro = (nomeDigitado: string) => {
     setNomeNovoParceiro(nomeDigitado)
@@ -1438,17 +1730,42 @@ function NovoLeadModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-stone-200 animate-scale-in">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-stone-200 animate-scale-in max-h-[92vh] flex flex-col">
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="font-display font-semibold text-stone-900 text-base">
-            Cadastrar Novo Lead
-          </h3>
+          <div>
+            <h3 className="font-display font-semibold text-stone-900 text-base">
+              Cadastrar Novo Card no CRM
+            </h3>
+            <p className="text-[11px] text-stone-500">
+              Cadastre um novo lead ou inicie um novo card de projeto para um cliente existente
+            </p>
+          </div>
           <button onClick={onClose} className="p-1 text-stone-400 hover:text-stone-700">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs overflow-y-auto">
+          {clientesCatalogo.length > 0 && (
+            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1.5">
+              <label className="label mb-0 text-stone-700">
+                Cliente já cadastrado? (Opcional — cria um novo card de projeto para o cliente)
+              </label>
+              <BuscaAutocomplete
+                opcoes={clientesCatalogo.map((c) => ({
+                  value: String(c.id),
+                  label: c.nome,
+                  descricao: c.telefone,
+                }))}
+                value={data.clienteId}
+                onChange={handleSelectClienteExistente}
+                placeholder="Buscar cliente existente por nome ou telefone..."
+                textoVazio={(busca) => `Nenhum cliente encontrado para "${busca}"`}
+                tituloLimpar="Desvincular cliente existente"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="label">Nome Completo *</label>

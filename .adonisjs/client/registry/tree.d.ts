@@ -12,6 +12,8 @@ export interface ApiDefinition {
     index: typeof routes['crm.index']
     leads: {
       store: typeof routes['crm.leads.store']
+      fichaCliente: typeof routes['crm.leads.ficha_cliente']
+      novoProjeto: typeof routes['crm.leads.novo_projeto']
       updateStatus: typeof routes['crm.leads.update_status']
       qualificar: typeof routes['crm.leads.qualificar']
       desqualificar: typeof routes['crm.leads.desqualificar']
@@ -104,6 +106,11 @@ export interface ApiDefinition {
     update: typeof routes['clientes.update']
     patch: typeof routes['clientes.patch']
     aprovar: typeof routes['clientes.aprovar']
+    novoProjetoCrm: typeof routes['clientes.novo_projeto_crm']
+    prontuario: {
+      store: typeof routes['clientes.prontuario.store']
+      destroy: typeof routes['clientes.prontuario.destroy']
+    }
     enderecos: {
       store: typeof routes['clientes.enderecos.store']
       destroy: typeof routes['clientes.enderecos.destroy']
@@ -167,6 +174,12 @@ export interface ApiDefinition {
       update: typeof routes['configuracoes.tipos_compromisso.update']
       toggle: typeof routes['configuracoes.tipos_compromisso.toggle']
       destroy: typeof routes['configuracoes.tipos_compromisso.destroy']
+    }
+    categoriasProntuario: {
+      store: typeof routes['configuracoes.categorias_prontuario.store']
+      update: typeof routes['configuracoes.categorias_prontuario.update']
+      toggle: typeof routes['configuracoes.categorias_prontuario.toggle']
+      destroy: typeof routes['configuracoes.categorias_prontuario.destroy']
     }
     roteiros: {
       store: typeof routes['configuracoes.roteiros.store']

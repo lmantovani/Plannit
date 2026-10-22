@@ -79,6 +79,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'crm.leads.ficha_cliente': {
+    methods: ["GET","HEAD"]
+    pattern: '/crm/leads/:id/ficha-cliente'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['abrirFichaCliente']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['abrirFichaCliente']>>>
+    }
+  }
+  'crm.leads.novo_projeto': {
+    methods: ["POST"]
+    pattern: '/crm/leads/:id/novo-projeto'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['criarNovoProjetoCard']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['criarNovoProjetoCard']>>>
+    }
+  }
   'crm.leads.update_status': {
     methods: ["PATCH"]
     pattern: '/crm/leads/:id/status'
@@ -811,6 +835,42 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['aprovarCadastro']>>>
     }
   }
+  'clientes.novo_projeto_crm': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/novo-projeto-crm'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['criarNovoProjetoCrm']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['criarNovoProjetoCrm']>>>
+    }
+  }
+  'clientes.prontuario.store': {
+    methods: ["POST"]
+    pattern: '/clientes/:id/prontuario'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/prontuario').criarProntuarioValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/prontuario').criarProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['salvarProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['salvarProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'clientes.prontuario.destroy': {
+    methods: ["DELETE"]
+    pattern: '/clientes/:id/prontuario/:prontuarioId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; prontuarioId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['excluirProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/clientes_controller').default['excluirProntuario']>>>
+    }
+  }
   'clientes.enderecos.store': {
     methods: ["POST"]
     pattern: '/clientes/:id/enderecos'
@@ -1265,6 +1325,54 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyTipoCompromisso']>>>
+    }
+  }
+  'configuracoes.categorias_prontuario.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/categorias-prontuario'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createCategoriaProntuarioValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createCategoriaProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeCategoriaProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.categorias_prontuario.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/categorias-prontuario/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateCategoriaProntuarioValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateCategoriaProntuarioValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateCategoriaProntuario']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.categorias_prontuario.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/categorias-prontuario/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleCategoriaProntuario']>>>
+    }
+  }
+  'configuracoes.categorias_prontuario.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/categorias-prontuario/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCategoriaProntuario']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCategoriaProntuario']>>>
     }
   }
   'configuracoes.roteiros.store': {

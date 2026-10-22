@@ -63,6 +63,7 @@ export const createLeadValidator = vine.create({
     })
     .optional(),
   vendedorId: vine.number().positive().optional(),
+  clienteId: vine.number().positive().optional(),
   // Especificador que indicou o lead (só usado quando a origem é "arquiteto")
   arquitetoId: vine
     .number()
@@ -119,6 +120,8 @@ export const perderLeadValidator = vine.create({
 export const interacaoValidator = vine.create({
   tipo: vine.enum(['whatsapp', 'ligacao', 'email', 'visita', 'reuniao']),
   resumo: vine.string().trim().minLength(2).maxLength(2000),
+  adicionarAoProntuario: vine.boolean().optional(),
+  categoriaProntuario: vine.string().trim().maxLength(50).optional(),
 })
 
 export const qualificarLeadValidator = vine.create({

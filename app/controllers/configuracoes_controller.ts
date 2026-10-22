@@ -5,6 +5,7 @@ import AmbienteCatalogo from '#models/ambiente_catalogo'
 import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
 import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
+import CategoriaProntuarioCatalogo from '#models/categoria_prontuario_catalogo'
 import PerfilCatalogo from '#models/perfil_catalogo'
 import RoteiroBriefing from '#models/roteiro_briefing'
 import RoteiroBriefingAmbiente from '#models/roteiro_briefing_ambiente'
@@ -25,6 +26,8 @@ import {
   updatePerfilValidator,
   createRoteiroValidator,
   updateRoteiroValidator,
+  createCategoriaProntuarioValidator,
+  updateCategoriaProntuarioValidator,
 } from '#validators/configuracao'
 
 function slugify(text: string): string {
@@ -129,6 +132,10 @@ export default class ConfiguracoesController {
       .orderBy('ordem', 'asc')
       .orderBy('nome', 'asc')
 
+    const categoriasProntuario = await CategoriaProntuarioCatalogo.query()
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
     const roteiros = await RoteiroBriefing.query()
       .preload('ambientes')
       .orderBy('ordem', 'asc')
@@ -203,6 +210,17 @@ export default class ConfiguracoesController {
         isActive: t.isActive,
         createdAt: t.createdAt?.toISO() || null,
         updatedAt: t.updatedAt?.toISO() || null,
+      })),
+      categoriasProntuario: categoriasProntuario.map((cp) => ({
+        id: cp.id,
+        nome: cp.nome,
+        slug: cp.slug,
+        cor: cp.cor,
+        icone: cp.icone,
+        ordem: cp.ordem,
+        isActive: cp.isActive,
+        createdAt: cp.createdAt?.toISO() || null,
+        updatedAt: cp.updatedAt?.toISO() || null,
       })),
       roteiros: roteiros.map((r) => ({
         id: r.id,
@@ -760,6 +778,167 @@ export default class ConfiguracoesController {
     }
 
     session.flash('success', `Tipo de compromisso "${tipo.nome}" removido do catálogo.`)
+    return response.redirect().back()
+  }
+
+  // ==========================================
+  // CATEGORIAS DE PRONTUÁRIO
+  // ==========================================
+
+  async storeCategoriaProntuario({ request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const payload = await request.validateUsing(createCategoriaProntuarioValidator)
+    const slug = payload.slug ? slugify(payload.slug) : slugify(payload.nome)
+
+    if (!slug || slug.length < 2) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+      }
+      session.flash('error', 'Identificador (slug) inválido ou vazio.')
+      return response.redirect().back()
+    }
+
+    const existing = await CategoriaProntuarioCatalogo.findBy('slug', slug)
+    if (existing) {
+      if (this.wantsJson(request)) {
+        return response.status(400).json({ message: `A categoria de prontuário com identificador "${slug}" já existe.` })
+      }
+      session.flash('error', `A categoria de prontuário com identificador "${slug}" já existe.`)
+      return response.redirect().back()
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.create({
+      nome: payload.nome,
+      slug,
+      cor: payload.cor || '#3B82F6',
+      icone: payload.icone || null,
+      ordem: payload.ordem !== undefined ? payload.ordem : 0,
+      isActive: payload.isActive !== undefined ? payload.isActive : true,
+    })
+
+    if (this.wantsJson(request)) {
+      return response.status(201).json(categoria)
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" cadastrada com sucesso no catálogo.`)
+    return response.redirect().back()
+  }
+
+  async updateCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+    const payload = await request.validateUsing(updateCategoriaProntuarioValidator)
+
+    if (payload.nome !== undefined) categoria.nome = payload.nome
+    if (payload.slug !== undefined) {
+      const slugRaw = payload.slug || payload.nome || categoria.nome
+      const slug = slugify(slugRaw)
+      if (!slug || slug.length < 2) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: 'Identificador (slug) inválido ou vazio.' })
+        }
+        session.flash('error', 'Identificador (slug) inválido ou vazio.')
+        return response.redirect().back()
+      }
+
+      const existing = await CategoriaProntuarioCatalogo.query()
+        .where('slug', slug)
+        .whereNot('id', categoria.id)
+        .first()
+
+      if (existing) {
+        if (this.wantsJson(request)) {
+          return response.status(400).json({ message: `O identificador "${slug}" já está em uso.` })
+        }
+        session.flash('error', `O identificador "${slug}" já está em uso.`)
+        return response.redirect().back()
+      }
+      categoria.slug = slug
+    }
+    if (payload.cor !== undefined) categoria.cor = payload.cor
+    if (payload.icone !== undefined) categoria.icone = payload.icone
+    if (payload.ordem !== undefined) categoria.ordem = payload.ordem
+    if (payload.isActive !== undefined) categoria.isActive = payload.isActive
+
+    await categoria.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(categoria)
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" atualizada com sucesso.`)
+    return response.redirect().back()
+  }
+
+  async toggleCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+    categoria.isActive = !categoria.isActive
+    await categoria.save()
+
+    if (this.wantsJson(request)) {
+      return response.json(categoria)
+    }
+
+    session.flash(
+      'success',
+      `Categoria "${categoria.nome}" ${categoria.isActive ? 'ativada' : 'desativada'} com sucesso.`
+    )
+    return response.redirect().back()
+  }
+
+  async destroyCategoriaProntuario({ params, request, response, session, auth }: HttpContext) {
+    const user = auth.user!
+    if (!this.isAuthorized(user)) {
+      return response.status(403).json({ message: 'Acesso restrito a Gestores e Diretoria' })
+    }
+
+    const categoria = await CategoriaProntuarioCatalogo.findOrFail(params.id)
+
+    // Verificar se existem anotações vinculadas ao slug antes de excluir
+    try {
+      const checkUso = await db
+        .from('prontuario_clientes')
+        .where('categoria', categoria.slug)
+        .count('* as total')
+      const total = Number(checkUso[0]?.total || 0)
+      if (total > 0) {
+        if (this.wantsJson(request)) {
+          const msg = `Não é possível excluir a categoria "${categoria.nome}" pois existem ${total} anotação(ões) vinculada(s). Recomendamos desativá-la.`
+          return response.status(400).json({
+            message: msg,
+            error: msg,
+          })
+        }
+        session.flash(
+          'error',
+          `Não é possível excluir a categoria "${categoria.nome}" pois existem ${total} anotação(ões) vinculada(s). Recomendamos desativá-la.`
+        )
+        return response.redirect().back()
+      }
+    } catch {
+      // Ignora erro
+    }
+
+    await categoria.delete()
+
+    if (this.wantsJson(request)) {
+      return response.json({ message: 'Categoria removida com sucesso' })
+    }
+
+    session.flash('success', `Categoria "${categoria.nome}" removida do catálogo.`)
     return response.redirect().back()
   }
 

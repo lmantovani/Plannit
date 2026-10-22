@@ -130,5 +130,23 @@ export const updateRoteiroValidator = vine.create({
   isActive: vine.boolean().optional(),
 })
 
+export const createCategoriaProntuarioValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  icone: vine.string().trim().maxLength(50).nullable().optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const updateCategoriaProntuarioValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(100).optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  icone: vine.string().trim().maxLength(50).nullable().optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
 
 

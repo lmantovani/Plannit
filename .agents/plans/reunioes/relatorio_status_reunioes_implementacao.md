@@ -1,6 +1,6 @@
 # Relatório Analítico de Implementação — Transcrições de Reuniões 📊
 
-**Data de Emissão:** 22 de Outubro de 2026  
+**Data de Emissão:** 22 de Outubro de 2026 (Atualizado após entregas das Sprints de Agenda, Ficha do Cliente e Multi-Projetos no CRM)  
 **Fontes Analisadas:**
 1. `Reunião iniciada às 2026_10_08 21_00 GMT-03_00 - Anotações do Gemini.md` (Participantes: Thiago Aguiar, Rafael Porto, Leandro Mantovani)
 2. `Reunião iniciada às 2026_10_15 11_38 GMT-03_00 - Anotações do Gemini.md` (Participantes: Leandro Mantovani, Rafael Porto)
@@ -10,9 +10,16 @@
 
 ## 🧭 Sumário Executivo
 
-O cruzamento detalhado entre as decisões registradas nas transcrições das reuniões e a base de código atual do repositório (**AdonisJS v7 + Lucid ORM + Inertia React 19**) demonstra um **alto índice de avanço nas entregas estruturais e de infraestrutura**, com a consolidação do monólito, o deploy automatizado no Railway, a parametrização dos 18 roteiros de briefing no banco e a nova matriz dinâmica de permissões.
+O cruzamento detalhado entre as decisões registradas nas transcrições das reuniões e a base de código atual do repositório (**AdonisJS v7 + Lucid ORM + Inertia React 19**) demonstra que **17 das 18 demandas técnicas já estão 100% implementadas**, incluindo:
+- Consolidação do monólito na raiz e deploy automatizado no Railway;
+- Parametrização dos 18 roteiros técnicos de briefing no banco de dados;
+- Matriz dinâmica de permissões e perfis;
+- Agenda com seletor de duração estilo Google Agenda + paleta circular de cores;
+- Atalho direto no Card/Drawer do CRM para a Ficha do Cliente;
+- Suporte completo a **Múltiplos Projetos por Cliente**, garantindo **1 Card independente no Kanban do CRM para cada Projeto** e **1 único Briefing por Projeto**;
+- **Prontuário de Relacionamento do Cliente** na Ficha do Cliente com timeline por categorias e integração direta com o formulário de interações do CRM.
 
-Identificam-se, contudo, **pendências pontuais de usabilidade e fluxos de negócio** acordadas na reunião de 08/10 que ainda não foram convertidas em código (especialmente o ajuste de duração na agenda, o prontuário de observações do cliente, o atalho para a ficha de clientes a partir do CRM e a gestão de múltiplos projetos por cliente no Kanban).
+Resta atualmente **apenas 1 único item técnico de produto** no backlog: o **Seletor "Ver como..." no Header para a Diretoria**.
 
 ---
 
@@ -34,11 +41,10 @@ Identificam-se, contudo, **pendências pontuais de usabilidade e fluxos de negó
 | **12** | **Deploy Automático por Merge na Branch `main`** | 15/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Branch `main` sincronizada e configurada com webhooks do Railway. |
 | **13** | **Agenda: Data/Hora de Término ➔ Seletor de Duração (Estilo Google Agenda)** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Criado `SeletorDataHoraDuracao.tsx` com data única, hora de início/fim sincronizadas com duração (`15m`, `30m`, `1h`, `1h30`, `2h`...), opção "Dia inteiro", chips de local e detector de conflitos de agenda em tempo real nos 3 modais (`ModalNovoCompromisso`, `ModalEditarCompromisso`, `ModalReagendarCompromisso`). |
 | **14** | **Paleta de Cores Circular para Tipos de Compromisso** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Paleta circular estilo Google Calendar (12 cores + roda de cor personalizada + preview ao vivo do badge) em `inertia/pages/configuracoes/index.tsx`. |
-| **15** | **Atalho no Card/Drawer do CRM para Abrir a Ficha do Cliente** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Não há botão ou link direto dentro do `LeadCard` ou `LeadDrawer` em `crm/index.tsx` apontando para `/clientes/:id`. |
-| **16** | **"Prontuário do Cliente": Observações Pessoais nas Interações** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | A ficha do cliente (`clientes/show.tsx`) possui apenas campo geral de observações, sem área dedicada a fatos pessoais de encantamento (hobbies, família, pets). |
-| **17** | **Associação de Múltiplos Projetos por Lead/Cliente (Cards Independentes)** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Iniciar briefing para lead existente atualmente reaproveita o mesmo projeto em aberto. Falta fluxo para criar novo projeto independente para o mesmo cliente. |
+| **15** | **Atalho no Card/Drawer do CRM para Abrir a Ficha do Cliente** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Botão direto no `LeadCard` (`Ficha ↗`), no cabeçalho/barra de ações do `LeadDrawer` (`Ver Ficha do Cliente ↗`) e na tabela em lista do CRM, com resolução automática de ficha via `GET /crm/leads/:id/ficha-cliente` (`leads_controller.ts`). |
+| **16** | **"Prontuário do Cliente": Observações Pessoais nas Interações & Parametrização em Configurações** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Tabela `prontuario_clientes`, model `ProntuarioCliente`, seção visual `ProntuarioClienteSection.tsx` na Ficha do Cliente (`/clientes/:id`) com timeline por categorias, estrelas de destaque e checkbox no formulário de interações do `LeadDrawer` do CRM. Tabela `categorias_prontuario_catalogo` com CRUD e aba dedicada em `/configuracoes`, cores customizáveis, ícones e sincronização cross-tab em tempo real. Testes em `prontuario_cliente.spec.ts`. |
+| **17** | **Associação de Múltiplos Projetos por Lead/Cliente (Cards Independentes)** | 08/10 | <span style="color:green;font-weight:bold;">✅ Implementado</span> | Regra `1 Cliente ➔ N Projetos (1 Card no CRM por Projeto)` e `1 Projeto ➔ 1 Briefing Único`. Botões **`+ Novo Projeto p/ este Cliente`** no `LeadDrawer` (`POST /crm/leads/:id/novo-projeto`), **`+ Novo Projeto no CRM`** na Ficha do Cliente (`POST /clientes/:id/novo-projeto-crm`), seletor de cliente existente no `NovoLeadModal`, badge `PRJ-ANO-NNN` nos cards do Kanban e links **`Abrir Briefing ↗`** / **`Ver Projeto ↗`** na Ficha do Cliente. |
 | **18** | **Seletor de Perfil no Header ("Ver como...") para Diretoria** | 08/10 | <span style="color:red;font-weight:bold;">🔴 Pendente</span> | Header não possui mecanismo de alternância rápida de visualização para simular outros perfis (vendedor, projetista). |
-| **19** | **Configuração de Domínio Próprio e DNS no Railway** | 15/10 | <span style="color:blue;font-weight:bold;">🌐 Ação Externa</span> | Aplicação utiliza domínio padrão do Railway (`.up.railway.app`). Aguarda definição de domínio corporativo pela liderança. |
 
 ---
 
@@ -80,79 +86,66 @@ Identificam-se, contudo, **pendências pontuais de usabilidade e fluxos de negó
   - Integração nos modais `ModalNovoCompromisso.tsx`, `ModalEditarCompromisso.tsx` e `ModalReagendarCompromisso.tsx`, além de chips rápidos de Local (`Showroom / Loja`, `Obra / Imóvel`, `Escritório Especificador`, `Reunião Online`).
   - Paleta circular de 12 cores + roda de cor personalizada e preview ao vivo do badge em `/configuracoes`.
 
+### 6. Atalho Direto no CRM para a Ficha Completa do Cliente (Reunião 08/10)
+- **O que foi pedido:** Permitir clicar em um atalho a partir do Kanban do CRM ou do Drawer do lead para abrir diretamente a ficha cadastral do cliente (`/clientes/:id`).
+- **Como foi entregue:**
+  - Vínculo automático de ficha de cliente ao criar o lead (`leads_controller.ts -> store`) e rota dedicada `GET /crm/leads/:id/ficha-cliente` (`abrirFichaCliente`) que resolve ou cria a ficha para leads legados sem retirá-los do funil Kanban.
+  - Botão de 1 clique **`Ficha ↗`** no rodapé do `LeadCard`, botão **`Ver Ficha do Cliente ↗`** no cabeçalho e barra de ações do `LeadDrawer`, coluna de ação na visão em Lista e botão de retorno rápido **`← Funil CRM`** na página `/clientes/:id`.
+
+### 7. Múltiplos Projetos por Cliente e Cards Independentes no CRM (Reunião 08/10)
+- **O que foi pedido:** Permitir que um mesmo cliente tenha mais de um projeto ao longo do tempo, onde cada projeto possua seu próprio card no Kanban do CRM e um único briefing técnico vinculado, além de visualizar claramente todos os projetos e briefings na Ficha do Cliente.
+- **Como foi entregue:**
+  - **Modelagem & Backend (`app/models/lead.ts`, `leads_controller.ts`, `clientes_controller.ts`):** Relação `1 Cliente ➔ N Leads (Cards no CRM)` e `1 Lead (Card) ➔ 1 Projeto ➔ 1 Briefing`. Criação dos endpoints `POST /crm/leads/:id/novo-projeto` (`criarNovoProjetoCard`) e `POST /clientes/:id/novo-projeto-crm` (`criarNovoProjetoCrm`), além de suporte a `clienteId` no `NovoLeadModal`.
+  - **Kanban & Drawer do CRM (`inertia/pages/crm/index.tsx`):** Exibição do código e etapa do projeto (`PRJ-2026-XXX • Em Briefing`) diretamente no `LeadCard`, barra dedicada ao Projeto & Briefing único no `LeadDrawer` com links diretos (`Briefing ↗` e `Projeto ↗`), botão **`+ Novo Projeto p/ este Cliente`** na gaveta lateral e seletor de cliente já cadastrado com `BuscaAutocomplete` no modal de Novo Card.
+  - **Ficha do Cliente (`inertia/pages/clientes/show.tsx`):** Separação entre projetos **"Em Briefing / Negociação"** e **"Projetos Contratados"**, exibição dos ambientes do briefing na tabela e botões clicáveis **`Abrir Briefing ↗`** e **`Ver Projeto ↗`**.
+
+### 8. "Prontuário do Cliente" — Observações Pessoais, Relacionamento & Parametrização em Configurações (Reunião 08/10)
+- **O que foi pedido:** Criar um prontuário dedicado na ficha do cliente para registrar sutilezas e fatos pessoais (hobbies, nomes dos filhos, pets, preferências) voltados a encantamento e pós-venda, permitir salvar no prontuário direto ao registrar interações no CRM e garantir que as categorias sejam 100% personalizáveis e configuráveis pelo lojista em Configurações (sem enums estáticos).
+- **Como foi entregue:**
+  - **Tabela & Model:** Migration `create_prontuario_clientes_table` com colunas `cliente_id`, `autor_id`, `lead_id`, `categoria` (varchar dinâmico), `titulo`, `descricao` e `importante`. Model `ProntuarioCliente` com relações completas.
+  - **Parametrização em Configurações (`/configuracoes?tab=prontuario`):** Tabela `categorias_prontuario_catalogo` com campos `nome`, `slug`, `cor`, `icone`, `ordem`, `is_active` e timestamps. Controller `ConfiguracoesController` com CRUD completo, toggle de status, validação de integridade referencial (bloqueio de exclusão física se houver anotações vinculadas com sugestão de inativação) e endpoints JSON paralelos.
+  - **Painel em Configurações (`CategoriasProntuarioPanel.tsx` e `ModalCategoriaProntuario.tsx`):** Gestão visual completa das categorias com paleta circular de 12 cores, seleção de ícones Lucide, busca em tempo real, status ativo/inativo e reordenação.
+  - **Sincronização Cross-Tab em Tempo Real (`useSincronizarCatalogos`):** Sincronização automática entre a aba de Configurações, a Ficha do Cliente e o CRM via evento `storage` (`plannit_catalogo_updated`) e `window.focus`. Atalho direto *"Configurar Categorias ↗"* para gestores na Ficha do Cliente.
+  - **Ficha do Cliente (`/clientes/:id`):** Componente `ProntuarioClienteSection.tsx` consumindo o catálogo dinâmico de categorias com estilização automática baseada na cor e ícone configurados, badges coloridas, filtros rápidos, destaque com estrela e timeline interativa.
+  - **Interações no CRM (`/crm`):** Formulário de Nova Interação no `LeadDrawer` com checkbox *"📌 Salvar também no Prontuário do Cliente"* e select dinâmico alimentado pelo catálogo ativo de categorias.
+  - **Testes:** Suíte funcional completa em `tests/functional/prontuario_cliente.spec.ts` cobrindo adição direta, exclusão, criação via interação do CRM, CRUD completo de categorias em Configurações e trava de integridade referencial.
+
 ---
 
 ## 📌 Detalhamento do que FALTA Implementar (Backlog Aberto)
 
-Abaixo estão os **4 itens técnicos e de produto** que foram solicitados nas reuniões e ainda precisam ser desenvolvidos no código:
+Resta atualmente **apenas 1 único item técnico de produto** pendente no backlog:
 
 ---
 
-### Item 2: CRM — Atalho para a Ficha Completa do Cliente
-- **Origem:** Reunião 08/10 (Minutos [00:12:48](#00:12:48) e [00:14:41](#00:14:41)).
-- **Problema Atual:** No Kanban do CRM, quando o vendedor ou gestor clica em um card ou abre o drawer do lead, não há botão direto para abrir a ficha do cliente em `/clientes/:id`.
-- **O que precisa ser feito:**
-  1. No `LeadCard` e no cabeçalho do `LeadDrawer` em `inertia/pages/crm/index.tsx`, adicionar o botão/link **"Ver Ficha do Cliente ↗"**.
-  2. Caso o lead já esteja convertido em cliente (`lead.clienteId`), abrir diretamente `/clientes/${lead.clienteId}` em nova aba ou navegação fluida.
-  3. Caso o lead ainda não esteja convertido, abrir modal ou redirecionamento de visualização cadastral.
-
----
-
-### Item 3: "Prontuário do Cliente" — Histórico de Observações Pessoais
-- **Origem:** Reunião 08/10 (Minutos [00:11:04](#00:11:04) a [00:15:54](#00:15:54) — Thiago Aguiar).
-- **Problema Atual:** Falta um local estruturado para registrar características pessoais e sutilezas do cliente pescadas durante as conversas (ex.: hobbies, nomes dos filhos, pets, preferências), voltado a estratégias de relacionamento e presentes pós-venda.
-- **O que precisa ser feito:**
-  1. **Na Ficha do Cliente (`/clientes/:id`):** Criar uma aba ou card destacado chamado **"Prontuário de Relacionamento"** contendo anotações livres em formato de timeline cronológica (autor, data e anotação).
-  2. **No Modal de Nova Interação do CRM:** Adicionar um checkbox ou campo opcional: *"📌 Adicionar ao Prontuário do Cliente"*, permitindo que uma anotação feita no WhatsApp ou ligação seja gravada diretamente na ficha do cliente de forma automática.
-
----
-
-### Item 4: Associação de Múltiplos Projetos para o Mesmo Cliente/Lead
-- **Origem:** Reunião 08/10 (Minutos [00:23:03](#00:23:03) e [00:24:19](#00:24:19) — Thiago Aguiar).
-- **Problema Atual:** Se um cliente que já fechou um projeto (ex.: Cozinha e Sala) volta à loja para fazer um novo ambiente (ex.: Quarto do Filho), o sistema atual tende a reaproveitar o projeto existente ou forçar a criação de um novo cliente duplicado.
-- **O que precisa ser feito:**
-  1. Permitir a criação de um **Novo Projeto** vinculado a um Cliente/Lead já existente.
-  2. Cada projeto deve gerar seu próprio card independente no Kanban (com seu próprio status, valor, ambientes e SLA), permitindo que um projeto esteja em montagem e outro em fase de briefing simultaneamente.
-  3. Na Ficha do Cliente (`/clientes/:id`), exibir a lista de todos os projetos vinculados (em andamento e concluídos).
-
----
-
-### Item 5: Alternância de Perfil no Header ("Ver como...") para Diretoria
+### Item Único Pendente (Matriz #18): Alternância de Perfil no Header ("Ver como...") para Diretoria
+- **Modelo Recomendado para Execução:** **🧠 4. Argon** (Altera middlewares de autenticação, sessão, bypass de `isSuperuser`/`DIRETORIA` no `PermissionService` e filtros de isolamento em múltiplos controllers).
 - **Origem:** Reunião 08/10 (Minutos [00:04:25](#00:04:25) e [00:05:28](#00:05:28) — Thiago Aguiar).
 - **Conceito:** Permitir que o usuário com perfil `DIRETORIA` visualize a plataforma sob a ótica de outros perfis (Vendedor, Projetista, Conferente) para auditar permissões e visibilidade de tela sem precisar fazer logout e login com outras contas.
 - **O que precisa ser feito:**
-  1. No cabeçalho (`Header.tsx` em `app_layout.tsx`), ao lado do perfil da Diretoria, exibir um dropdown de simulação: *"Modo de Visão: [ Diretoria ▼ | Vendedor | Projetista | Gerente ]"*.
+  1. No cabeçalho (`app_layout.tsx`), ao lado do perfil da Diretoria, exibir um dropdown de simulação: *"Modo de Visão: [ Diretoria ▼ | Vendedor | Projetista | Gerente ]"*.
   2. O backend armazena o perfil simulado na sessão (`session.put('impersonate_perfil', perfil)`), ajustando as queries de isolamento e props compartilhadas do Inertia enquanto a simulação estiver ativa.
   3. Exibir banner de alerta no topo informando: *"Você está visualizando o sistema como Vendedor. [Restaurar Visão de Diretoria]"*.
 
 ---
 
-## 🎯 Recomendações e Próximos Passos (Plano de Ação Sugerido)
-
-Recomenda-se dividir as pendências nas seguintes fases de desenvolvimento:
+## 🎯 Recomendações e Próximos Passos
 
 ```mermaid
 flowchart TD
-    subgraph Sprint1["Fase 1: Ajustes Imediatos de UX (Rápida Entrega)"]
-        A1["1. Agenda: Duração em vez de Horário de Término"]
-        A2["2. CRM: Atalho no Card para a Ficha do Cliente"]
-        A3["3. Paleta circular de cores para tipos de compromisso"]
+    subgraph Concluido["✅ Concluído (17 de 18 Demandas Técnicas)"]
+        A1["✅ 1. Agenda: Duração estilo Google Agenda + Conflitos"]
+        A2["✅ 2. Paleta circular de cores em Configurações"]
+        A3["✅ 3. CRM: Atalho direto no Card/Drawer para Ficha do Cliente"]
+        A4["✅ 4. Multi-Projetos por Cliente (1 Card no CRM por Projeto / 1 Briefing por Projeto)"]
+        A5["✅ 5. Prontuário de Relacionamento na Ficha do Cliente + Integração CRM"]
     end
 
-    subgraph Sprint2["Fase 2: Relacionamento & Prontuário"]
-        B1["4. Prontuário de Relacionamento na Ficha do Cliente"]
-        B2["5. Checkbox em Interações do CRM para enviar ao Prontuário"]
+    subgraph Proximos["🚀 Único Item Restante"]
+        B1["6. Seletor de Simulação de Perfil ('Ver como...') no Header para Diretoria (Recomendado: 🧠 4. Argon)"]
     end
 
-    subgraph Sprint3["Fase 3: Multi-Projetos & Governança"]
-        C1["6. Múltiplos Projetos por Cliente com Cards Independentes"]
-        C2["7. Seletor de Simulação de Perfil ('Ver como...') no Header"]
-    end
-
-    Sprint1 --> Sprint2 --> Sprint3
+    Concluido --> Proximos
 ```
 
-1. **Prioridade 1 (Imediata):** Implementar o **Seletor de Duração na Agenda** e o **Atalho para a Ficha do Cliente no CRM** (itens simples de alto impacto diário).
-2. **Prioridade 2:** Desenvolver o **Prontuário de Relacionamento do Cliente** integrado às interações.
-3. **Prioridade 3:** Estruturar o suporte a **Múltiplos Projetos por Cliente** com cards independentes no Kanban e a simulação de perfil no Header.
-
+1. **Próximo e Último Passo Técnico (Item #18):** Implementar o seletor **"Ver como..."** no cabeçalho para a Diretoria simular outros perfis (com **Gemini 4 Argon**).

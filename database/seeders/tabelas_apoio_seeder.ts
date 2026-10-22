@@ -71,5 +71,19 @@ export default class TabelasApoioSeeder extends BaseSeeder {
       ]
       await db.table('tipos_compromisso_catalogo').multiInsert(tiposPadrao)
     }
+
+    // 5. Categorias Padrão do Prontuário do Cliente
+    const countProntuario = await db.from('categorias_prontuario_catalogo').count('* as total')
+    if (Number(countProntuario[0]?.total || 0) === 0) {
+      const categoriasProntuarioPadrao = [
+        { nome: 'Pessoal & Hábitos', slug: 'pessoal', cor: '#3B82F6', icone: 'User', ordem: 10, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Família & Filhos', slug: 'familia', cor: '#8B5CF6', icone: 'Users', ordem: 20, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Pets & Animais', slug: 'pet', cor: '#F59E0B', icone: 'Dog', ordem: 30, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Hobbies & Lazer', slug: 'hobby', cor: '#10B981', icone: 'Smile', ordem: 40, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Preferências & Estilo', slug: 'preferencia', cor: '#EC4899', icone: 'Heart', ordem: 50, is_active: true, created_at: now, updated_at: now },
+        { nome: 'Atendimento & CRM', slug: 'atendimento', cor: '#6B7280', icone: 'MessageSquare', ordem: 60, is_active: true, created_at: now, updated_at: now },
+      ]
+      await db.table('categorias_prontuario_catalogo').multiInsert(categoriasProntuarioPadrao)
+    }
   }
 }
