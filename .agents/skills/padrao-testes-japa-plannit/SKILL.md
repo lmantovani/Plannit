@@ -96,3 +96,4 @@ node ace test functional --files=tests/functional/roteiros_catalogo.spec.ts
 # Filtrar por nome do teste:
 node ace test --tests="bloqueia ação para usuário não autenticado"
 ```
+

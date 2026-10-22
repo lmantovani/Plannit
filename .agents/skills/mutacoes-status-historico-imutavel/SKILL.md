@@ -101,3 +101,4 @@ return response.redirect().back()
 - [ ] Os guardrails aplicáveis (RN001, RN002, RN005, RN006) são validados e devolvem feedback claro?
 - [ ] O cálculo de `tempoPermanenciaSegundos` usa Luxon em UTC?
 - [ ] Em caso de cancelamento ou arquivamento, o motivo é obrigatório?
+

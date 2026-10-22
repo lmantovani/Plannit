@@ -98,3 +98,4 @@ export default class EtapaProducao extends EtapasProducaoSchema {
 
 > [!TIP]
 > **Campos JSONB:** Para colunas do tipo JSONB (`jsonPrepareConsume`), redeclare a coluna no Model caso precise garantir parsing estrito de objetos ou arrays vazios padrão (`defaultTo([])`).
+
