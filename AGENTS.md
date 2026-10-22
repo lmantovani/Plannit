@@ -151,6 +151,11 @@ Remover o item daqui quando for corrigido.
 7. **Skills do projeto** ficam em `.agents/skills/<nome>/SKILL.md` e valem para qualquer agente de IA: antes de trabalhar no assunto de uma skill, leia o `SKILL.md` dela. O Claude Code as encontra por symlinks em `.claude/skills/`. Ao criar uma skill nova, coloque-a em `.agents/skills/`, crie o symlink correspondente em `.claude/skills/` e liste-a aqui. Skills atuais:
    - `parametrizacao-campos-configuracoes` — decidir com o usuário se um campo com opções vira catálogo em `/configuracoes` e montar tabela, CRUD, aba e seeder.
    - `sincronizacao-catalogos-configuracoes` — telas, filtros e validações que usam um catálogo de Configurações: sincronização sem recarregar a página, validação contra o catálogo ativo, atalhos para gestores e cadastro rápido.
+   - `mutacoes-status-historico-imutavel` — regras de mudança de status em Projetos, Leads e Colaboradores: transação atômica obrigatória (`db.transaction`), auditoria imutável (RN017), tempo de permanência/SLA e validação de guardrails (RN001, RN002, RN005, RN006 e RN016).
+   - `contrato-mutacoes-inertia-flash` — padrão de Controllers no AdonisJS v7 + Inertia: validação VineJS, flash messages repassadas ao toast (`error`, `success`, `info`) e suporte a JSON paralelo via `wantsJson()`.
+   - `rbac-permissoes-dinamicas` — Matriz Dinâmica de Permissões por Perfil (`perfil_permissoes`): checagem no backend (`middleware.permission`), governança incondicional da Diretoria e renderização condicional no frontend React.
+   - `criacao-migrations-models-lucid` — convenções de banco de dados e Lucid ORM no AdonisJS v7: criação de migrations, auto-geração de `database/schema.ts` (nunca editar manualmente) e definição de Models com relacionamentos.
+   - `padrao-testes-japa-plannit` — escrita e execução de testes funcionais com Japa: banco de desenvolvimento compartilhado, isolamento por identificadores únicos, autenticação com `client.loginAs()` e validação de fluxos Inertia/JSON.
 
 ---
 
