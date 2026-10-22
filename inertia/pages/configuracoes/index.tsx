@@ -18,6 +18,7 @@ import {
   Bookmark,
   Check,
   Palette,
+  Kanban,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
@@ -28,7 +29,9 @@ import UsuariosSistemaPanel, {
 } from './components/UsuariosSistemaPanel'
 import RoteirosBriefingPanel from './components/RoteirosBriefingPanel'
 import CategoriasProntuarioPanel from './components/CategoriasProntuarioPanel'
+import KanbanFunisPanel from './components/KanbanFunisPanel'
 import type { RoteiroBriefingItem } from './components/ModalRoteiroBriefing'
+import type { KanbanQuadroCatalogoItem } from '~/lib/constants'
 import { notificarCatalogoAtualizado } from '~/lib/catalogos'
 
 export const CORES_PALETA_TIPOS = [
@@ -104,6 +107,7 @@ interface ConfiguracoesPageProps {
   campanhas: CampanhaItem[]
   tiposCompromisso?: TipoCompromissoItem[]
   categoriasProntuario?: CategoriaProntuarioItem[]
+  kanbanQuadros?: KanbanQuadroCatalogoItem[]
   roteiros?: RoteiroBriefingItem[]
   podeGerenciarPermissoes?: boolean
   permissoesConfig?: PermissaoPerfilMatrix | null
@@ -112,6 +116,7 @@ interface ConfiguracoesPageProps {
 }
 
 type TabKey =
+  | 'kanban'
   | 'ambientes'
   | 'origens'
   | 'campanhas'
@@ -133,6 +138,7 @@ export default function ConfiguracoesPage({
   campanhas = [],
   tiposCompromisso = [],
   categoriasProntuario = [],
+  kanbanQuadros = [],
   roteiros = [],
   podeGerenciarPermissoes = false,
   permissoesConfig = null,
@@ -144,6 +150,7 @@ export default function ConfiguracoesPage({
       const params = new URLSearchParams(window.location.search)
       const tab = params.get('tab')
       if (
+        tab === 'kanban' ||
         tab === 'ambientes' ||
         tab === 'origens' ||
         tab === 'campanhas' ||
@@ -505,6 +512,29 @@ export default function ConfiguracoesPage({
         {/* Header Tabs */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-2 flex items-center justify-between gap-2 overflow-x-auto">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <button
+              onClick={() => setActiveTab('kanban')}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all select-none whitespace-nowrap shrink-0 cursor-pointer',
+                activeTab === 'kanban'
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+              )}
+            >
+              <Kanban size={15} />
+              <span>Quadros Kanban</span>
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                  activeTab === 'kanban'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-stone-200 text-stone-700'
+                )}
+              >
+                {kanbanQuadros.length}
+              </span>
+            </button>
+
             <button
               onClick={() => setActiveTab('ambientes')}
               className={clsx(
@@ -1161,6 +1191,9 @@ export default function ConfiguracoesPage({
             </div>
           </div>
         )}
+
+        {/* TAB KANBAN: QUADROS E ETAPAS DO FUNIL */}
+        {activeTab === 'kanban' && <KanbanFunisPanel quadros={kanbanQuadros} />}
 
         {/* TAB 5: CATEGORIAS DO PRONTUÁRIO */}
         {activeTab === 'prontuario' && (

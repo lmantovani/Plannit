@@ -182,6 +182,20 @@ export interface ApiDefinition {
       toggle: typeof routes['configuracoes.categorias_prontuario.toggle']
       destroy: typeof routes['configuracoes.categorias_prontuario.destroy']
     }
+    kanbanQuadros: {
+      store: typeof routes['configuracoes.kanban_quadros.store']
+      update: typeof routes['configuracoes.kanban_quadros.update']
+      toggle: typeof routes['configuracoes.kanban_quadros.toggle']
+      reorder: typeof routes['configuracoes.kanban_quadros.reorder']
+      destroy: typeof routes['configuracoes.kanban_quadros.destroy']
+    }
+    kanbanEtapas: {
+      store: typeof routes['configuracoes.kanban_etapas.store']
+      update: typeof routes['configuracoes.kanban_etapas.update']
+      toggle: typeof routes['configuracoes.kanban_etapas.toggle']
+      reorder: typeof routes['configuracoes.kanban_etapas.reorder']
+      destroy: typeof routes['configuracoes.kanban_etapas.destroy']
+    }
     roteiros: {
       store: typeof routes['configuracoes.roteiros.store']
       update: typeof routes['configuracoes.roteiros.update']

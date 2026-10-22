@@ -4,8 +4,8 @@ import path from 'node:path'
 
 const baseUrl = 'http://localhost:3333'
 const outputDirs = [
-  path.resolve('public/manual_assets'),
-  path.resolve('../docs/manual/images'),
+  path.resolve('public/manual/images'),
+  path.resolve('docs/manual/images'),
 ]
 
 // Garante que os diretórios de saída existam
@@ -61,11 +61,21 @@ async function run() {
     await new Promise((r) => setTimeout(r, 1200))
     await saveScreenshot(page, '02_dashboard.png')
 
-    // 3. CRM & Funil de Leads
+    // 3. CRM & Funil Multi-Quadros
     console.log('3. Capturando CRM & Funil Comercial...')
     await page.goto(`${baseUrl}/crm`, { waitUntil: 'networkidle2' })
-    await new Promise((r) => setTimeout(r, 1200))
+    await new Promise((r) => setTimeout(r, 1500))
     await saveScreenshot(page, '03_crm.png')
+
+    // 3b. Lead Drawer no CRM
+    console.log('3b. Capturando Gaveta Lateral do Lead (Drawer)...')
+    const cardSelector = '.kanban-card, [title*="Última interação"]'
+    const cardExists = await page.$(cardSelector)
+    if (cardExists) {
+      await cardExists.click()
+      await new Promise((r) => setTimeout(r, 1200))
+      await saveScreenshot(page, '03b_crm_drawer.png')
+    }
 
     // 4. Briefings Inteligentes
     console.log('4. Capturando Briefings Inteligentes...')
@@ -107,7 +117,7 @@ async function run() {
       return null
     })
 
-    const targetId = projetoId || '459'
+    const targetId = projetoId || '1'
     console.log(`Alvo para detalhe do projeto: ID ${targetId}`)
 
     // 9. Sala de Controle de Projetos & Render (show)
@@ -128,8 +138,26 @@ async function run() {
     await new Promise((r) => setTimeout(r, 1200))
     await saveScreenshot(page, '11_colaboradores.png')
 
+    // 12. Agenda de Compromissos Integrada
+    console.log('12. Capturando Módulo de Agenda de Compromissos (/agenda)...')
+    await page.goto(`${baseUrl}/agenda`, { waitUntil: 'networkidle2' })
+    await new Promise((r) => setTimeout(r, 1500))
+    await saveScreenshot(page, '12_agenda.png')
+
+    // 13. Configurações - Quadros e Etapas do Kanban
+    console.log('13. Capturando Configurações - Quadros e Etapas do Kanban (/configuracoes?tab=kanban)...')
+    await page.goto(`${baseUrl}/configuracoes?tab=kanban`, { waitUntil: 'networkidle2' })
+    await new Promise((r) => setTimeout(r, 1500))
+    await saveScreenshot(page, '13_configuracoes_kanban.png')
+
+    // 14. Configurações - Perfis & Permissões (RBAC Dinâmico)
+    console.log('14. Capturando Configurações - Perfis & Permissões (/configuracoes?tab=perfis)...')
+    await page.goto(`${baseUrl}/configuracoes?tab=perfis`, { waitUntil: 'networkidle2' })
+    await new Promise((r) => setTimeout(r, 1500))
+    await saveScreenshot(page, '14_configuracoes_perfis.png')
+
     console.log('\n=============================================================')
-    console.log('✅ TODAS AS 11 CAPTURAS DE TELA FORAM GERADAS COM SUCESSO!')
+    console.log('✅ TODAS AS CAPTURAS DE TELA FORAM GERADAS COM SUCESSO!')
     console.log('=============================================================')
   } catch (err) {
     console.error('❌ Erro na captura de tela:', err)

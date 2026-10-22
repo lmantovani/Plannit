@@ -727,6 +727,62 @@ export class InteracoesLeadSchema extends BaseModel {
   declare tipo: string
 }
 
+export class KanbanEtapasCatalogoSchema extends BaseModel {
+  static $columns = ['cor', 'createdAt', 'exigeMotivoPerda', 'exigeQualificacao', 'id', 'isActive', 'isSistema', 'nome', 'ordem', 'quadroId', 'slug', 'tipoEstagio', 'updatedAt'] as const
+  $columns = KanbanEtapasCatalogoSchema.$columns
+  @column()
+  declare cor: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare exigeMotivoPerda: boolean
+  @column()
+  declare exigeQualificacao: boolean
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare isSistema: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column()
+  declare quadroId: number
+  @column()
+  declare slug: string
+  @column()
+  declare tipoEstagio: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class KanbanQuadrosCatalogoSchema extends BaseModel {
+  static $columns = ['cor', 'createdAt', 'descricao', 'id', 'isActive', 'isSistema', 'nome', 'ordem', 'slug', 'updatedAt'] as const
+  $columns = KanbanQuadrosCatalogoSchema.$columns
+  @column()
+  declare cor: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare descricao: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isActive: boolean
+  @column()
+  declare isSistema: boolean
+  @column()
+  declare nome: string
+  @column()
+  declare ordem: number
+  @column()
+  declare slug: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class LeadSchema extends BaseModel {
   static $columns = ['ambientesInteresse', 'arquitetoId', 'campanha', 'cidade', 'clienteId', 'concorrentePerdido', 'convertidoEmCliente', 'createdAt', 'decisorPresente', 'email', 'estado', 'faixaOrcamento', 'id', 'motivoDesqualificacao', 'motivoPerda', 'nome', 'orcamentoEstimado', 'origem', 'origemDescricao', 'possuiArquiteto', 'prazoObra', 'qualificado', 'qualificadoEm', 'qualificadoPorId', 'statusAlteradoEm', 'statusFunil', 'telefone', 'tipoImovel', 'ultimaInteracaoEm', 'updatedAt', 'vendedorId'] as const
   $columns = LeadSchema.$columns

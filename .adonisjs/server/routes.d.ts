@@ -119,6 +119,16 @@ export type ScannedRoutes = {
     'configuracoes.categorias_prontuario.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.categorias_prontuario.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.categorias_prontuario.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.kanban_quadros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.reorder': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.kanban_etapas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.reorder': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
     'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -236,6 +246,8 @@ export type ScannedRoutes = {
     'configuracoes.campanhas.store': { paramsTuple?: []; params?: {} }
     'configuracoes.tipos_compromisso.store': { paramsTuple?: []; params?: {} }
     'configuracoes.categorias_prontuario.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.kanban_quadros.store': { paramsTuple?: []; params?: {} }
+    'configuracoes.kanban_etapas.store': { paramsTuple?: []; params?: {} }
     'configuracoes.roteiros.store': { paramsTuple?: []; params?: {} }
     'configuracoes.perfis.store': { paramsTuple?: []; params?: {} }
   }
@@ -256,6 +268,10 @@ export type ScannedRoutes = {
     'configuracoes.campanhas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.categorias_prontuario.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.reorder': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.reorder': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.permissoes.toggle': { paramsTuple?: []; params?: {} }
   }
@@ -272,6 +288,8 @@ export type ScannedRoutes = {
     'configuracoes.campanhas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.categorias_prontuario.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.perfis.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
@@ -288,6 +306,8 @@ export type ScannedRoutes = {
     'configuracoes.campanhas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.tipos_compromisso.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.categorias_prontuario.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_quadros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'configuracoes.kanban_etapas.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.roteiros.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'configuracoes.perfis.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }

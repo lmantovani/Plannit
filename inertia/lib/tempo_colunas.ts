@@ -1,21 +1,6 @@
-export interface FunilEtapa {
-  key: string
-  label: string
-  cor: string
-  bg: string
-  border: string
-  text: string
-}
+import { FUNIL_ETAPAS, type FunilEtapa } from './constants'
 
-export const FUNIL_ETAPAS: FunilEtapa[] = [
-  { key: 'novo_lead', label: 'Novo Lead', cor: '#3b82f6', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  { key: 'qualificando', label: 'Qualificando', cor: '#8b5cf6', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-  { key: 'em_visita', label: 'Em Visita', cor: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  { key: 'em_briefing', label: 'Em Briefing', cor: '#a66a12', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800' },
-  { key: 'em_projeto', label: 'Em Projeto', cor: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
-  { key: 'fechado', label: 'Fechado', cor: '#16a34a', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
-  { key: 'perdido', label: 'Perdido', cor: '#dc2626', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700' },
-]
+export { FUNIL_ETAPAS, type FunilEtapa }
 
 export interface HistoricoTransicaoStatus {
   id: number
@@ -91,13 +76,23 @@ export function formatarDuracaoDetalhada(segundos: number | null | undefined): s
 /**
  * Mapeamento das propriedades visuais das etapas do funil
  */
-function getEtapaConfig(statusKey: string): FunilEtapa {
+function getEtapaConfig(
+  statusKey: string,
+  etapasCatalogo?: FunilEtapa[],
+  historicoLabels?: Record<string, string>
+): FunilEtapa {
+  if (etapasCatalogo && etapasCatalogo.length > 0) {
+    const custom = etapasCatalogo.find((e) => e.key === statusKey)
+    if (custom) return custom
+  }
+
   const encontrada = FUNIL_ETAPAS.find((e) => e.key === statusKey)
   if (encontrada) return encontrada
 
+  const labelHistorico = historicoLabels?.[statusKey]
   return {
     key: statusKey,
-    label: statusKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+    label: labelHistorico || statusKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
     cor: '#78716c',
     bg: 'bg-stone-50',
     border: 'border-stone-200',
@@ -114,7 +109,8 @@ export function calcularTempoPorColuna(
   historicoStatus: HistoricoTransicaoStatus[] | undefined,
   statusAlteradoEm: string | null | undefined,
   leadCreatedAt: string | null | undefined,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  etapasCatalogo?: FunilEtapa[]
 ): DetalhesTempoLead {
   const mapaSoma: Record<
     string,
@@ -123,10 +119,17 @@ export function calcularTempoPorColuna(
       passagensPassadas: number
     }
   > = {}
+  const historicoLabels: Record<string, string> = {}
 
   // 1. Processar todas as saídas registradas no histórico
   if (historicoStatus && historicoStatus.length > 0) {
     for (const h of historicoStatus) {
+      if (h.statusDe && h.statusDeLabel) {
+        historicoLabels[h.statusDe] = h.statusDeLabel
+      }
+      if (h.statusPara && h.statusParaLabel) {
+        historicoLabels[h.statusPara] = h.statusParaLabel
+      }
       if (h.statusDe) {
         if (!mapaSoma[h.statusDe]) {
           mapaSoma[h.statusDe] = { tempoPassadoSegundos: 0, passagensPassadas: 0 }
@@ -154,10 +157,16 @@ export function calcularTempoPorColuna(
     colunasChaves.add(statusAtual)
   }
 
-  // Ordenar conforme a ordem padrão do FUNIL_ETAPAS
+  // Ordenar conforme a ordem do catálogo ou FUNIL_ETAPAS
   const ordemFunil: Record<string, number> = {}
-  FUNIL_ETAPAS.forEach((e, idx) => {
+  const baseEtapas = etapasCatalogo && etapasCatalogo.length > 0 ? etapasCatalogo : FUNIL_ETAPAS
+  baseEtapas.forEach((e, idx) => {
     ordemFunil[e.key] = idx
+  })
+  FUNIL_ETAPAS.forEach((e, idx) => {
+    if (ordemFunil[e.key] === undefined) {
+      ordemFunil[e.key] = 100 + idx
+    }
   })
 
   const chavesOrdenadas = Array.from(colunasChaves).sort((a, b) => {
@@ -170,7 +179,7 @@ export function calcularTempoPorColuna(
   let temRetornos = false
 
   const colunasCalculadas: ResumoTempoColuna[] = chavesOrdenadas.map((key) => {
-    const config = getEtapaConfig(key)
+    const config = getEtapaConfig(key, etapasCatalogo, historicoLabels)
     const dadosPassados = mapaSoma[key] || { tempoPassadoSegundos: 0, passagensPassadas: 0 }
     const isAtual = key === statusAtual
 

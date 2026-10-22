@@ -8,6 +8,7 @@ import Cliente from '#models/cliente'
 import Lead, { StatusFunil } from '#models/lead'
 import FilaProjeto, { StatusFila } from '#models/fila_projeto'
 import HistoricoStatusProjeto from '#models/historico_status_projeto'
+import HistoricoStatusLead from '#models/historico_status_lead'
 import Arquiteto from '#models/arquiteto'
 import AmbienteCatalogo from '#models/ambiente_catalogo'
 import RoteiroBriefing from '#models/roteiro_briefing'
@@ -418,8 +419,24 @@ export default class BriefingsController {
       })
 
       if (lead) {
-        lead.statusFunil = StatusFunil.EM_BRIEFING
-        await lead.save()
+        const statusAntLead = lead.statusFunil
+        if (statusAntLead !== StatusFunil.EM_BRIEFING) {
+          const refDateLead = lead.statusAlteradoEm || lead.createdAt
+          const tempoPermLead = refDateLead
+            ? Math.max(0, Math.floor(DateTime.now().diff(refDateLead, 'seconds').seconds))
+            : 0
+          await HistoricoStatusLead.create({
+            leadId: lead.id,
+            alteradoPorId: user.id,
+            statusDe: statusAntLead,
+            statusPara: StatusFunil.EM_BRIEFING,
+            tempoPermanenciaSegundos: statusAntLead ? tempoPermLead : null,
+            observacao: `Briefing técnico iniciado para o projeto ${projeto.codigo}`,
+          })
+          lead.statusFunil = StatusFunil.EM_BRIEFING
+          lead.statusAlteradoEm = DateTime.now()
+          await lead.save()
+        }
       }
     } else {
       session.flash('erro', 'Informe o projeto ou o nome do cliente.')
@@ -708,11 +725,40 @@ export default class BriefingsController {
           },
           { client: trx }
         )
+
+        // Move automaticamente o card do Lead no Kanban do CRM para a etapa "Fila de Projeto"
+        if (projeto.leadId) {
+          const leadVinculado = await Lead.query({ client: trx }).where('id', projeto.leadId).first()
+          if (leadVinculado && leadVinculado.statusFunil !== StatusFunil.FILA_PROJETO) {
+            const statusAntLead = leadVinculado.statusFunil
+            const refDateLead = leadVinculado.statusAlteradoEm || leadVinculado.createdAt
+            const tempoPermLead = refDateLead
+              ? Math.max(0, Math.floor(DateTime.now().diff(refDateLead, 'seconds').seconds))
+              : 0
+
+            await HistoricoStatusLead.create(
+              {
+                leadId: leadVinculado.id,
+                alteradoPorId: user.id,
+                statusDe: statusAntLead,
+                statusPara: StatusFunil.FILA_PROJETO,
+                tempoPermanenciaSegundos: statusAntLead ? tempoPermLead : null,
+                observacao: `Briefing aprovado (Score ${scoreResult.score} pts) — movido automaticamente para Fila de Projeto`,
+              },
+              { client: trx }
+            )
+
+            leadVinculado.useTransaction(trx)
+            leadVinculado.statusFunil = StatusFunil.FILA_PROJETO
+            leadVinculado.statusAlteradoEm = DateTime.now()
+            await leadVinculado.save()
+          }
+        }
       }
     })
 
     session.flash(
-      'sucesso',
+      'success',
       `Briefing aprovado com Score ${scoreResult.score} pts! O projeto avançou para a Fila de Projetos.`
     )
     if (request.header('accept')?.includes('application/json')) {

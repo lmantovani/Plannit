@@ -148,5 +148,48 @@ export const updateCategoriaProntuarioValidator = vine.create({
   isActive: vine.boolean().optional(),
 })
 
+export const createKanbanQuadroValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(120),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  descricao: vine.string().trim().maxLength(255).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const updateKanbanQuadroValidator = vine.create({
+  nome: vine.string().trim().minLength(2).maxLength(120).optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  descricao: vine.string().trim().maxLength(255).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  ordem: vine.number().min(0).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const createKanbanEtapaValidator = vine.create({
+  quadroId: vine.number().positive(),
+  nome: vine.string().trim().minLength(2).maxLength(120),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  ordem: vine.number().min(0).optional(),
+  exigeQualificacao: vine.boolean().optional(),
+  exigeMotivoPerda: vine.boolean().optional(),
+  tipoEstagio: vine.enum(['aberta', 'ganho', 'perdido', 'desqualificado']).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+export const updateKanbanEtapaValidator = vine.create({
+  quadroId: vine.number().positive().optional(),
+  nome: vine.string().trim().minLength(2).maxLength(120).optional(),
+  slug: vine.string().trim().use(slugOpcionalRule()).nullable().optional(),
+  cor: vine.string().trim().maxLength(50).optional(),
+  ordem: vine.number().min(0).optional(),
+  exigeQualificacao: vine.boolean().optional(),
+  exigeMotivoPerda: vine.boolean().optional(),
+  tipoEstagio: vine.enum(['aberta', 'ganho', 'perdido', 'desqualificado']).optional(),
+  isActive: vine.boolean().optional(),
+})
+
+
 
 

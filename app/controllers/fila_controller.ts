@@ -4,6 +4,8 @@ import { DateTime } from 'luxon'
 import FilaProjeto, { StatusFila } from '#models/fila_projeto'
 import Projeto, { StatusProjeto } from '#models/projeto'
 import HistoricoStatusProjeto from '#models/historico_status_projeto'
+import Lead, { StatusFunil } from '#models/lead'
+import HistoricoStatusLead from '#models/historico_status_lead'
 import { PerfilUsuario } from '#models/user'
 import {
   podeAlocar,
@@ -207,10 +209,41 @@ export default class FilaController {
           },
           { client: trx }
         )
+
+        // Sincroniza o card do Lead no Kanban do CRM para "Em Projeto"
+        if (filaItem.projeto.leadId) {
+          const leadVinculado = await Lead.query({ client: trx })
+            .where('id', filaItem.projeto.leadId)
+            .first()
+          if (leadVinculado && leadVinculado.statusFunil !== StatusFunil.EM_PROJETO) {
+            const statusAntLead = leadVinculado.statusFunil
+            const refDateLead = leadVinculado.statusAlteradoEm || leadVinculado.createdAt
+            const tempoPermLead = refDateLead
+              ? Math.max(0, Math.floor(DateTime.now().diff(refDateLead, 'seconds').seconds))
+              : 0
+
+            await HistoricoStatusLead.create(
+              {
+                leadId: leadVinculado.id,
+                alteradoPorId: user.id,
+                statusDe: statusAntLead,
+                statusPara: StatusFunil.EM_PROJETO,
+                tempoPermanenciaSegundos: statusAntLead ? tempoPermLead : null,
+                observacao: `Projeto ${filaItem.projeto.codigo} alocado na Fila de Projetos`,
+              },
+              { client: trx }
+            )
+
+            leadVinculado.useTransaction(trx)
+            leadVinculado.statusFunil = StatusFunil.EM_PROJETO
+            leadVinculado.statusAlteradoEm = DateTime.now()
+            await leadVinculado.save()
+          }
+        }
       }
     })
 
-    session.flash('sucesso', 'Projetista alocado com sucesso! O projeto avançou para a etapa "Em Projeto".')
+    session.flash('success', 'Projetista alocado com sucesso! O projeto avançou para a etapa "Em Projeto".')
     return response.redirect().back()
   }
 

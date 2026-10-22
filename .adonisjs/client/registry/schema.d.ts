@@ -1387,6 +1387,126 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyCategoriaProntuario']>>>
     }
   }
+  'configuracoes.kanban_quadros.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/kanban-quadros'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createKanbanQuadroValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createKanbanQuadroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanQuadro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_quadros.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/kanban-quadros/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateKanbanQuadroValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateKanbanQuadroValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanQuadro']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_quadros.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-quadros/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_quadros.reorder': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-quadros/:id/reorder'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_quadros.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/kanban-quadros/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanQuadro']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanQuadro']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.store': {
+    methods: ["POST"]
+    pattern: '/configuracoes/kanban-etapas'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').createKanbanEtapaValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').createKanbanEtapaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['storeKanbanEtapa']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_etapas.update': {
+    methods: ["PUT"]
+    pattern: '/configuracoes/kanban-etapas/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/configuracao').updateKanbanEtapaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/configuracao').updateKanbanEtapaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['updateKanbanEtapa']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'configuracoes.kanban_etapas.toggle': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-etapas/:id/toggle'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['toggleKanbanEtapa']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.reorder': {
+    methods: ["PATCH"]
+    pattern: '/configuracoes/kanban-etapas/:id/reorder'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['reorderKanbanEtapa']>>>
+    }
+  }
+  'configuracoes.kanban_etapas.destroy': {
+    methods: ["DELETE"]
+    pattern: '/configuracoes/kanban-etapas/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanEtapa']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/configuracoes_controller').default['destroyKanbanEtapa']>>>
+    }
+  }
   'configuracoes.roteiros.store': {
     methods: ["POST"]
     pattern: '/configuracoes/roteiros'

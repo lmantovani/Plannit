@@ -16,6 +16,8 @@ import OrigemLeadCatalogo from '#models/origem_lead_catalogo'
 import CampanhaLead from '#models/campanha_lead'
 import TipoCompromissoCatalogo from '#models/tipo_compromisso_catalogo'
 import CategoriaProntuarioCatalogo from '#models/categoria_prontuario_catalogo'
+import KanbanQuadroCatalogo from '#models/kanban_quadro_catalogo'
+import KanbanEtapaCatalogo from '#models/kanban_etapa_catalogo'
 import { StatusCompromisso } from '#models/compromisso_agenda'
 import Cliente from '#models/cliente'
 import ProntuarioCliente from '#models/prontuario_cliente'
@@ -118,17 +120,42 @@ export default class LeadsController {
 
     const rawLeads = await leadsQuery
 
-    // Métricas para a barra superior calculadas direto dos models
+    // Catálogo de Quadros e Etapas do Kanban
+    const kanbanQuadrosCatalogo = await KanbanQuadroCatalogo.query()
+      .where('isActive', true)
+      .preload('etapas', (q) => {
+        q.where('isActive', true).orderBy('ordem', 'asc').orderBy('nome', 'asc')
+      })
+      .orderBy('ordem', 'asc')
+      .orderBy('nome', 'asc')
+
+    const todasEtapasCatalogo = await KanbanEtapaCatalogo.query()
+    const etapasLabelsMap: Record<string, string> = { ...STATUS_FUNIL_LABELS }
+    const etapasTipoMap: Record<string, string> = {}
+
+    for (const et of todasEtapasCatalogo) {
+      etapasLabelsMap[et.slug] = et.nome
+      etapasTipoMap[et.slug] = et.tipoEstagio
+    }
+
+    // Métricas para a barra superior calculadas direto dos models + catálogo de etapas
     const estatisticas = {
       total: rawLeads.length,
-      ativos: rawLeads.filter(
-        (l) =>
+      ativos: rawLeads.filter((l) => {
+        const tipo = etapasTipoMap[l.statusFunil]
+        if (tipo) return tipo === 'aberta'
+        return (
           l.statusFunil !== StatusFunil.FECHADO &&
           l.statusFunil !== StatusFunil.PERDIDO &&
           l.statusFunil !== StatusFunil.DESQUALIFICADO
+        )
+      }).length,
+      fechados: rawLeads.filter(
+        (l) => etapasTipoMap[l.statusFunil] === 'ganho' || l.statusFunil === StatusFunil.FECHADO
       ).length,
-      fechados: rawLeads.filter((l) => l.statusFunil === StatusFunil.FECHADO).length,
-      perdidos: rawLeads.filter((l) => l.statusFunil === StatusFunil.PERDIDO).length,
+      perdidos: rawLeads.filter(
+        (l) => etapasTipoMap[l.statusFunil] === 'perdido' || l.statusFunil === StatusFunil.PERDIDO
+      ).length,
       estagnados: rawLeads.filter((l) => l.precisaAtencao).length,
     }
 
@@ -278,9 +305,9 @@ export default class LeadsController {
           id: h.id,
           leadId: h.leadId,
           statusDe: h.statusDe,
-          statusDeLabel: h.statusDe ? STATUS_FUNIL_LABELS[h.statusDe as StatusFunil] || h.statusDe : null,
+          statusDeLabel: h.statusDe ? etapasLabelsMap[h.statusDe] || h.statusDe : null,
           statusPara: h.statusPara,
-          statusParaLabel: STATUS_FUNIL_LABELS[h.statusPara as StatusFunil] || h.statusPara,
+          statusParaLabel: etapasLabelsMap[h.statusPara] || h.statusPara,
           tempoPermanenciaSegundos: h.tempoPermanenciaSegundos,
           observacao: h.observacao,
           createdAt: h.createdAt ? h.createdAt.toISO() : null,
@@ -378,6 +405,25 @@ export default class LeadsController {
         cor: cp.cor,
         icone: cp.icone,
         ordem: cp.ordem,
+      })),
+      kanbanQuadrosCatalogo: kanbanQuadrosCatalogo.map((q) => ({
+        id: q.id,
+        nome: q.nome,
+        slug: q.slug,
+        descricao: q.descricao,
+        cor: q.cor,
+        ordem: q.ordem,
+        etapas: (q.etapas || []).map((e) => ({
+          id: e.id,
+          quadroId: e.quadroId,
+          nome: e.nome,
+          slug: e.slug,
+          cor: e.cor,
+          ordem: e.ordem,
+          exigeQualificacao: e.exigeQualificacao,
+          exigeMotivoPerda: e.exigeMotivoPerda,
+          tipoEstagio: e.tipoEstagio,
+        })),
       })),
       filtros: {
         q: search,
@@ -583,7 +629,7 @@ export default class LeadsController {
       arquitetoId: cliente.arquitetoId || leadOriginal.arquitetoId,
       possuiArquiteto: Boolean(cliente.arquitetoId || leadOriginal.arquitetoId),
       clienteId: cliente.id,
-      convertidoEmCliente: true,
+      convertidoEmCliente: false,
       statusFunil: StatusFunil.NOVO_LEAD,
       qualificado: false,
       ultimaInteracaoEm: DateTime.now(),
@@ -622,23 +668,34 @@ export default class LeadsController {
     const payload = await request.validateUsing(updateStatusValidator)
     const user = auth.user!
 
-    const etapasPosVisita: string[] = [
+    const etapaDestino = await KanbanEtapaCatalogo.findBy('slug', payload.statusFunil)
+
+    const etapasPosVisitaFallback: string[] = [
       StatusFunil.EM_BRIEFING,
+      StatusFunil.FILA_PROJETO,
       StatusFunil.EM_PROJETO,
       StatusFunil.EM_FECHAMENTO,
     ]
 
-    // RN001: Bloqueia avanço para briefing/projeto sem qualificação prévia
-    if (etapasPosVisita.includes(payload.statusFunil) && !lead.qualificado) {
+    const exigeQualificacao = etapaDestino
+      ? etapaDestino.exigeQualificacao
+      : etapasPosVisitaFallback.includes(payload.statusFunil)
+
+    // RN001: Bloqueia avanço para briefing/projeto/pós-venda sem qualificação prévia
+    if (exigeQualificacao && !lead.qualificado) {
       session.flash(
         'error',
-        'RN001 — Bloqueio de Funil: O lead precisa ser qualificado antes de avançar para Briefing ou Projeto.'
+        'RN001 — Bloqueio de Funil: O lead precisa ser qualificado antes de avançar para esta etapa.'
       )
       return response.redirect().back()
     }
 
+    const exigeMotivoPerda = etapaDestino
+      ? etapaDestino.exigeMotivoPerda || etapaDestino.tipoEstagio === 'perdido'
+      : payload.statusFunil === StatusFunil.PERDIDO
+
     // RF004: Exige motivo ao marcar como Perdido
-    if (payload.statusFunil === StatusFunil.PERDIDO && !payload.motivoPerda) {
+    if (exigeMotivoPerda && !payload.motivoPerda) {
       session.flash(
         'error',
         'RF004: É obrigatório informar o motivo da perda ao arquivar um lead como perdido.'
@@ -648,7 +705,7 @@ export default class LeadsController {
 
     const statusAnterior = lead.statusFunil
     lead.statusFunil = payload.statusFunil
-    if (payload.statusFunil === StatusFunil.PERDIDO) {
+    if (exigeMotivoPerda) {
       lead.motivoPerda = payload.motivoPerda || null
       lead.concorrentePerdido = payload.concorrentePerdido || null
     }
@@ -656,7 +713,9 @@ export default class LeadsController {
     await this.registrarHistoricoStatus(lead, statusAnterior, payload.statusFunil, user)
     await lead.save()
 
-    session.flash('success', `Status de "${lead.nome}" atualizado para ${lead.statusFunil}.`)
+    const labelDestino =
+      etapaDestino?.nome || STATUS_FUNIL_LABELS[payload.statusFunil] || payload.statusFunil
+    session.flash('success', `Status de "${lead.nome}" atualizado para "${labelDestino}".`)
     return response.redirect().back()
   }
 

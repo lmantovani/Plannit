@@ -198,6 +198,19 @@ router
         router.patch('configuracoes/categorias-prontuario/:id/toggle', [controllers.Configuracoes, 'toggleCategoriaProntuario']).as('configuracoes.categorias_prontuario.toggle')
         router.delete('configuracoes/categorias-prontuario/:id', [controllers.Configuracoes, 'destroyCategoriaProntuario']).as('configuracoes.categorias_prontuario.destroy')
 
+        // Quadros & Etapas do Kanban (CRM / Funis)
+        router.post('configuracoes/kanban-quadros', [controllers.Configuracoes, 'storeKanbanQuadro']).as('configuracoes.kanban_quadros.store')
+        router.put('configuracoes/kanban-quadros/:id', [controllers.Configuracoes, 'updateKanbanQuadro']).as('configuracoes.kanban_quadros.update')
+        router.patch('configuracoes/kanban-quadros/:id/toggle', [controllers.Configuracoes, 'toggleKanbanQuadro']).as('configuracoes.kanban_quadros.toggle')
+        router.patch('configuracoes/kanban-quadros/:id/reorder', [controllers.Configuracoes, 'reorderKanbanQuadro']).as('configuracoes.kanban_quadros.reorder')
+        router.delete('configuracoes/kanban-quadros/:id', [controllers.Configuracoes, 'destroyKanbanQuadro']).as('configuracoes.kanban_quadros.destroy')
+
+        router.post('configuracoes/kanban-etapas', [controllers.Configuracoes, 'storeKanbanEtapa']).as('configuracoes.kanban_etapas.store')
+        router.put('configuracoes/kanban-etapas/:id', [controllers.Configuracoes, 'updateKanbanEtapa']).as('configuracoes.kanban_etapas.update')
+        router.patch('configuracoes/kanban-etapas/:id/toggle', [controllers.Configuracoes, 'toggleKanbanEtapa']).as('configuracoes.kanban_etapas.toggle')
+        router.patch('configuracoes/kanban-etapas/:id/reorder', [controllers.Configuracoes, 'reorderKanbanEtapa']).as('configuracoes.kanban_etapas.reorder')
+        router.delete('configuracoes/kanban-etapas/:id', [controllers.Configuracoes, 'destroyKanbanEtapa']).as('configuracoes.kanban_etapas.destroy')
+
         // Roteiros de Apoio (Briefing)
         router.post('configuracoes/roteiros', [controllers.Configuracoes, 'storeRoteiro']).as('configuracoes.roteiros.store')
         router.put('configuracoes/roteiros/:id', [controllers.Configuracoes, 'updateRoteiro']).as('configuracoes.roteiros.update')
