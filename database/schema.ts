@@ -80,6 +80,113 @@ export class ArquitetoSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class AtendimentoFilaVendedoreSchema extends BaseModel {
+  static $columns = ['adicionadoPorId', 'atendimentosHoje', 'createdAt', 'data', 'horaChegada', 'id', 'motivoIndisponibilidade', 'posicao', 'status', 'ultimoAtendimentoEm', 'updatedAt', 'vendedorId'] as const
+  $columns = AtendimentoFilaVendedoreSchema.$columns
+  @column()
+  declare adicionadoPorId: number | null
+  @column()
+  declare atendimentosHoje: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare data: DateTime
+  @column.dateTime()
+  declare horaChegada: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare motivoIndisponibilidade: string | null
+  @column()
+  declare posicao: number
+  @column()
+  declare status: string
+  @column.dateTime()
+  declare ultimoAtendimentoEm: DateTime | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare vendedorId: number
+}
+
+export class AtendimentoHistoricoEventoSchema extends BaseModel {
+  static $columns = ['atendimentoRegistroId', 'createdAt', 'data', 'detalhes', 'executadoPorId', 'id', 'motivo', 'posicaoAnterior', 'posicaoNova', 'tipoEvento', 'vendedorId', 'vendedorPuladoId'] as const
+  $columns = AtendimentoHistoricoEventoSchema.$columns
+  @column()
+  declare atendimentoRegistroId: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare data: DateTime
+  @column()
+  declare detalhes: string | null
+  @column()
+  declare executadoPorId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare motivo: string | null
+  @column()
+  declare posicaoAnterior: number | null
+  @column()
+  declare posicaoNova: number | null
+  @column()
+  declare tipoEvento: string
+  @column()
+  declare vendedorId: number
+  @column()
+  declare vendedorPuladoId: number | null
+}
+
+export class AtendimentoRegistroSchema extends BaseModel {
+  static $columns = ['arquitetoId', 'clienteId', 'clienteNome', 'clienteTelefone', 'concluidoEm', 'createdAt', 'data', 'desfecho', 'duracaoMinutos', 'foiPuloDeVez', 'id', 'iniciadoEm', 'iniciadoPorId', 'justificativaPulo', 'leadId', 'motivoPulo', 'observacao', 'status', 'tipoAtendimento', 'updatedAt', 'vendedorId', 'vendedorPuladoId'] as const
+  $columns = AtendimentoRegistroSchema.$columns
+  @column()
+  declare arquitetoId: number | null
+  @column()
+  declare clienteId: number | null
+  @column()
+  declare clienteNome: string | null
+  @column()
+  declare clienteTelefone: string | null
+  @column.dateTime()
+  declare concluidoEm: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.date()
+  declare data: DateTime
+  @column()
+  declare desfecho: string | null
+  @column()
+  declare duracaoMinutos: number | null
+  @column()
+  declare foiPuloDeVez: boolean
+  @column({ isPrimary: true })
+  declare id: number
+  @column.dateTime()
+  declare iniciadoEm: DateTime
+  @column()
+  declare iniciadoPorId: number
+  @column()
+  declare justificativaPulo: string | null
+  @column()
+  declare leadId: number | null
+  @column()
+  declare motivoPulo: string | null
+  @column()
+  declare observacao: string | null
+  @column()
+  declare status: string
+  @column()
+  declare tipoAtendimento: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare vendedorId: number
+  @column()
+  declare vendedorPuladoId: number | null
+}
+
 export class BriefingSchema extends BaseModel {
   static $columns = ['ambientes', 'arquitetoEmail', 'arquitetoNome', 'arquitetoTelefone', 'cidadeObra', 'createdAt', 'enderecoObra', 'enviadoEm', 'estadoObra', 'estiloPreferido', 'faixaInvestimentoMax', 'faixaInvestimentoMin', 'id', 'motivoDevolucao', 'observacoes', 'prazoDesejado', 'projetoId', 'referenciasUrl', 'score', 'scoreDetalhes', 'scoreMinimo', 'status', 'updatedAt'] as const
   $columns = BriefingSchema.$columns

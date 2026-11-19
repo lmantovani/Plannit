@@ -175,6 +175,90 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leads_controller').default['registrarInteracao']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'atendimentos.fila.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/atendimentos/fila'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['index']>>>
+    }
+  }
+  'atendimentos.fila.entrar': {
+    methods: ["POST"]
+    pattern: '/atendimentos/fila/entrar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/atendimento_fila').entrarFilaValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/atendimento_fila').entrarFilaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['entrarNaFila']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['entrarNaFila']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'atendimentos.fila.iniciar': {
+    methods: ["POST"]
+    pattern: '/atendimentos/fila/iniciar-atendimento'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/atendimento_fila').iniciarAtendimentoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/atendimento_fila').iniciarAtendimentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['iniciarAtendimento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['iniciarAtendimento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'atendimentos.fila.concluir': {
+    methods: ["POST"]
+    pattern: '/atendimentos/fila/atendimentos/:id/concluir'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/atendimento_fila').concluirAtendimentoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/atendimento_fila').concluirAtendimentoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['concluirAtendimento']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['concluirAtendimento']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'atendimentos.fila.status': {
+    methods: ["PATCH"]
+    pattern: '/atendimentos/fila/:id/status'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/atendimento_fila').mudarDisponibilidadeValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/atendimento_fila').mudarDisponibilidadeValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['mudarStatus']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['mudarStatus']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'atendimentos.fila.reordenar': {
+    methods: ["PATCH"]
+    pattern: '/atendimentos/fila/:id/reordenar'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/atendimento_fila').reordenarFilaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/atendimento_fila').reordenarFilaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['reordenar']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['reordenar']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'atendimentos.fila.destroy': {
+    methods: ["DELETE"]
+    pattern: '/atendimentos/fila/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['removerDaFila']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/atendimentos_fila_controller').default['removerDaFila']>>>
+    }
+  }
   'briefings.index': {
     methods: ["GET","HEAD"]
     pattern: '/briefings'

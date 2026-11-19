@@ -17,8 +17,9 @@ export const MODULOS_SISTEMA: Array<{ key: string; label: string; ordem: number 
   { key: 'projetos', label: 'Projetos & Render', ordem: 5 },
   { key: 'especificadores', label: 'Especificadores', ordem: 6 },
   { key: 'agenda', label: 'Agenda', ordem: 7 },
-  { key: 'colaboradores', label: 'Colaboradores / RH', ordem: 8 },
-  { key: 'configuracoes', label: 'Configurações', ordem: 9 },
+  { key: 'atendimentos', label: 'Fila de Atendimento', ordem: 8 },
+  { key: 'colaboradores', label: 'Colaboradores / RH', ordem: 9 },
+  { key: 'configuracoes', label: 'Configurações', ordem: 10 },
 ]
 
 export const DEFINICOES_PERMISSOES: DefinicaoPermissao[] = [
@@ -195,6 +196,29 @@ export const DEFINICOES_PERMISSOES: DefinicaoPermissao[] = [
     moduloLabel: 'Agenda',
     nome: 'Gerenciar Compromissos',
     descricao: 'Permite agendar novos compromissos, reagendar, cancelar e registrar desfechos.',
+  },
+
+  // Fila de Atendimento (Recepção / Vendedores)
+  {
+    codigo: 'atendimentos.visualizar_fila',
+    modulo: 'atendimentos',
+    moduloLabel: 'Fila de Atendimento',
+    nome: 'Visualizar Fila da Vez',
+    descricao: 'Permite acessar a tela da fila de atendimento da recepção e acompanhar a vez.',
+  },
+  {
+    codigo: 'atendimentos.operar_fila',
+    modulo: 'atendimentos',
+    moduloLabel: 'Fila de Atendimento',
+    nome: 'Operar Disponibilidade e Atendimentos',
+    descricao: 'Permite entrar na fila, alternar disponibilidade e iniciar/concluir atendimentos.',
+  },
+  {
+    codigo: 'atendimentos.reordenar_fila',
+    modulo: 'atendimentos',
+    moduloLabel: 'Fila de Atendimento',
+    nome: 'Alterar Ordem da Fila',
+    descricao: 'Permite alterar manualmente a ordem da fila e incluir/remover outros vendedores.',
   },
 
   // Colaboradores / RH

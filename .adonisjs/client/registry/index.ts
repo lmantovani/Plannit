@@ -90,6 +90,48 @@ const routes = {
     tokens: [{"old":"/crm/leads/:id/interacoes","type":0,"val":"crm","end":""},{"old":"/crm/leads/:id/interacoes","type":0,"val":"leads","end":""},{"old":"/crm/leads/:id/interacoes","type":1,"val":"id","end":""},{"old":"/crm/leads/:id/interacoes","type":0,"val":"interacoes","end":""}],
     types: placeholder as Registry['crm.leads.registrar_interacao']['types'],
   },
+  'atendimentos.fila.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/atendimentos/fila',
+    tokens: [{"old":"/atendimentos/fila","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila","type":0,"val":"fila","end":""}],
+    types: placeholder as Registry['atendimentos.fila.index']['types'],
+  },
+  'atendimentos.fila.entrar': {
+    methods: ["POST"],
+    pattern: '/atendimentos/fila/entrar',
+    tokens: [{"old":"/atendimentos/fila/entrar","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/entrar","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/entrar","type":0,"val":"entrar","end":""}],
+    types: placeholder as Registry['atendimentos.fila.entrar']['types'],
+  },
+  'atendimentos.fila.iniciar': {
+    methods: ["POST"],
+    pattern: '/atendimentos/fila/iniciar-atendimento',
+    tokens: [{"old":"/atendimentos/fila/iniciar-atendimento","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/iniciar-atendimento","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/iniciar-atendimento","type":0,"val":"iniciar-atendimento","end":""}],
+    types: placeholder as Registry['atendimentos.fila.iniciar']['types'],
+  },
+  'atendimentos.fila.concluir': {
+    methods: ["POST"],
+    pattern: '/atendimentos/fila/atendimentos/:id/concluir',
+    tokens: [{"old":"/atendimentos/fila/atendimentos/:id/concluir","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/atendimentos/:id/concluir","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/atendimentos/:id/concluir","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/atendimentos/:id/concluir","type":1,"val":"id","end":""},{"old":"/atendimentos/fila/atendimentos/:id/concluir","type":0,"val":"concluir","end":""}],
+    types: placeholder as Registry['atendimentos.fila.concluir']['types'],
+  },
+  'atendimentos.fila.status': {
+    methods: ["PATCH"],
+    pattern: '/atendimentos/fila/:id/status',
+    tokens: [{"old":"/atendimentos/fila/:id/status","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/:id/status","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/:id/status","type":1,"val":"id","end":""},{"old":"/atendimentos/fila/:id/status","type":0,"val":"status","end":""}],
+    types: placeholder as Registry['atendimentos.fila.status']['types'],
+  },
+  'atendimentos.fila.reordenar': {
+    methods: ["PATCH"],
+    pattern: '/atendimentos/fila/:id/reordenar',
+    tokens: [{"old":"/atendimentos/fila/:id/reordenar","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/:id/reordenar","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/:id/reordenar","type":1,"val":"id","end":""},{"old":"/atendimentos/fila/:id/reordenar","type":0,"val":"reordenar","end":""}],
+    types: placeholder as Registry['atendimentos.fila.reordenar']['types'],
+  },
+  'atendimentos.fila.destroy': {
+    methods: ["DELETE"],
+    pattern: '/atendimentos/fila/:id',
+    tokens: [{"old":"/atendimentos/fila/:id","type":0,"val":"atendimentos","end":""},{"old":"/atendimentos/fila/:id","type":0,"val":"fila","end":""},{"old":"/atendimentos/fila/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['atendimentos.fila.destroy']['types'],
+  },
   'briefings.index': {
     methods: ["GET","HEAD"],
     pattern: '/briefings',

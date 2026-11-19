@@ -26,6 +26,8 @@ export default class PerfilPermissoesSeeder extends BaseSeeder {
         'especificadores.gerenciar',
         'agenda.visualizar',
         'agenda.gerenciar',
+        'atendimentos.visualizar_fila',
+        'atendimentos.operar_fila',
       ],
       [PerfilUsuario.PROJETISTA]: [
         'briefings.visualizar',
@@ -42,6 +44,9 @@ export default class PerfilPermissoesSeeder extends BaseSeeder {
       [PerfilUsuario.RECEPCAO]: [
         'crm.visualizar',
         'agenda.visualizar',
+        'atendimentos.visualizar_fila',
+        'atendimentos.operar_fila',
+        'atendimentos.reordenar_fila',
       ],
       [PerfilUsuario.SUPERVISOR_MONTAGEM]: [
         'projetos.visualizar',

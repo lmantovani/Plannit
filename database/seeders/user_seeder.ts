@@ -62,5 +62,29 @@ export default class extends BaseSeeder {
         isSuperuser: false,
       }
     )
+
+    await User.updateOrCreate(
+      { email: 'recepcao@lidermoveis.com.br' },
+      {
+        nome: 'Recepção Showroom',
+        email: 'recepcao@lidermoveis.com.br',
+        password: 'Teste@123',
+        perfil: PerfilUsuario.RECEPCAO,
+        isActive: true,
+        isSuperuser: false,
+      }
+    )
+
+    await User.updateOrCreate(
+      { email: 'vendedor2@lidermoveis.com.br' },
+      {
+        nome: 'Vendedor 2 Líder',
+        email: 'vendedor2@lidermoveis.com.br',
+        password: 'Teste@123',
+        perfil: PerfilUsuario.VENDEDOR,
+        isActive: true,
+        isSuperuser: false,
+      }
+    )
   }
 }
