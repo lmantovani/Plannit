@@ -37,6 +37,15 @@ router
     router.post('crm/leads/:id/perder', [controllers.Leads, 'marcarPerdido']).as('crm.leads.marcar_perdido')
     router.post('crm/leads/:id/interacoes', [controllers.Leads, 'registrarInteracao']).as('crm.leads.registrar_interacao')
 
+    // Fila de Atendimento dos Vendedores (Recepção / Showroom)
+    router.get('atendimentos/fila', [controllers.AtendimentosFila, 'index']).as('atendimentos.fila.index')
+    router.post('atendimentos/fila/entrar', [controllers.AtendimentosFila, 'entrarNaFila']).as('atendimentos.fila.entrar')
+    router.post('atendimentos/fila/iniciar-atendimento', [controllers.AtendimentosFila, 'iniciarAtendimento']).as('atendimentos.fila.iniciar')
+    router.post('atendimentos/fila/atendimentos/:id/concluir', [controllers.AtendimentosFila, 'concluirAtendimento']).as('atendimentos.fila.concluir')
+    router.patch('atendimentos/fila/:id/status', [controllers.AtendimentosFila, 'mudarStatus']).as('atendimentos.fila.status')
+    router.patch('atendimentos/fila/:id/reordenar', [controllers.AtendimentosFila, 'reordenar']).as('atendimentos.fila.reordenar')
+    router.delete('atendimentos/fila/:id', [controllers.AtendimentosFila, 'removerDaFila']).as('atendimentos.fila.destroy')
+
     // Briefings & Score Inteligente (Fase 3 - RN002)
     // Rotas com caminhos fixos antes de caminhos com parâmetros dinâmicos
     router.get('briefings', [controllers.Briefings, 'index']).as('briefings.index')

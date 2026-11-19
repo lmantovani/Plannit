@@ -20,6 +20,7 @@ import {
   Sliders,
   Eye,
   RotateCcw,
+  ListOrdered,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -101,6 +102,7 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
           { slug: 'diretoria', nome: 'Diretoria' },
           { slug: 'gerente_comercial', nome: 'Gerente Comercial' },
           { slug: 'vendedor', nome: 'Vendedor' },
+          { slug: 'recepcao', nome: 'Recepção' },
           { slug: 'projetista', nome: 'Projetista' },
           { slug: 'conferente', nome: 'Conferente Técnico' },
           { slug: 'financeiro', nome: 'Financeiro' },
@@ -155,6 +157,21 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
     {
       section: 'Comercial',
       items: [
+        ...(user?.isSuperuser ||
+        user?.perfil === 'diretoria' ||
+        user?.perfil === 'gerente_comercial' ||
+        user?.perfil === 'recepcao' ||
+        user?.perfil === 'vendedor' ||
+        permissoes?.includes('atendimentos.visualizar_fila')
+          ? [
+              {
+                label: 'Fila de Atendimento',
+                href: '/atendimentos/fila',
+                icon: ListOrdered,
+                badge: 'Recepção',
+              },
+            ]
+          : []),
         { label: 'CRM / Leads', href: '/crm', icon: Users },
         { label: 'Clientes', href: '/clientes', icon: UserCheck },
         { label: 'Briefings', href: '/briefings', icon: FileText, badge: 'RN002' },

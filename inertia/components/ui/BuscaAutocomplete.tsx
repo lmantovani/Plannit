@@ -136,7 +136,14 @@ export default function BuscaAutocomplete({
         />
         <input
           type="text"
+          name={`plannit-search-${listaId}`}
           role="combobox"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-form-type="other"
+          data-lpignore="true"
           aria-expanded={aberto}
           aria-controls={listaId}
           aria-autocomplete="list"

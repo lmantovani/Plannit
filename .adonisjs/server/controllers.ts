@@ -6,6 +6,7 @@
 export const controllers = {
   Agenda: () => import('#controllers/agenda_controller'),
   Arquitetos: () => import('#controllers/arquitetos_controller'),
+  AtendimentosFila: () => import('#controllers/atendimentos_fila_controller'),
   Briefings: () => import('#controllers/briefings_controller'),
   Clientes: () => import('#controllers/clientes_controller'),
   Colaboradores: () => import('#controllers/colaboradores_controller'),

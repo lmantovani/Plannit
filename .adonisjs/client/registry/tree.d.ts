@@ -22,6 +22,17 @@ export interface ApiDefinition {
       registrarInteracao: typeof routes['crm.leads.registrar_interacao']
     }
   }
+  atendimentos: {
+    fila: {
+      index: typeof routes['atendimentos.fila.index']
+      entrar: typeof routes['atendimentos.fila.entrar']
+      iniciar: typeof routes['atendimentos.fila.iniciar']
+      concluir: typeof routes['atendimentos.fila.concluir']
+      status: typeof routes['atendimentos.fila.status']
+      reordenar: typeof routes['atendimentos.fila.reordenar']
+      destroy: typeof routes['atendimentos.fila.destroy']
+    }
+  }
   briefings: {
     index: typeof routes['briefings.index']
     store: typeof routes['briefings.store']
